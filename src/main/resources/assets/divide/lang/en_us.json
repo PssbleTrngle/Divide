@@ -1,0 +1,32 @@
+{
+  "block.divide.flag": "Flag",
+
+  "command.divide.team_rank": "%s's rank is %s",
+  "commands.divide.rank.failed": "No team found",
+  "commands.divide.flag.has": "%s carries %s's flag",
+  "commands.divide.flag.none": "%s carries no flag",
+  "command.divide.delivery.next": "Next delivery is in %s ticks",
+  "command.divide.protection.get": "This chunk is owned by %s as %s",
+  "command.divide.protection.not_found": "This chunk has no protection",
+  "command.divide.protection.already_exists": "This chunk is already protected",
+
+  "message.divide.own_flag": "You cannot break your own teams flag",
+  "message.divide.flag_broken": "You broke %s's flag",
+  "message.divide.flag_taken": "Your flag has been taken",
+  "message.divide.flag_returned": "Your flag has been returned",
+  "message.divide.already_carrying": "You are already carrying a flag",
+  "message.divide.delivery": "New deliveries have arrived",
+  "message.divide.delivery_notify": "New delivery arrives in %s seconds",
+  "message.divide.no_team": "No team",
+  "message.divide.flag_overwritten": "This was already protected. The Protection will be overwritten, but things may not work as you intended to",
+  "message.divide.protection.entered_own": "You entered your teams land",
+  "message.divide.protection.entered_other": "You entered %s's land",
+  "message.divide.protection.left_own": "You left your land",
+  "message.divide.protection.left_other": "You left %s's land",
+
+  "screen.divide.title": "Team Overview",
+
+  "bossbar.divide.delivery": "Next Delivery",
+
+  "key.divide.overview.description": "Open the Teams Overview Screen"
+}
