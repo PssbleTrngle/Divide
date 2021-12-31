@@ -83,7 +83,7 @@ configurations {
     library
     implementation.extendsFrom library
     api.extendsFrom library
-    //library.exclude group: 'org.jetbrains', module: 'annotations'
+    library.exclude group: 'org.jetbrains', module: 'annotations'
 }
 
 minecraft.runs.all {
