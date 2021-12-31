@@ -1,0 +1,116 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.+', changing: true
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10'
+        classpath 'org.jetbrains.kotlin:kotlin-serialization:1.6.10'
+    }
+}
+
+plugins {
+    id 'application'
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'kotlin'
+apply plugin: 'kotlinx-serialization'
+
+apply from: 'https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/site/thedarkcolour/kotlinforforge/gradle/kff-3.1.0.gradle'
+
+version = project.version
+group = "possible_triangle.${project.modid}"
+archivesBaseName = project.modid
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+configurations {
+    library
+    implementation.extendsFrom library
+    library.exclude group: 'org.jetbrains', module: 'annotations'
+}
+
+minecraft.runs.all {
+    lazyToken('minecraft_classpath') {
+        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: project.mc_version
+    // Add your AccessTransformer
+    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                divide {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run/server')
+
+            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                divide {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
+            property 'forge.logging.console.level', 'debug'
+
+            args '--mod', project.modid, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources')
+
+            mods {
+                divide {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+// Include assets and data from data generators
+sourceSets.main.resources { srcDirs 'src/generated/resources/' }
+
+dependencies {
+    library "io.ktor:ktor-utils-jvm:${project.ktor_version}"
+    library "io.ktor:ktor-server-core:${project.ktor_version}"
+    library "io.ktor:ktor-server-netty:${project.ktor_version}"
+    library "io.ktor:ktor-serialization:${project.ktor_version}"
+    library "ch.qos.logback:logback-classic:${project.logback_version}"
+
+    // Use the latest version of Minecraft Forge
+    minecraft "net.minecraftforge:forge:${project.mc_version}-${project.forge_version}"
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'     : project.modid,
+                'Specification-Vendor'    : "examplemodsareus",
+                'Specification-Version'   : "1",
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : "examplemodsareus",
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
