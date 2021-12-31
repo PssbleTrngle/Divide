@@ -12,6 +12,7 @@ object DivideMod {
     val LOGGER: Logger = LogManager.getLogger(ID)
 
     init {
+        LOGGER.info("Divide booting")
         Api.startServer()
     }
 

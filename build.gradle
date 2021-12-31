@@ -1,23 +1,26 @@
 buildscript {
     repositories {
         maven { url = 'https://maven.minecraftforge.net' }
+        gradlePluginPortal()
         mavenCentral()
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.+', changing: true
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10'
         classpath 'org.jetbrains.kotlin:kotlin-serialization:1.6.10'
+        classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.1"
     }
 }
 
-plugins {
-    id 'application'
-}
+//plugins {
+//    id 'application'
+//}
 
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'kotlin'
 apply plugin: 'kotlinx-serialization'
 
+apply plugin: "com.github.johnrengelman.shadow"
 apply from: 'https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/site/thedarkcolour/kotlinforforge/gradle/kff-3.1.0.gradle'
 
 version = project.version
@@ -25,6 +28,7 @@ group = "possible_triangle.${project.modid}"
 archivesBaseName = project.modid
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+tasks.build.dependsOn shadowJar
 
 minecraft {
     mappings channel: 'official', version: project.mc_version
@@ -78,6 +82,7 @@ minecraft {
 configurations {
     library
     implementation.extendsFrom library
+    api.extendsFrom library
     //library.exclude group: 'org.jetbrains', module: 'annotations'
 }
 
@@ -91,19 +96,24 @@ minecraft.runs.all {
 sourceSets.main.resources { srcDirs 'src/generated/resources/' }
 
 dependencies {
-    library("io.ktor:ktor-server-core:${project.ktor_version}") {
-        exclude group: 'org.jetbrains', module: 'annotations'
-    }
-    library("io.ktor:ktor-server-netty:${project.ktor_version}") {
-        exclude group: 'org.jetbrains', module: 'annotations'
-    }
-    library("io.ktor:ktor-serialization:${project.ktor_version}") {
-        exclude group: 'org.jetbrains', module: 'annotations'
-    }
-    library "ch.qos.logback:logback-classic:${project.logback_version}"
+    library "io.ktor:ktor-server-core:${project.ktor_version}"
+    library "io.ktor:ktor-server-netty:${project.ktor_version}"
+    library "io.ktor:ktor-serialization:${project.ktor_version}"
+    //library "ch.qos.logback:logback-classic:${project.logback_version}"
 
     // Use the latest version of Minecraft Forge
     minecraft "net.minecraftforge:forge:${project.mc_version}-${project.forge_version}"
+}
+
+shadowJar {
+    configurations = [project.configurations.library]
+
+//    relocate('io.ktor', 'possible_triangle.io.ktor')
+
+    exclude("org/jetbrains/")
+    exclude("org/intellij/")
+    exclude("kotlin/")
+    exclude("kotlinx/")
 }
 
 jar {
