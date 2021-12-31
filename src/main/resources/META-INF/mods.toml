@@ -1,28 +1,26 @@
-modLoader="javafml"
-loaderVersion="[31,)"
-#issueTrackerURL="http://my.issue.tracker/"
+# Make sure this is set to "kotlinforforge"
+modLoader="kotlinforforge"
+# Make sure this is set to the appropriate version range
+loaderVersion="[2.2,)" # Require at least 2.0.x
+# License is REQUIRED after 1.16
+license='LGPL'
+
 [[mods]]
 modId="divide"
 version="${file.jarVersion}"
 displayName="Divide"
-#updateJSONURL="http://myurl.me/"
-#displayURL="http://example.com/"
-#logoFile="examplemod.png"
-#credits="Me hehe"
-#authors="possible_triangle"
-description='''
-Dividing the playerbase is now a feature
-'''
+authors="possible_triangle"
+description='''Divide the people'''
 
 [[dependencies.divide]]
     modId="forge"
     mandatory=true
-    versionRange="[31,)"
+    versionRange="[38,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.divide]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.15.2]"
+    versionRange="[1.18.1]"
     ordering="NONE"
     side="BOTH"
