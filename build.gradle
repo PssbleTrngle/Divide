@@ -26,18 +26,6 @@ archivesBaseName = project.modid
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-configurations {
-    library
-    implementation.extendsFrom library
-    library.exclude group: 'org.jetbrains', module: 'annotations'
-}
-
-minecraft.runs.all {
-    lazyToken('minecraft_classpath') {
-        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
-    }
-}
-
 minecraft {
     mappings channel: 'official', version: project.mc_version
     // Add your AccessTransformer
@@ -87,14 +75,31 @@ minecraft {
     }
 }
 
+configurations {
+    library
+    implementation.extendsFrom library
+    //library.exclude group: 'org.jetbrains', module: 'annotations'
+}
+
+minecraft.runs.all {
+    lazyToken('minecraft_classpath') {
+        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+    }
+}
+
 // Include assets and data from data generators
 sourceSets.main.resources { srcDirs 'src/generated/resources/' }
 
 dependencies {
-    library "io.ktor:ktor-utils-jvm:${project.ktor_version}"
-    library "io.ktor:ktor-server-core:${project.ktor_version}"
-    library "io.ktor:ktor-server-netty:${project.ktor_version}"
-    library "io.ktor:ktor-serialization:${project.ktor_version}"
+    library("io.ktor:ktor-server-core:${project.ktor_version}") {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
+    library("io.ktor:ktor-server-netty:${project.ktor_version}") {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
+    library("io.ktor:ktor-serialization:${project.ktor_version}") {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
     library "ch.qos.logback:logback-classic:${project.logback_version}"
 
     // Use the latest version of Minecraft Forge
