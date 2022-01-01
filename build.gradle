@@ -96,9 +96,9 @@ minecraft.runs.all {
 sourceSets.main.resources { srcDirs 'src/generated/resources/' }
 
 dependencies {
-    library "io.ktor:ktor-server-core:${project.ktor_version}"
-    library "io.ktor:ktor-server-netty:${project.ktor_version}"
-    library "io.ktor:ktor-serialization:${project.ktor_version}"
+    //library "io.ktor:ktor-server-core:${project.ktor_version}"
+    //library "io.ktor:ktor-server-netty:${project.ktor_version}"
+    //library "io.ktor:ktor-serialization:${project.ktor_version}"
     //library "ch.qos.logback:logback-classic:${project.logback_version}"
 
     // Use the latest version of Minecraft Forge
