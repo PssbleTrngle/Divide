@@ -2,8 +2,6 @@ package possible_triangle.divide.logic
 
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextComponent
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.block.Blocks
@@ -11,6 +9,7 @@ import net.minecraftforge.event.entity.player.AdvancementEvent
 import net.minecraftforge.event.world.BlockEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
+import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.Bounty
 
@@ -25,22 +24,22 @@ object BountyEvents {
         val world = player.level
 
         if (world is ServerLevel && team != null) {
-        val bounties = BOUNTY_COUNTS.get(world)
+            val bounties = BOUNTY_COUNTS.get(world)
             val alreadyDone = bounties[team]
             val cashGained = bounty.amount(alreadyDone)
 
             TeamLogic.players(world).filter { it.team == team }.forEach {
                 //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
-                it.connection.send(ClientboundSetTitleTextPacket(TextComponent("+$cashGained")))
-                it.connection.send(
-                    ClientboundSetSubtitleTextPacket(
-                        TextComponent(bounty.display).setStyle(
-                            Style.EMPTY.withItalic(
-                                true
-                            )
+                Chat.subtitle(
+                    it,
+                    TextComponent(bounty.display).setStyle(
+                        Style.EMPTY.withItalic(
+                            true
                         )
+
                     )
                 )
+                Chat.title(it, "+$cashGained")
             }
 
             bounties[team] = alreadyDone + 1

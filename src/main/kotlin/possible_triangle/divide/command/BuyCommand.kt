@@ -4,11 +4,11 @@ import com.mojang.brigadier.context.CommandContext
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.network.chat.TextComponent
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import net.minecraftforge.server.command.EnumArgument
 import possible_triangle.divide.data.Reward
 import possible_triangle.divide.logic.TeamLogic
 
@@ -18,16 +18,39 @@ object BuyCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            literal("buy").then(
-                argument("reward", EnumArgument.enumArgument(Reward::class.java))
-                    .executes(::buyReward)
-            )
+            Reward.values().fold(
+                literal("buy")
+            ) { node, reward ->
+                val base = literal(reward.name.lowercase())
+                if (reward.requiresTarget) node.then(
+                    base.then(
+                        argument(
+                            "target",
+                            EntityArgument.player()
+                        ).executes { buyReward(it, reward) })
+                )
+                else node.then(base.executes { buyReward(it, reward) })
+            }
         )
+
     }
 
-    private fun buyReward(ctx: CommandContext<CommandSourceStack>): Int {
-        val reward = ctx.getArgument("reward", Reward::class.java)
-        if (reward.buy(ctx.source.level, TeamLogic.teamOf(ctx))) {
+    private fun buyReward(ctx: CommandContext<CommandSourceStack>, reward: Reward): Int {
+
+        val target = if (reward.requiresTarget) {
+            EntityArgument.getPlayer(ctx, "target")
+        } else ctx.source.playerOrException
+
+        if (reward.buy(
+                Reward.Context(
+                    TeamLogic.teamOf(ctx),
+                    ctx.source.level,
+                    ctx.source.playerOrException,
+                    target,
+                    reward
+                )
+            )
+        ) {
             ctx.source?.sendSuccess(TextComponent("Bought ${reward.display} for ${reward.price}"), false)
         } else {
             throw CashCommand.NOT_ENOUGH.create()

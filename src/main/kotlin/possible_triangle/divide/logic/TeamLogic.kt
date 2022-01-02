@@ -8,7 +8,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.GameType
-import net.minecraft.world.scores.Team
+import net.minecraft.world.scores.PlayerTeam
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
@@ -19,12 +19,14 @@ object TeamLogic {
 
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
 
-    fun teamOf(player: Player): Team? {
+    fun teamOf(player: Player): PlayerTeam? {
         if (!isPlayer(player)) return null
-        return player.team
+        val team = player.team
+        return if(team is PlayerTeam) team
+        else null
     }
 
-    fun teamOf(ctx: CommandContext<CommandSourceStack>): Team {
+    fun teamOf(ctx: CommandContext<CommandSourceStack>): PlayerTeam {
         return teamOf(ctx.source.playerOrException) ?: throw NOT_PLAYING.create()
     }
 
@@ -44,9 +46,9 @@ object TeamLogic {
         return world.players().filter { isPlayer(it) }
     }
 
-    fun teams(world: ServerLevel): List<Team> {
+    fun teams(world: ServerLevel): List<PlayerTeam> {
         val players = players(world)
-        return players.mapNotNull { it.team }.distinctBy { it.name }
+        return players.mapNotNull { it.team }.distinctBy { it.name }.filterIsInstance(PlayerTeam::class.java)
     }
 
     @SubscribeEvent
