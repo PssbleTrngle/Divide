@@ -3,7 +3,6 @@ package possible_triangle.divide
 import net.minecraftforge.fml.common.Mod
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import possible_triangle.divide.api.Api
 
 @Mod(DivideMod.ID)
 object DivideMod {
@@ -13,7 +12,6 @@ object DivideMod {
 
     init {
         LOGGER.info("Divide booting")
-        Api.startServer()
     }
 
 }
