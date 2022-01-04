@@ -17,10 +17,8 @@ object TrackPlayer : Action {
         DynamicCommandExceptionType { (it as BaseComponent).append(TextComponent(" is already being tracked")) }
 
     override fun start(ctx: Reward.Context) {
-        if (Action.isRunning(
-                ctx.world
-            ) { it.reward == Reward.TRACK_PLAYER && it.target == ctx.target }
-        ) throw ALREADY_TRACKED.create(ctx.target.name)
+        if (Action.isRunning(ctx.world, ctx.reward) { it.target == ctx.target })
+            throw ALREADY_TRACKED.create(ctx.target.name)
 
         with(ctx) {
             if (target.level.dimension() != player.level.dimension()) Chat.subtitle(

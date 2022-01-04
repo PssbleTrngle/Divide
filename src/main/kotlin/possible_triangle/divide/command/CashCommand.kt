@@ -23,6 +23,7 @@ object CashCommand {
         event.dispatcher.register(
             literal("cash")
                 .executes(::getCash)
+                .requires { it.hasPermission(2) }
                 .then(literal("add").then(argument("amount", IntegerArgumentType.integer(1)).executes(::addCash)))
                 .then(literal("remove").then(argument("amount", IntegerArgumentType.integer(1)).executes(::removeCash)))
                 .then(literal("set").then(argument("amount", IntegerArgumentType.integer(0)).executes(::setCash)))

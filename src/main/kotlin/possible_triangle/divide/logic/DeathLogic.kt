@@ -1,10 +1,14 @@
 package possible_triangle.divide.logic
 
+import net.minecraft.ChatFormatting
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import net.minecraft.world.level.block.Blocks
+import net.minecraftforge.event.entity.EntityJoinWorldEvent
 import net.minecraftforge.event.entity.living.LivingDropsEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.EventPriority
@@ -12,6 +16,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.data.Bounty
+import possible_triangle.divide.data.Reward
+import possible_triangle.divide.logic.actions.Buff
 import java.util.*
 import kotlin.random.Random
 
@@ -19,6 +26,38 @@ import kotlin.random.Random
 object DeathLogic {
 
     private val STORED = hashMapOf<UUID, List<ItemStack>>()
+    private const val STARTER_GEAR_BREAK = 20 * 60 * 5
+
+    @SubscribeEvent
+    fun playerJoin(event: EntityJoinWorldEvent) {
+        val player = event.entity
+        if (player is ServerPlayer) player.awardRecipes(player.server.recipeManager.recipes)
+    }
+
+    fun starterGear(player: ServerPlayer, updateDeathTime: Boolean = true): List<ItemStack> {
+        if (!player.persistentData.contains(ServerPlayer.PERSISTED_NBT_TAG)) player.persistentData.put(
+            ServerPlayer.PERSISTED_NBT_TAG,
+            CompoundTag()
+        )
+        val persistent = player.persistentData.getCompound(ServerPlayer.PERSISTED_NBT_TAG)
+        val lastDeath = persistent.getLong("${DivideMod.ID}_last_death")
+        val now = player.level.gameTime
+        val timeSince = now - lastDeath
+
+        if (updateDeathTime) persistent.putLong("${DivideMod.ID}_last_death", now)
+        if (timeSince < STARTER_GEAR_BREAK) return listOf()
+
+        val teamColor = player.team?.color ?: ChatFormatting.WHITE
+
+        return listOf(
+            ItemStack(Items.JUNGLE_PLANKS, 10),
+            ItemStack(Items.BREAD, 6),
+            ItemStack(Blocks.WHITE_BED),
+        ).map {
+            it.orCreateTag.putBoolean("starter_gear", true)
+            it
+        }
+    }
 
     private val TIERED = listOf(
         listOf<Item>(Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.DIAMOND_AXE),
@@ -90,17 +129,31 @@ object DeathLogic {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     fun onPlayerDrops(event: LivingDropsEvent) {
-        val entity = event.entity
-        if (entity !is ServerPlayer) return
-        if (event.drops.isEmpty()) return
+        val player = event.entity
+        if (player !is ServerPlayer) return
+        if (!TeamLogic.isPlayer(player)) return
 
-        val keepPercent = Random.nextDouble(0.2, 0.8)
-        val keepAmount = (event.drops.size * keepPercent).toInt()
-        val keep = event.drops.shuffled().take(keepAmount)
+        val killerEntity = event.source.entity
+        val killer = if (killerEntity is ServerPlayer && killerEntity.team != player.team)
+            killerEntity
+        else
+            null
 
-        Chat.sendMessage(entity, "You keep $keepPercent% of your items ($keepAmount / ${event.drops.size})")
+        if (killer != null) BountyEvents.gain(killer, Bounty.PLAYER_KILL)
 
-        STORED[entity.uuid] = keep.map {
+        var keepPercent = Random.nextDouble(0.2, 0.8)
+        if (killer != null && Buff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
+
+        event.drops.filter { it.item.orCreateTag.getBoolean("starter_gear") }
+            .forEach { it.setRemoved(Entity.RemovalReason.DISCARDED) }
+
+        val drops = event.drops.filterNot { it.isRemoved || it.item.orCreateTag.getBoolean("starter_gear") }
+        val keepAmount = (drops.size * keepPercent).toInt()
+        val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
+
+        Chat.sendMessage(player, "You keep $keepPercent% of your items ($keepAmount / ${drops.size})")
+
+        STORED[player.uuid] = starterGear(player) + keep.map {
             val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count) else it.item.count
             if (taken >= it.item.count) {
                 it.makeFakeItem()

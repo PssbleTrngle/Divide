@@ -22,12 +22,17 @@ object TeamLogic {
     fun teamOf(player: Player): PlayerTeam? {
         if (!isPlayer(player)) return null
         val team = player.team
-        return if(team is PlayerTeam) team
+        return if (team is PlayerTeam) team
         else null
     }
 
     fun teamOf(ctx: CommandContext<CommandSourceStack>): PlayerTeam {
         return teamOf(ctx.source.playerOrException) ?: throw NOT_PLAYING.create()
+    }
+
+    fun isAdmin(source: CommandSourceStack): Boolean {
+        val entity = source.entity
+        return source.hasPermission(2) || entity is ServerPlayer && entity.tags.contains("admin")
     }
 
     fun isSpectator(player: Player): Boolean {

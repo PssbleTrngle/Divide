@@ -55,7 +55,7 @@ fun interface Action {
             DivideMod.LOGGER.info("Started '${ctx.reward.display}'")
 
             if (duration != null) {
-                val until = System.currentTimeMillis() + (duration * 1000)
+                val until = ctx.world.gameTime + (duration * 20)
                 data.running.add(ctx to until)
             }
 
@@ -63,9 +63,9 @@ fun interface Action {
 
         }
 
-        fun isRunning(world: ServerLevel, predicate: (ctx: Context) -> Boolean): Boolean {
+        fun isRunning(world: ServerLevel, reward: Reward, predicate: (ctx: Context) -> Boolean = { true }): Boolean {
             val data = getData(world)
-            return data.running.any { (ctx) -> predicate(ctx) }
+            return data.running.any { (ctx) -> ctx.reward == reward && predicate(ctx) }
         }
 
         @SubscribeEvent
@@ -74,7 +74,7 @@ fun interface Action {
             if (world !is ServerLevel) return
 
             val data = getData(world)
-            val now = System.currentTimeMillis()
+            val now = world.gameTime
             val due = data.running.filter { (_, time) -> time < now }
 
             data.running.forEach { (ctx) ->

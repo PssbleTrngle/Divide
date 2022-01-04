@@ -51,6 +51,8 @@ object BountyEvents {
         val world = event.player.level
         if (world !is ServerLevel) return
 
+        if(event.advancement.id.path.startsWith("recipes/")) return
+
         val alreadyUnlocked = TeamLogic.players(world)
             .filter { it != event.player }
             .filter { it.team == event.player.team }
