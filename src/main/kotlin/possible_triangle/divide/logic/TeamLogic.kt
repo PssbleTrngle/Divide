@@ -30,6 +30,11 @@ object TeamLogic {
         return teamOf(ctx.source.playerOrException) ?: throw NOT_PLAYING.create()
     }
 
+    fun teammates(player: ServerPlayer): List<ServerPlayer> {
+        val team = teamOf(player) ?: return listOf()
+        return player.getLevel().players().filter { it.team?.name == team.name }
+    }
+
     fun isAdmin(source: CommandSourceStack): Boolean {
         val entity = source.entity
         return source.hasPermission(2) || entity is ServerPlayer && entity.tags.contains("admin")

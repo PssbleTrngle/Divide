@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "possible_triangle.divide.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "divide.refmap.json",
+  "mixins": [
+    "ServerGamePacketListenerImplMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

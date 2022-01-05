@@ -1,11 +1,16 @@
 package possible_triangle.divide.data
 
 import kotlinx.serialization.Serializable
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
+import possible_triangle.divide.Chat
 import possible_triangle.divide.logic.Action
 import possible_triangle.divide.logic.CashLogic
+import possible_triangle.divide.logic.TeamLogic
 import possible_triangle.divide.logic.actions.Buff
 import possible_triangle.divide.logic.actions.FindGrave
 import possible_triangle.divide.logic.actions.HideNametags
@@ -41,7 +46,17 @@ enum class Reward(
         if (!canBuy) return false
 
         Action.run(action, ctx, duration)
-        return CashLogic.modify(ctx.world, ctx.team, -price)
+        val bought = CashLogic.modify(ctx.world, ctx.team, -price)
+        if (bought) TeamLogic.teammates(ctx.player).forEach {
+            Chat.message(
+                it, TextComponent("Bought ${ctx.reward.display} for ").append(
+                    TextComponent("${ctx.reward.price}").setStyle(
+                        Style.EMPTY.withColor(ChatFormatting.LIGHT_PURPLE)
+                    )
+                )
+            )
+        }
+        return bought
     }
 
 

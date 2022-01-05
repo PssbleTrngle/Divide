@@ -9,12 +9,12 @@ import net.minecraft.server.level.ServerPlayer
 
 object Chat {
 
-    fun sendMessage(player: ServerPlayer, message: String) {
-        sendMessage(player, TextComponent(message))
+    fun message(player: ServerPlayer, message: String, status: Boolean = true) {
+        message(player, TextComponent(message), status)
     }
 
-    fun sendMessage(player: ServerPlayer, message: Component) {
-        player.sendMessage(message, ChatType.GAME_INFO, player.uuid)
+    fun message(player: ServerPlayer, message: Component, status: Boolean = true) {
+        player.sendMessage(message, if(status) ChatType.GAME_INFO else ChatType.SYSTEM, player.uuid)
     }
 
     fun title(player: ServerPlayer, message: String) {

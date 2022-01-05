@@ -1,6 +1,7 @@
 package possible_triangle.divide.logic
 
 import net.minecraft.ChatFormatting
+import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -32,6 +33,14 @@ object DeathLogic {
     fun playerJoin(event: EntityJoinWorldEvent) {
         val player = event.entity
         if (player is ServerPlayer) player.awardRecipes(player.server.recipeManager.recipes)
+    }
+
+    fun getDeathPos(player: ServerPlayer): BlockPos? {
+        val persistent = player.persistentData.getCompound(ServerPlayer.PERSISTED_NBT_TAG)
+        val i = persistent.getIntArray("${DivideMod.ID}_death_pos")
+        return if (i.size == 3)
+            BlockPos(i[0], i[1], i[2])
+        else null
     }
 
     fun starterGear(player: ServerPlayer, updateDeathTime: Boolean = true): List<ItemStack> {
@@ -151,7 +160,7 @@ object DeathLogic {
         val keepAmount = (drops.size * keepPercent).toInt()
         val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
 
-        Chat.sendMessage(player, "You keep $keepPercent% of your items ($keepAmount / ${drops.size})")
+        Chat.message(player, "You keep $keepPercent% of your items ($keepAmount / ${drops.size})")
 
         STORED[player.uuid] = starterGear(player) + keep.map {
             val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count) else it.item.count
@@ -163,6 +172,9 @@ object DeathLogic {
                 it.item.split(taken)
             }
         }
+
+        val pos = listOf(player.blockPosition().x, player.blockPosition().y, player.blockPosition().z)
+        player.persistentData.getCompound(ServerPlayer.PERSISTED_NBT_TAG).putIntArray("${DivideMod.ID}_death_pos", pos)
 
     }
 

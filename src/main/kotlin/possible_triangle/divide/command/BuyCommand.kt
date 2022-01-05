@@ -5,7 +5,6 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.arguments.EntityArgument
-import net.minecraft.network.chat.TextComponent
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
@@ -41,7 +40,7 @@ object BuyCommand {
             EntityArgument.getPlayer(ctx, "target")
         } else ctx.source.playerOrException
 
-        if (reward.buy(
+        if (!reward.buy(
                 Reward.Context(
                     TeamLogic.teamOf(ctx),
                     ctx.source.level,
@@ -50,11 +49,8 @@ object BuyCommand {
                     reward
                 )
             )
-        ) {
-            ctx.source?.sendSuccess(TextComponent("Bought ${reward.display} for ${reward.price}"), false)
-        } else {
-            throw CashCommand.NOT_ENOUGH.create()
-        }
+        ) throw CashCommand.NOT_ENOUGH.create()
+
         return 1
     }
 

@@ -29,7 +29,7 @@ object Border {
         val verb = if (worldborder.size < size.toDouble()) "grow" else "shrink"
         if (message)
             TeamLogic.players(server.overworld()).forEach {
-                Chat.sendMessage(it, "border started to $verb")
+                Chat.message(it, "border started to $verb")
             }
     }
 
