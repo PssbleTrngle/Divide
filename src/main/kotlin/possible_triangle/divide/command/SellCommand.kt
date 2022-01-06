@@ -13,8 +13,7 @@ import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.data.Bounty
-import possible_triangle.divide.logic.BountyEvents
+import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.logic.TeamLogic
 import java.util.*
 
@@ -57,7 +56,7 @@ object SellCommand {
             )
         )
 
-        BountyEvents.gain(ctx.source.playerOrException, Bounty.SOLD_HEART)
+        Bounty.SOLD_HEART.gain(ctx.source.playerOrException)
 
         val health = ctx.source.playerOrException.health
         if (health > attribute.value) ctx.source.playerOrException.hurt(

@@ -8,7 +8,7 @@ import net.minecraft.world.level.ItemLike
 import possible_triangle.divide.data.ReloadedResource
 import kotlin.random.Random
 
-object CrateLoot : ReloadedResource<CrateLoot.Raw, CrateLoot.Entry>("crate_loot", CrateLoot.Raw::serializer) {
+object CrateLoot : ReloadedResource<CrateLoot.Raw, CrateLoot.Entry>("crate_loot", { Raw.serializer() }) {
 
     @Serializable
     data class Raw(val item: String, val weight: Int, val amount: List<Int>?)

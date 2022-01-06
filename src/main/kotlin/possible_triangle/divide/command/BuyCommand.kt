@@ -8,8 +8,9 @@ import net.minecraft.commands.arguments.EntityArgument
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import possible_triangle.divide.data.Reward
 import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.reward.Reward
+import possible_triangle.divide.reward.RewardContext
 
 @Mod.EventBusSubscriber
 object BuyCommand {
@@ -17,18 +18,18 @@ object BuyCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            Reward.values().fold(
+            Reward.values.entries.toList().fold(
                 literal("buy").requires { TeamLogic.isPlayer(it.playerOrException) }
-            ) { node, reward ->
-                val base = literal(reward.name.lowercase())
-                if (reward.requiresTarget) node.then(
+            ) { node, entry ->
+                val base = literal(entry.key.lowercase())
+                if (entry.value.requiresTarget) node.then(
                     base.then(
                         argument(
                             "target",
                             EntityArgument.player()
-                        ).executes { buyReward(it, reward) })
+                        ).executes { buyReward(it, entry.value) })
                 )
-                else node.then(base.executes { buyReward(it, reward) })
+                else node.then(base.executes { buyReward(it, entry.value) })
             }
         )
     }
@@ -40,7 +41,7 @@ object BuyCommand {
         } else ctx.source.playerOrException
 
         if (!reward.buy(
-                Reward.Context(
+                RewardContext(
                     TeamLogic.teamOf(ctx),
                     ctx.source.level,
                     ctx.source.playerOrException,

@@ -1,48 +1,18 @@
-package possible_triangle.divide.logic
+package possible_triangle.divide.bounty
 
-import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.BlockTags
-import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.block.Blocks
 import net.minecraftforge.event.entity.player.AdvancementEvent
 import net.minecraftforge.event.world.BlockEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.data.Bounty
+import possible_triangle.divide.logic.TeamLogic
 
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object BountyEvents {
-
-    private val BOUNTY_COUNTS = PerTeamData("bounties")
-
-    fun gain(player: Player, bounty: Bounty, modifier: Double = 1.0) {
-        val team = TeamLogic.teamOf(player)
-
-        if (player is ServerPlayer && team != null) {
-            val bounties = BOUNTY_COUNTS.get(player.getLevel())
-            val alreadyDone = bounties[team]
-            val cashGained = (bounty.amount(alreadyDone) * modifier).toInt()
-
-            if (cashGained > 0) {
-                CashLogic.modify(player.getLevel(), team, cashGained)
-
-                TeamLogic.teammates(player).forEach { teammate ->
-                    //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
-                    Chat.subtitle(
-                        teammate,
-                        TextComponent(bounty.display).withStyle { it.withItalic(true) }
-                    )
-                    Chat.title(teammate, "+$cashGained")
-                }
-            }
-
-            bounties[team] = alreadyDone + 1
-        }
-    }
 
     @SubscribeEvent
     fun onAdvancement(event: AdvancementEvent) {
@@ -55,7 +25,7 @@ object BountyEvents {
             it.advancements.getOrStartProgress(event.advancement).isDone
         }
 
-        if (!alreadyUnlocked) gain(event.player, Bounty.ADVANCEMENT)
+        if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(event.player)
     }
 
     @SubscribeEvent
@@ -70,7 +40,7 @@ object BountyEvents {
             Blocks.ANCIENT_DEBRIS::equals to Bounty.MINED_NETHERITE,
         ).find { it.first(event.state.block) }
 
-        if (match != null) gain(event.player, match.second)
+        match?.second?.gain(event.player)
 
     }
 

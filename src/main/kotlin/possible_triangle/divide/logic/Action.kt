@@ -9,16 +9,16 @@ import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.data.Reward
-import possible_triangle.divide.data.Reward.Context
+import possible_triangle.divide.reward.Reward
+import possible_triangle.divide.reward.RewardContext
 
 fun interface Action {
 
-    fun start(ctx: Context)
+    fun start(ctx: RewardContext)
 
-    fun stop(ctx: Context) {}
+    fun stop(ctx: RewardContext) {}
 
-    fun tick(ctx: Context) {}
+    fun tick(ctx: RewardContext) {}
 
     @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     companion object {
@@ -38,17 +38,19 @@ fun interface Action {
                 val team = world.scoreboard.getPlayerTeam(it.getString("team"))
                 val player = world.getPlayerByUUID(it.getUUID("player"))
                 val target = world.getPlayerByUUID(it.getUUID("target"))
-                val reward = Reward.valueOf("reward")
+
+                val rewardId = it.getString(("reward"))
+                val reward = Reward[rewardId] ?: throw NullPointerException("Missing $rewardId")
 
                 if (team != null && player is ServerPlayer && target is ServerPlayer) {
-                    val ctx = Context(team, world, player, target, reward)
+                    val ctx = RewardContext(team, world, player, target, reward)
                     data.running.add(ctx to it.getLong("time"))
                 }
             }
             return data
         }
 
-        fun run(action: Action, ctx: Context, duration: Int?) {
+        fun run(action: Action, ctx: RewardContext, duration: Int?) {
             val data = getData(ctx.world)
             action.start(ctx)
 
@@ -63,7 +65,7 @@ fun interface Action {
 
         }
 
-        fun isRunning(world: ServerLevel, reward: Reward, predicate: (ctx: Context) -> Boolean = { true }): Boolean {
+        fun isRunning(world: ServerLevel, reward: Reward, predicate: (ctx: RewardContext) -> Boolean = { true }): Boolean {
             val data = getData(world)
             return data.running.any { (ctx) -> ctx.reward == reward && predicate(ctx) }
         }
@@ -96,7 +98,7 @@ fun interface Action {
 
     private class Data : SavedData() {
 
-        val running = arrayListOf<Pair<Context, Long>>()
+        val running = arrayListOf<Pair<RewardContext, Long>>()
 
         override fun save(nbt: CompoundTag): CompoundTag {
             val list = ListTag()
@@ -106,7 +108,7 @@ fun interface Action {
                 tag.putString("team", ctx.team.name)
                 tag.putUUID("player", ctx.player.uuid)
                 tag.putUUID("target", ctx.target.uuid)
-                tag.putString("reward", ctx.reward.name)
+                tag.putString("reward", Reward.idOf(ctx.reward))
                 list.add(tag)
             }
             nbt.put("values", list)

@@ -1,10 +1,11 @@
 package possible_triangle.divide.data
 
 import com.charleskorn.kaml.Yaml
-import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import net.minecraft.server.MinecraftServer
 import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.server.ServerStartedEvent
+import net.minecraftforge.event.server.ServerStartingEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
@@ -17,12 +18,13 @@ import java.nio.file.attribute.BasicFileAttributes
 
 abstract class ReloadedResource<Raw, Entry>(
     private val dir: String,
-    private val serializer: () -> DeserializationStrategy<Raw>
+    private val serializer: () -> KSerializer<Raw>
 ) {
 
     @Mod.EventBusSubscriber
     companion object {
         private val WATCHERS = arrayListOf<Pair<ReloadedResource<*, *>, WatchService>>()
+        private var IS_LOADING = false
 
         @SubscribeEvent
         fun onTick(event: TickEvent.WorldTickEvent) {
@@ -30,7 +32,7 @@ abstract class ReloadedResource<Raw, Entry>(
 
             WATCHERS.removeIf { (resource, watcher) ->
                 val key = watcher.poll() ?: return@removeIf false
-                if (key.pollEvents().isNotEmpty()) {
+                if (key.pollEvents().isNotEmpty() && !IS_LOADING) {
                     DivideMod.LOGGER.info("Detected chances for ${resource.dir}")
                     resource.load(server)
                 }
@@ -52,12 +54,21 @@ abstract class ReloadedResource<Raw, Entry>(
         }
     }
 
-    private val folder
+    fun idOf(entry: Entry): String {
+        return values.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for reward")
+    }
+
+    operator fun get(id: String): Entry? {
+        return values[id]
+    }
+
+    protected val folder
         get() = File("config/divide/$dir")
 
-    abstract fun map(raw: Raw, server: MinecraftServer): Entry
+    abstract fun map(raw: Raw, server: MinecraftServer): Entry?
 
     private fun registerRecursive(root: Path, watchService: WatchService) {
+        root.toFile().mkdirs()
         Files.walkFileTree(root, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
                 dir.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)
@@ -67,27 +78,52 @@ abstract class ReloadedResource<Raw, Entry>(
     }
 
     @SubscribeEvent
-    fun setup(event: ServerStartedEvent) {
+    fun setup(event: ServerStartingEvent) {
         load(event.server)
         val watcher = FileSystems.getDefault().newWatchService()
         registerRecursive(folder.toPath(), watcher)
         WATCHERS.add(this to watcher)
     }
 
-    var values: List<Entry> = listOf()
+    var values = mapOf<String, Entry>()
         private set
 
-    private fun load(server: MinecraftServer) {
-        val children = folder.list { _, name -> name.endsWith(".yml") } ?: return
+    open fun afterLoad(server: MinecraftServer) {}
 
-        val raw = children.map {
+    open fun onError(id: String): Entry? {
+        return null
+    }
+
+    private fun load(server: MinecraftServer) {
+        IS_LOADING = true
+
+        val children = folder.list { _, name -> name.endsWith(".yml") } ?: return
+        val serializer = serializer()
+
+        val raw = children.associate {
             val stream = File(folder.path, it).inputStream()
-            Yaml.default.decodeFromStream(serializer(), stream)
+            val id = File(it).nameWithoutExtension.lowercase()
+
+            val parsed = try {
+                Yaml.default.decodeFromStream(serializer, stream)
+            } catch (e: SerializationException) {
+                DivideMod.LOGGER.warn("an error occurred loading $dir '$id'")
+                null
+            }
+
+            id to parsed
         }
 
-        values = raw.map { map(it, server) }
+        values = raw.mapValues { (id, value) ->
+            if (value == null) onError(id)
+            else map(value, server)
+        }.filterValues { it != null }.mapValues { it.value as Entry }
+
+        afterLoad(server)
+
         DivideMod.LOGGER.info("Reloaded $dir with ${values.size} values")
 
+        IS_LOADING = false
     }
 
 }

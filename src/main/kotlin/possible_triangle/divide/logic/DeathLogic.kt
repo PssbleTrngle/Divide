@@ -17,10 +17,10 @@ import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
-import possible_triangle.divide.data.Bounty
-import possible_triangle.divide.data.Reward
 import possible_triangle.divide.logic.actions.Buff
+import possible_triangle.divide.reward.Reward
 import java.util.*
 import kotlin.math.max
 import kotlin.random.Random
@@ -171,7 +171,7 @@ object DeathLogic {
                 Bounty.BLOWN_UP
             else
                 Bounty.PLAYER_KILL
-            BountyEvents.gain(killer, bounty, modifier)
+            bounty.gain(killer, modifier)
         }
 
         var keepPercent = Random.nextDouble(0.2, 0.8)

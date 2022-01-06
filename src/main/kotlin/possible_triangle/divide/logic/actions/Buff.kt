@@ -4,15 +4,16 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
-import possible_triangle.divide.data.Reward
+import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.logic.Action
+import possible_triangle.divide.reward.RewardContext
 
 object Buff : Action {
 
     private val ALREADY_BUFFED =
         DynamicCommandExceptionType { TextComponent("You already buffed $it") }
 
-    override fun start(ctx: Reward.Context) {
+    override fun start(ctx: RewardContext) {
         if (Action.isRunning(ctx.world, ctx.reward) { it.target == ctx.target })
             throw ALREADY_BUFFED.create(ctx.reward.display)
     }
