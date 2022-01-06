@@ -7,3 +7,11 @@ scoreboard objectives add jumps custom:jump "Jumps"
 
 scoreboard objectives add crafting_tables_crafted minecraft.crafted:minecraft.crafting_table "Crafting Tables Crafted"
 scoreboard objectives add crafting_tables_placed minecraft.used:minecraft.crafting_table "Crafting Tables Placed"
+
+gamerule doDaylightCycle false
+time set noon
+
+gamerule doLimitedCrafting true
+gamerule playersSleepingPercentage 30
+gamerule doInsomnia false
+gamerule doImmediateRespawn true

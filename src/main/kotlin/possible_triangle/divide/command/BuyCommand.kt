@@ -18,7 +18,7 @@ object BuyCommand {
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
             Reward.values().fold(
-                literal("buy")
+                literal("buy").requires { TeamLogic.isPlayer(it.playerOrException) }
             ) { node, reward ->
                 val base = literal(reward.name.lowercase())
                 if (reward.requiresTarget) node.then(
@@ -31,7 +31,6 @@ object BuyCommand {
                 else node.then(base.executes { buyReward(it, reward) })
             }
         )
-
     }
 
     private fun buyReward(ctx: CommandContext<CommandSourceStack>, reward: Reward): Int {

@@ -18,9 +18,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.logic.Border
 import possible_triangle.divide.logic.DeathLogic
 import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.events.Border
+import possible_triangle.divide.logic.events.CycleEvent
+import possible_triangle.divide.logic.events.Eras
 
 @Mod.EventBusSubscriber
 object AdminCommand {
@@ -28,6 +30,8 @@ object AdminCommand {
     private val TEAM_ALREADY_EXISTS =
         SimpleCommandExceptionType(TranslatableComponent("commands.team.add.duplicate"))
 
+
+    private val EVENTS = listOf(Border, Eras)
 
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
@@ -59,6 +63,14 @@ object AdminCommand {
                 )
                 .then(literal("center").executes(::center))
                 .then(literal("start").executes(::start))
+                .then(EVENTS.fold(literal("skip")) { node, event ->
+                    node.then(literal(event.id).executes {
+                        skip(
+                            it,
+                            event
+                        )
+                    })
+                })
         )
     }
 
@@ -77,7 +89,9 @@ object AdminCommand {
     }
 
     private fun start(ctx: CommandContext<CommandSourceStack>): Int {
-        Border.startCycle(ctx.source.server)
+        EVENTS.forEach {
+            it.startCycle(ctx.source.server)
+        }
 
         TeamLogic.players(ctx.source.level).forEach { player ->
             player.setGameMode(GameType.SURVIVAL)
@@ -85,6 +99,12 @@ object AdminCommand {
             Chat.subtitle(player, "Started")
         }
 
+        return 1
+    }
+
+    private fun skip(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {
+        event.skip(ctx.source.server)
+        ctx.source.sendSuccess(TextComponent("Skipped ${event.id}"), true)
         return 1
     }
 

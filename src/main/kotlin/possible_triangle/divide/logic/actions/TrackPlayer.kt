@@ -3,7 +3,6 @@ package possible_triangle.divide.logic.actions
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.BaseComponent
-import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -35,8 +34,8 @@ object TrackPlayer : GlowingAction() {
                     Chat.subtitle(
                         it,
                         TextComponent("Target is in ").append(
-                            TextComponent(target.level.dimension().location().path).setStyle(
-                                Style.EMPTY.withColor(ChatFormatting.GOLD)
+                            TextComponent(target.level.dimension().location().path).withStyle(
+                                ChatFormatting.GOLD
                             )
                         )
                     )

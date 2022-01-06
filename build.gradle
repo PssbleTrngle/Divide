@@ -31,7 +31,6 @@ group = "possible_triangle.${project.modid}"
 archivesBaseName = project.modid
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-tasks.build.dependsOn shadowJar
 
 minecraft {
     mappings channel: 'official', version: project.mc_version
@@ -109,22 +108,33 @@ dependencies {
     // Use the latest version of Minecraft Forge
     minecraft "net.minecraftforge:forge:${project.mc_version}-${project.forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-}
 
-shadowJar {
-    configurations = [project.configurations.library]
-
-//    relocate('io.ktor', 'possible_triangle.io.ktor')
-
-    exclude("org/jetbrains/")
-    exclude("org/intellij/")
-    exclude("kotlin/")
-    exclude("kotlinx/")
+    library "com.charleskorn.kaml:kaml:0.38.0"
 }
 
 mixin {
-    add sourceSets.main, "${project.modid}.mixins.refmap.json"
+    add sourceSets.main, "${project.modid}.refmap.json"
 }
+
+shadowJar {
+    from sourceSets.main.output
+
+    archiveClassifier.set("obf")
+    //configurations = [project.configurations.library]
+
+//    relocate('io.ktor', 'possible_triangle.io.ktor')
+
+    dependencies {
+        include(dependency("com.charleskorn.kaml:kaml"))
+    }
+
+    //exclude("org/jetbrains/")
+    //exclude("org/intellij/")
+    //exclude("kotlin/")
+    //exclude("kotlinx/")
+}
+
+tasks.build.dependsOn shadowJar
 
 jar {
     manifest {

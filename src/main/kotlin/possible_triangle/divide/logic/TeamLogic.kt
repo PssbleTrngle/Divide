@@ -30,9 +30,11 @@ object TeamLogic {
         return teamOf(ctx.source.playerOrException) ?: throw NOT_PLAYING.create()
     }
 
-    fun teammates(player: ServerPlayer): List<ServerPlayer> {
+    fun teammates(player: ServerPlayer, includeSelf: Boolean = true): List<ServerPlayer> {
         val team = teamOf(player) ?: return listOf()
-        return player.getLevel().players().filter { it.team?.name == team.name }
+        return player.getLevel().players()
+            .filter { it.team?.name == team.name }
+            .filter { includeSelf || it.uuid != player.uuid }
     }
 
     fun isAdmin(source: CommandSourceStack): Boolean {

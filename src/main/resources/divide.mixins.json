@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "divide.refmap.json",
   "mixins": [
+    "PlayerMixin",
     "ServerGamePacketListenerImplMixin"
   ],
   "injectors": {

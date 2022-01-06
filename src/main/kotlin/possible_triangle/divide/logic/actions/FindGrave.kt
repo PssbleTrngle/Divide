@@ -1,6 +1,7 @@
 package possible_triangle.divide.logic.actions
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
+import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerPlayer
@@ -21,7 +22,7 @@ object FindGrave : GlowingAction() {
 
     override fun onStart(ctx: Reward.Context) {
         val pos = getPos(ctx)
-        Chat.message(ctx.player,  "You died at [${pos.x}/${pos.y}/${pos.z}]", status = false)
+        Chat.message(ctx.player,  TextComponent("You died at [${pos.x}/${pos.y}/${pos.z}]").withStyle(ChatFormatting.GOLD), status = false)
     }
 
     override fun targets(ctx: Reward.Context): List<Entity> {
