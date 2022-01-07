@@ -17,8 +17,8 @@ import java.nio.file.attribute.BasicFileAttributes
 
 
 abstract class ReloadedResource<Raw, Entry>(
-    private val dir: String,
-    private val serializer: () -> KSerializer<Raw>
+    protected val dir: String,
+    protected val serializer: () -> KSerializer<Raw>
 ) {
 
     @Mod.EventBusSubscriber
@@ -55,7 +55,7 @@ abstract class ReloadedResource<Raw, Entry>(
     }
 
     fun idOf(entry: Entry): String {
-        return values.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for reward")
+        return values.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for $dir")
     }
 
     operator fun get(id: String): Entry? {

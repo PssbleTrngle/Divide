@@ -61,7 +61,7 @@ object DeathLogic {
         val persistent = player.persistentData.getCompound(ServerPlayer.PERSISTED_NBT_TAG)
 
         if (updateDeathTime) persistent.putLong("${DivideMod.ID}_last_death", player.level.gameTime)
-        if (timeSince < Config.CONFIG.starterGearBreak) return listOf()
+        if (timeSince < (Config.CONFIG.starterGearBreak * 20)) return listOf()
 
         val teamColor = player.team?.color ?: ChatFormatting.WHITE
 

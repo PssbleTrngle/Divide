@@ -6,13 +6,11 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.world.BossEvent
 import net.minecraft.world.level.saveddata.SavedData
 import possible_triangle.divide.Chat
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.logic.TeamLogic
 
 object Eras : CycleEvent("eras") {
-
-    private const val PEACE_TIME = 60 * 5
-    private const val WAR_TIME = 60 * 60
 
     fun peace(server: MinecraftServer) {
         Data[server] = true
@@ -40,7 +38,7 @@ object Eras : CycleEvent("eras") {
 
     override fun handle(server: MinecraftServer, index: Int): Int {
         val peace = index % 2 == 0
-        val pause = if (peace) PEACE_TIME else WAR_TIME
+        val pause = if (peace) Config.CONFIG.eras.peaceTime else Config.CONFIG.eras.warTime
 
         if (peace) peace(server)
         else war(server)

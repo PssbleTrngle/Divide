@@ -5,27 +5,30 @@ import kotlinx.serialization.KSerializer
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.DivideMod
 import java.io.File
+import java.lang.IllegalArgumentException
 import kotlin.reflect.KProperty
 
 abstract class DefaultedResource<Entry>(
     dir: String,
-    private val serializer: () -> KSerializer<Entry>
+    serializer: () -> KSerializer<Entry>
 ) :
     ReloadedResource<Entry, Entry>(dir, serializer) {
 
     private val defaults = hashMapOf<String, () -> Entry>()
 
     fun defaulted(id: String, supplier: () -> Entry): Delegate {
-        defaults[id.lowercase()] = supplier
-        values[id.lowercase()] = supplier()
-        return Delegate(id.lowercase(), supplier)
+        val lower = id.lowercase()
+        if (defaults.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
+        defaults[lower] = supplier
+        values[lower] = supplier()
+        return Delegate(lower, supplier)
     }
 
     override fun map(raw: Entry, server: MinecraftServer): Entry {
         return raw
     }
 
-    fun save(id: String, entry: Entry) {
+    protected fun save(id: String, entry: Entry) {
         val encoded = Yaml.default.encodeToString(serializer(), entry)
         val file = File(folder, "$id.yml")
         if (!file.exists()) file.createNewFile()

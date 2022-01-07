@@ -2,7 +2,6 @@ package possible_triangle.divide.crates
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
@@ -11,19 +10,20 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.effect.MobEffects
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.BarrelBlock
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerCallbacks
-import net.minecraft.world.level.timers.TimerQueue
 import net.minecraft.world.phys.AABB
+import net.minecraft.world.scores.Team
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.logic.Glowing
 import possible_triangle.divide.logic.TeamLogic
@@ -34,14 +34,15 @@ import java.util.stream.Collectors
 object CrateScheduler {
 
     init {
-        TimerCallbacks.SERVER_CALLBACKS.register(Serializer)
+        TimerCallbacks.SERVER_CALLBACKS.register(FillLootCallback.Serializer)
+        TimerCallbacks.SERVER_CALLBACKS.register(MessageCallback.Serializer)
+        TimerCallbacks.SERVER_CALLBACKS.register(CleanCallback.Serializer)
     }
 
     @SubscribeEvent
     fun preventBreaking(event: PlayerEvent.BreakSpeed) {
         val crate = crateAt(event.entity.server ?: return, event.pos) ?: return
-        val unbreakableUntil = crate.tileData.getLong("${DivideMod.ID}:unbreakable_until")
-        if (event.entity.level.gameTime <= unbreakableUntil) event.newSpeed = 0F
+        if (crate.tileData.getBoolean("${DivideMod.ID}:unbreakable")) event.newSpeed = 0F
     }
 
     fun crateAt(server: MinecraftServer, pos: BlockPos): RandomizableContainerBlockEntity? {
@@ -89,18 +90,18 @@ object CrateScheduler {
             .firstOrNull()
     }
 
-    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos) {
-        val world = server.overworld()
-
+    fun spawnCrate(server: MinecraftServer, pos: BlockPos) {
         val state = Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
-        world.setBlock(pos, state, 2)
+        server.overworld().setBlock(pos, state, 2)
 
         val crate = crateAt(server, pos) ?: throw NullPointerException("crate missing at $pos")
         crate.tileData.putBoolean("${DivideMod.ID}:crate_marker", true)
-        crate.tileData.putLong("${DivideMod.ID}:unbreakable_until", world.gameTime + seconds.plus(10) * 20)
+        crate.tileData.putBoolean("${DivideMod.ID}:unbreakable", true)
         setLock(crate, UUID.randomUUID().toString())
+    }
 
-        val marker = EntityType.SLIME.create(world) ?: throw NullPointerException()
+    fun spawnMarker(server: MinecraftServer, pos: BlockPos) {
+        val marker = EntityType.SLIME.create(server.overworld()) ?: throw NullPointerException()
         val nbt = CompoundTag()
         nbt.putBoolean("NoAI", true)
         nbt.putInt("Size", 0)
@@ -113,89 +114,47 @@ object CrateScheduler {
         marker.addEffect(
             MobEffectInstance(
                 MobEffects.INVISIBILITY,
-                seconds.plus(10) * 20,
+                1000000,
                 0,
                 false,
                 false
             )
         )
 
+        Glowing.addReason(marker, server.playerList.players, 1000000)
+    }
 
-        Glowing.addReason(marker, server.playerList.players, seconds)
+    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos) {
+        val world = server.overworld()
+
+        spawnCrate(server, pos)
+        spawnMarker(server, pos)
 
         val time = world.gameTime + seconds * 20
         server.worldData.overworldData().scheduledEvents.schedule(
-            "${DivideMod.ID}:crates",
+            "${DivideMod.ID}:crate",
             time,
-            Callback(pos, listOf())
+            FillLootCallback(pos, CrateLoot.random(), listOf())
+        )
+
+        server.worldData.overworldData().scheduledEvents.schedule(
+            "${DivideMod.ID}:crate_cleanup",
+            time + 20 * Config.CONFIG.crate.cleanUpTime,
+            CleanCallback(pos)
         )
 
         val teams = TeamLogic.ranked(server).reversed()
         teams.forEachIndexed { index, team ->
-            CrateMessages.scheduleMessage(server, seconds * index / teams.size, pos, time, team)
+            scheduleMessage(server, seconds * index / teams.size, pos, time, team)
         }
     }
 
-
-    class Callback(val pos: BlockPos, val orders: List<ItemStack>) : TimerCallback<MinecraftServer> {
-
-        override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-            val loot = CrateLoot.generate()
-            val crate = crateAt(server, pos)
-
-            if (crate != null) {
-                setLock(crate, null)
-                val slots = (0 until crate.containerSize).toList().shuffled()
-                slots.forEachIndexed { i, slot ->
-                    crate.setItem(slot, loot.getOrElse(i) { ItemStack.EMPTY })
-                }
-
-                server.playerList.players.forEach {
-                    server.overworld()
-                        .sendParticles(
-                            it, ParticleTypes.FIREWORK, false,
-                            pos.x + 0.5, pos.y.toDouble() + 0.5, pos.z.toDouble() + 0.5,
-                            20, 0.5, 0.5, 0.5, 0.1
-                        )
-                }
-            }
-
-            server.overworld().getEntitiesOfClass(Entity::class.java, AABB(pos).inflate(2.0)) {
-                it.tags.contains("${DivideMod.ID}:crate_marker")
-            }.forEach {
-                it.remove(Entity.RemovalReason.DISCARDED)
-            }
-        }
-
-    }
-
-    object Serializer :
-        TimerCallback.Serializer<MinecraftServer, Callback>(
-            ResourceLocation(DivideMod.ID, "crates"),
-            Callback::class.java
-        ) {
-
-        override fun serialize(nbt: CompoundTag, callback: Callback) {
-            nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
-            val list = ListTag()
-            callback.orders.forEach {
-                val encoded = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it)
-                encoded.get().ifLeft(list::add)
-            }
-            nbt.put("orders", list)
-        }
-
-        override fun deserialize(nbt: CompoundTag): Callback {
-            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
-            val list = nbt.getList("orders", 10)
-            val orders = list
-                .map { ItemStack.CODEC.parse(NbtOps.INSTANCE, it) }
-                .map { it.get().left() }
-                .filter { it.isPresent }
-                .map { it.get() }
-
-            return Callback(pos, orders)
-        }
+    private fun scheduleMessage(server: MinecraftServer, seconds: Int, pos: BlockPos, time: Long, team: Team) {
+        server.worldData.overworldData().scheduledEvents.schedule(
+            "${DivideMod.ID}:crate_message_${team.color.name.lowercase()}",
+            server.overworld().gameTime + seconds * 20,
+            MessageCallback(team.name, pos, time)
+        )
     }
 
 }

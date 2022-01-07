@@ -23,8 +23,12 @@ object Border : CycleEvent("border") {
     }
 
     override fun handle(server: MinecraftServer, index: Int): Int {
-        val (size, pause) = QUEUE[index % QUEUE.size]
-        resize(server, size, if (index > 0) 300 else 60, index > 0)
+        val grow = index % 2 == 0
+        val size = if (grow) Config.CONFIG.border.bigBorder else Config.CONFIG.border.smallBorder
+        val pause = if (grow) Config.CONFIG.border.stayBigFor else Config.CONFIG.border.staySmallFor
+        val moveTime = if (index > 0) Config.CONFIG.border.moveTime else 60
+
+        resize(server, size, moveTime, index > 0)
         return pause
     }
 

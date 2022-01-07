@@ -20,6 +20,7 @@ object DivideMod {
         ReloadedResource.register(CrateLoot)
         ReloadedResource.register(Bounty)
         ReloadedResource.register(Reward)
+        ReloadedResource.register(Config)
     }
 
 }
