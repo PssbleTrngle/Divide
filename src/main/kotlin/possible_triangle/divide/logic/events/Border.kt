@@ -2,15 +2,9 @@ package possible_triangle.divide.logic.events
 
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.Chat
+import possible_triangle.divide.Config
 
 object Border : CycleEvent("border") {
-
-    private const val LOBBY = 20
-    private const val MIN = 100
-    private const val MAX = 400
-    private const val CYCLE_TIME = 60 * 10
-
-    private val QUEUE = listOf(MIN to CYCLE_TIME, MAX to CYCLE_TIME)
 
     private fun resize(server: MinecraftServer, size: Int, seconds: Int = 0, message: Boolean = true) {
         val worldborder = server.overworld().worldBorder
@@ -24,7 +18,7 @@ object Border : CycleEvent("border") {
     }
 
     fun lobby(server: MinecraftServer) {
-        resize(server, LOBBY, message = false)
+        resize(server, Config.CONFIG.border.lobbySize, message = false)
         server.overworld().worldBorder.damagePerBlock = 0.0
     }
 

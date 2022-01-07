@@ -24,7 +24,7 @@ abstract class GlowingAction : Action {
     final override fun stop(ctx: RewardContext) {
         onStop(ctx)
         targets(ctx).forEach {
-            Glowing.updateGlowingData(it, ctx.world)
+            Glowing.updateGlowingData(it, ctx.server)
         }
     }
 

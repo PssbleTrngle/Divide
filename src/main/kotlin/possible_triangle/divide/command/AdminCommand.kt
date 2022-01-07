@@ -1,7 +1,9 @@
 package possible_triangle.divide.command
 
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
@@ -9,6 +11,8 @@ import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.arguments.ColorArgument
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.TeamArgument
+import net.minecraft.commands.arguments.TimeArgument
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.network.chat.TranslatableComponent
@@ -18,6 +22,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.logic.DeathLogic
 import possible_triangle.divide.logic.TeamLogic
 import possible_triangle.divide.logic.events.Border
@@ -30,6 +35,7 @@ object AdminCommand {
     private val TEAM_ALREADY_EXISTS =
         SimpleCommandExceptionType(TranslatableComponent("commands.team.add.duplicate"))
 
+    private val NO_CRATE_POS = DynamicCommandExceptionType { TextComponent("Could no find a valid pos around $it") }
 
     private val EVENTS = listOf(Border, Eras)
 
@@ -61,17 +67,51 @@ object AdminCommand {
                             )
                         )
                 )
+                .then(
+                    literal("crate").then(
+                        literal("spawn").then(
+                            argument("pos", BlockPosArgument.blockPos())
+                                .then(argument("in", TimeArgument.time()).executes(::spawnCrate))
+                                .executes(::spawnCrate)
+                        )
+                    )
+                )
                 .then(literal("center").executes(::center))
                 .then(literal("start").executes(::start))
-                .then(EVENTS.fold(literal("skip")) { node, event ->
-                    node.then(literal(event.id).executes {
+                .then(literal("stop").executes(::stop))
+                .then(EVENTS.fold(literal("skip")) { node, cycleEvent ->
+                    node.then(literal(cycleEvent.id).executes {
                         skip(
                             it,
-                            event
+                            cycleEvent
                         )
                     })
                 })
         )
+    }
+
+    private fun spawnCrate(ctx: CommandContext<CommandSourceStack>): Int {
+
+        val center = BlockPosArgument.getSpawnablePos(ctx, "pos")
+        val pos = CrateScheduler.findInRange(ctx.source.server, center, 10.0) ?: throw NO_CRATE_POS.create(center)
+
+        val timeTicks = try {
+            IntegerArgumentType.getInteger(ctx, "in")
+        } catch (e: IllegalArgumentException) {
+            0
+        }
+
+        val seconds = timeTicks / 20
+        CrateScheduler.schedule(ctx.source.server, seconds, pos)
+
+        ctx.source.sendSuccess(
+            TextComponent(
+                if (seconds == 0) "Crate delivered to $pos"
+                else "Crate will be delivered to $pos in $seconds seconds"
+            ), false
+        )
+
+        return seconds
     }
 
     private fun center(ctx: CommandContext<CommandSourceStack>): Int {
@@ -80,7 +120,7 @@ object AdminCommand {
         worldborder.setCenter(pos.x, pos.z)
         Border.lobby(ctx.source.server)
 
-        TeamLogic.players(ctx.source.level).filter { ctx.source.entity != it }.forEach {
+        TeamLogic.players(ctx.source.server).filter { ctx.source.entity != it }.forEach {
             it.teleportTo(ctx.source.level, pos.x, pos.y, pos.z, it.yRot, it.xRot)
             ctx.source.level.setDefaultSpawnPos(BlockPos(pos), 0F)
         }
@@ -93,12 +133,19 @@ object AdminCommand {
             it.startCycle(ctx.source.server)
         }
 
-        TeamLogic.players(ctx.source.level).forEach { player ->
+        TeamLogic.players(ctx.source.server).forEach { player ->
             player.setGameMode(GameType.SURVIVAL)
             DeathLogic.starterGear(player).forEach { player.addItem(it) }
             Chat.subtitle(player, "Started")
         }
 
+        return 1
+    }
+
+    private fun stop(ctx: CommandContext<CommandSourceStack>): Int {
+        EVENTS.forEach {
+            it.stop(ctx.source.server)
+        }
         return 1
     }
 
@@ -111,6 +158,7 @@ object AdminCommand {
     private fun addToTeam(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamArgument.getTeam(ctx, "team")
         EntityArgument.getPlayers(ctx, "players").forEach {
+            it.tags.remove("spectator")
             ctx.source.server.scoreboard.addPlayerToTeam(it.scoreboardName, team)
         }
         return 1

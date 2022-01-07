@@ -13,13 +13,13 @@ public class ServerEntityMixin {
     @Inject(at = @At("RETURN"), method = "sendDirtyEntityData()V")
     public void sendDirtyEntityData(CallbackInfo callback) {
         ServerEntity self = (ServerEntity) (Object) this;
-        if (self.entity.getEntityData().isDirty()) Glowing.INSTANCE.updateGlowingData(self.entity, self.level);
+        if (self.entity.getEntityData().isDirty()) Glowing.INSTANCE.updateGlowingData(self.entity, self.level.getServer());
     }
 
     @Inject(at = @At("RETURN"), method = "sendPairingData(Ljava/util/function/Consumer;)V")
     public void sendChanges(CallbackInfo callback) {
         ServerEntity self = (ServerEntity) (Object) this;
-        Glowing.INSTANCE.updateGlowingData(self.entity, self.level);
+        Glowing.INSTANCE.updateGlowingData(self.entity, self.level.getServer());
     }
 
 }

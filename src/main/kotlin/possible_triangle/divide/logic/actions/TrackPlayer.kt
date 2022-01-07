@@ -25,7 +25,7 @@ object TrackPlayer : GlowingAction() {
     }
 
     override fun onStart(ctx: RewardContext) {
-        if (Action.isRunning(ctx.world, ctx.reward) { it.target == ctx.target })
+        if (Action.isRunning(ctx.server, ctx.reward) { it.target == ctx.target })
             throw ALREADY_TRACKED.create(ctx.target.name)
 
         with(ctx) {

@@ -22,11 +22,17 @@ object FindGrave : GlowingAction() {
 
     override fun onStart(ctx: RewardContext) {
         val pos = getPos(ctx)
-        Chat.message(ctx.player,  TextComponent("You died at [${pos.x}/${pos.y}/${pos.z}]").withStyle(ChatFormatting.GOLD), status = false)
+        Chat.message(
+            ctx.player,
+            TextComponent("You died at [${pos.x}/${pos.y}/${pos.z}]").withStyle(ChatFormatting.GOLD),
+            status = false
+        )
     }
 
     override fun targets(ctx: RewardContext): List<Entity> {
-        return ctx.world.getEntitiesOfClass(ItemEntity::class.java, AABB(getPos(ctx)).inflate(5.0))
+        return ctx.server.allLevels.map {
+            return it.getEntitiesOfClass(ItemEntity::class.java, AABB(getPos(ctx)).inflate(5.0))
+        }.flatten()
     }
 
     override fun visibleTo(ctx: RewardContext): List<ServerPlayer> {

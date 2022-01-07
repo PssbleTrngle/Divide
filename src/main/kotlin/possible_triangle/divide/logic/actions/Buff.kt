@@ -14,12 +14,12 @@ object Buff : Action {
         DynamicCommandExceptionType { TextComponent("You already buffed $it") }
 
     override fun start(ctx: RewardContext) {
-        if (Action.isRunning(ctx.world, ctx.reward) { it.target == ctx.target })
+        if (Action.isRunning(ctx.server, ctx.reward) { it.target == ctx.target })
             throw ALREADY_BUFFED.create(ctx.reward.display)
     }
 
     fun isBuffed(player: ServerPlayer, reward: Reward): Boolean {
-        return Action.isRunning(player.level as ServerLevel, reward) { it.player.uuid == player.uuid }
+        return Action.isRunning(player.server, reward) { it.player.uuid == player.uuid }
     }
 
 }

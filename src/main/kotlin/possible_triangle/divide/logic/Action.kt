@@ -2,6 +2,7 @@ package possible_triangle.divide.logic
 
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.saveddata.SavedData
@@ -23,9 +24,9 @@ fun interface Action {
     @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     companion object {
 
-        private fun getData(world: ServerLevel): Data {
-            return world.server.overworld().dataStorage.computeIfAbsent(
-                { load(it, world) },
+        private fun getData(server: MinecraftServer): Data {
+            return server.overworld().dataStorage.computeIfAbsent(
+                { load(it, server.overworld()) },
                 { Data() },
                 "${DivideMod.ID}_actions"
             )
@@ -43,7 +44,7 @@ fun interface Action {
                 val reward = Reward[rewardId] ?: throw NullPointerException("Missing $rewardId")
 
                 if (team != null && player is ServerPlayer && target is ServerPlayer) {
-                    val ctx = RewardContext(team, world, player, target, reward)
+                    val ctx = RewardContext(team, world.server, player, target, reward)
                     data.running.add(ctx to it.getLong("time"))
                 }
             }
@@ -51,13 +52,13 @@ fun interface Action {
         }
 
         fun run(action: Action, ctx: RewardContext, duration: Int?) {
-            val data = getData(ctx.world)
+            val data = getData(ctx.server)
             action.start(ctx)
 
             DivideMod.LOGGER.info("Started '${ctx.reward.display}'")
 
             if (duration != null) {
-                val until = ctx.world.gameTime + (duration * 20)
+                val until = ctx.server.overworld().gameTime + (duration * 20)
                 data.running.add(ctx to until)
             }
 
@@ -65,18 +66,21 @@ fun interface Action {
 
         }
 
-        fun isRunning(world: ServerLevel, reward: Reward, predicate: (ctx: RewardContext) -> Boolean = { true }): Boolean {
-            val data = getData(world)
+        fun isRunning(
+            server: MinecraftServer,
+            reward: Reward,
+            predicate: (ctx: RewardContext) -> Boolean = { true }
+        ): Boolean {
+            val data = getData(server)
             return data.running.any { (ctx) -> ctx.reward == reward && predicate(ctx) }
         }
 
         @SubscribeEvent
         fun tick(event: TickEvent.WorldTickEvent) {
-            val world = event.world
-            if (world !is ServerLevel) return
+        val server = event.world.server ?: return
 
-            val data = getData(world)
-            val now = world.gameTime
+            val data = getData(server)
+            val now = server.overworld().gameTime
             val due = data.running.filter { (_, time) -> time < now }
 
             data.running.forEach { (ctx) ->

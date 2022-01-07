@@ -3,6 +3,7 @@ package possible_triangle.divide.logic
 import net.minecraft.network.protocol.Packet
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
 import net.minecraft.network.syncher.SynchedEntityData
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -26,9 +27,9 @@ object Glowing {
 
     fun addReason(target: Entity, players: List<ServerPlayer>, duration: Int) {
         if (players.isEmpty()) return
-        val world = players.first().getLevel()
-        REASONS.add(Reason(target.id, players.map { it.uuid }, world.gameTime + duration * 20))
-        updateGlowingData(target, world)
+        val server = players.first().server
+        REASONS.add(Reason(target.id, players.map { it.uuid }, server.overworld().gameTime + duration * 20))
+        updateGlowingData(target, server)
     }
 
     private fun <T> assign(cloned: SynchedEntityData, it: SynchedEntityData.DataItem<T>) {
@@ -55,15 +56,15 @@ object Glowing {
         return ClientboundSetEntityDataPacket(packet.id, cloned, false)
     }
 
-    fun updateGlowingData(entity: Entity, world: ServerLevel) {
-        if (!reasons(world).any { it.target == entity.id }) return
+    fun updateGlowingData(entity: Entity, server: MinecraftServer) {
+        if (!reasons(server.overworld()).any { it.target == entity.id }) return
 
         val data = entity.entityData
         val cloned = SynchedEntityData(entity)
 
         data.all?.filterNotNull()?.forEach { assign(cloned, it) }
 
-        world.players().forEach {
+        server.playerList.players.forEach {
             val glowing = isGlowingFor(entity.id, it)
             val current = cloned.get(Entity.DATA_SHARED_FLAGS_ID)
             cloned.set(

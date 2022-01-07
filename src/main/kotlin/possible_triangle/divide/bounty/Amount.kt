@@ -15,8 +15,8 @@ data class Amount(private val type: Type, private val values: List<Int>) {
     fun get(index: Int): Int {
         return when (type) {
             Type.CONSTANT -> values.first()
-            Type.INCREASING -> values.first() + values[2] * index
-            Type.FIRST -> if (index > 0) values.getOrElse(2) { 0 } else values.first()
+            Type.INCREASING -> values.first() + values.getOrElse(1) { 0 } * index
+            Type.FIRST -> if (index > 0) values.getOrElse(1) { 0 } else values.first()
         }
     }
 

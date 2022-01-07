@@ -85,7 +85,7 @@ abstract class ReloadedResource<Raw, Entry>(
         WATCHERS.add(this to watcher)
     }
 
-    var values = mapOf<String, Entry>()
+    var values = mutableMapOf<String, Entry>()
         private set
 
     open fun afterLoad(server: MinecraftServer) {}
@@ -117,7 +117,10 @@ abstract class ReloadedResource<Raw, Entry>(
         values = raw.mapValues { (id, value) ->
             if (value == null) onError(id)
             else map(value, server)
-        }.filterValues { it != null }.mapValues { it.value as Entry }
+        }
+            .filterValues { it != null }
+            .mapValues { it.value as Entry }
+            .toMutableMap()
 
         afterLoad(server)
 

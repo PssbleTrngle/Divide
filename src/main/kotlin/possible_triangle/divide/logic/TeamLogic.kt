@@ -4,11 +4,12 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.TextComponent
-import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.GameType
 import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.world.scores.Team
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
@@ -18,6 +19,10 @@ import possible_triangle.divide.DivideMod
 object TeamLogic {
 
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
+
+    fun score(server: MinecraftServer, team: Team): Int {
+        return CashLogic.getTotal(server, team)
+    }
 
     fun teamOf(player: Player): PlayerTeam? {
         if (!isPlayer(player)) return null
@@ -50,26 +55,29 @@ object TeamLogic {
         return !isSpectator(player)
     }
 
-    fun spectators(world: ServerLevel): List<ServerPlayer> {
-        return world.players().filter { isSpectator(it) }
+    fun spectators(server: MinecraftServer): List<ServerPlayer> {
+        return server.playerList.players.filter { isSpectator(it) }
     }
 
-    fun players(world: ServerLevel): List<ServerPlayer> {
-        return world.players().filter { isPlayer(it) }
+    fun players(server: MinecraftServer): List<ServerPlayer> {
+        return server.playerList.players.filter { isPlayer(it) }
     }
 
-    fun teams(world: ServerLevel): List<PlayerTeam> {
-        val players = players(world)
-        return players.mapNotNull { it.team }.distinctBy { it.name }.filterIsInstance(PlayerTeam::class.java)
+    fun teams(server: MinecraftServer): List<PlayerTeam> {
+        return server.scoreboard.playerTeams.toList()
+        //val players = players(server)
+        //return players.mapNotNull { it.team }.distinctBy { it.name }.filterIsInstance(PlayerTeam::class.java)
+    }
+
+    fun ranked(server: MinecraftServer): List<PlayerTeam> {
+        return teams(server).sortedBy { -score(server, it) }
     }
 
     @SubscribeEvent
     fun tick(event: TickEvent.WorldTickEvent) {
-        val world = event.world
-        if (world.isClientSide || (world !is ServerLevel)) return
-
-        spectators(world).forEach {
-            if (it.team != null) world.scoreboard.removePlayerFromTeam(it.scoreboardName)
+        val server = event.world.server ?: return
+        spectators(server).forEach {
+            if (it.team != null) server.overworld().scoreboard.removePlayerFromTeam(it.scoreboardName)
             it.setGameMode(GameType.SPECTATOR)
         }
     }

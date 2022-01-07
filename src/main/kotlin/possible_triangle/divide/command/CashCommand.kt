@@ -34,7 +34,7 @@ object CashCommand {
 
     private fun getCash(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamLogic.teamOf(ctx)
-        val amount = CashLogic.get(ctx.source.level, team)
+        val amount = CashLogic.get(ctx.source.server, team)
         ctx.source.sendSuccess(TextComponent("Your team has $amount"), false)
         return amount
     }
@@ -42,7 +42,7 @@ object CashCommand {
     private fun addCash(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamLogic.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        if (CashLogic.modify(ctx.source.level, team, amount))
+        if (CashLogic.modify(ctx.source.server, team, amount))
             ctx.source.sendSuccess(TextComponent("You added $amount to ${team.name}"), false)
         else
             throw NOT_ENOUGH.create()
@@ -52,7 +52,7 @@ object CashCommand {
     private fun removeCash(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamLogic.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        if (CashLogic.modify(ctx.source.level, team, -amount))
+        if (CashLogic.modify(ctx.source.server, team, -amount))
             ctx.source.sendSuccess(TextComponent("You removed $amount from ${team.name}"), false)
         else
             throw NOT_ENOUGH.create()
@@ -62,7 +62,7 @@ object CashCommand {
     private fun setCash(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamLogic.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        CashLogic.set(ctx.source.level, team, amount)
+        CashLogic.set(ctx.source.server, team, amount)
         ctx.source.sendSuccess(TextComponent("You set ${team.name} to $amount"), false)
         return amount
     }

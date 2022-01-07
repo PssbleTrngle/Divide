@@ -17,15 +17,21 @@ object Scores {
 
     @SubscribeEvent
     fun tick(event: TickEvent.WorldTickEvent) {
-        val world = event.world
-        if (world !is ServerLevel) return
-        if (event.phase == TickEvent.Phase.END) TeamLogic.teams(world).forEach {
-            updateScore(world.server, it)
+        val server = event.world.server ?: return
+
+        val overall = scoreboard(server)
+        server.scoreboard.setDisplayObjective(Scoreboard.DISPLAY_SLOT_SIDEBAR, overall)
+
+        if (event.phase == TickEvent.Phase.END) TeamLogic.ranked(server).forEachIndexed { index, team ->
+            val rank = index + 1
+            server.scoreboard.getOrCreatePlayerScore(team.name, overall).score = rank
+            updateScore(server, team, rank)
         }
     }
 
-    private fun scoreboard(server: MinecraftServer, team: Team): Objective {
-        val name = "${DivideMod.ID}_team_${team.color.name.lowercase()}"
+    private fun scoreboard(server: MinecraftServer, team: Team? = null): Objective {
+        val name =
+            if (team != null) "${DivideMod.ID}_team_${team.color.name.lowercase()}" else "${DivideMod.ID}_overall"
         return server.scoreboard.getObjective(name) ?: server.scoreboard.addObjective(
             name,
             ObjectiveCriteria.DUMMY,
@@ -34,7 +40,7 @@ object Scores {
         )
     }
 
-    private fun updateScore(server: MinecraftServer, team: Team) {
+    private fun updateScore(server: MinecraftServer, team: Team, rank: Int) {
         val scoreboard = scoreboard(server, team)
 
         server.scoreboard.setDisplayObjective(
@@ -42,16 +48,18 @@ object Scores {
             scoreboard
         )
 
-        val lines = listOf(
-            "Cash" to CashLogic.get(server.overworld(), team),
-        )
+        val lines = mapOf(
+            "Rank" to rank,
+            "Score" to TeamLogic.score(server, team),
+            "Cash" to CashLogic.get(server, team),
+        ).mapKeys { it.key.padEnd(10) }
 
-       // server.scoreboard.getPlayerScores(scoreboard)
-       //     .filterNot { lines.contains(it.owner) }
-       //     .forEach { server.scoreboard.resetPlayerScore(it.owner, scoreboard) }
+        server.scoreboard.getPlayerScores(scoreboard)
+            .filterNot { lines.containsKey(it.owner) }
+            .forEach { server.scoreboard.resetPlayerScore(it.owner, scoreboard) }
 
         lines.forEach { (line, value) ->
-            server.scoreboard.getOrCreatePlayerScore(line.padEnd(10), scoreboard).score = value
+            server.scoreboard.getOrCreatePlayerScore(line, scoreboard).score = value
         }
     }
 

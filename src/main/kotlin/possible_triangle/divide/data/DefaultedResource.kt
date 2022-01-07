@@ -17,10 +17,11 @@ abstract class DefaultedResource<Entry>(
 
     fun defaulted(id: String, supplier: () -> Entry): Delegate {
         defaults[id.lowercase()] = supplier
+        values[id.lowercase()] = supplier()
         return Delegate(id.lowercase(), supplier)
     }
 
-    final override fun map(raw: Entry, server: MinecraftServer): Entry {
+    override fun map(raw: Entry, server: MinecraftServer): Entry {
         return raw
     }
 
@@ -33,13 +34,13 @@ abstract class DefaultedResource<Entry>(
         writer.close()
     }
 
-    override fun onError(id: String): Entry? {
+    final override fun onError(id: String): Entry? {
         val default = defaults[id] ?: return null
         save(id, default())
         return default()
     }
 
-    override fun afterLoad(server: MinecraftServer) {
+    final override fun afterLoad(server: MinecraftServer) {
         defaults
             .filterNot { values.containsKey(it.key) }
             .forEach { (id, entry) -> save(id, entry()) }

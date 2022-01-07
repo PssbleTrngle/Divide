@@ -16,6 +16,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
@@ -29,7 +30,6 @@ import kotlin.random.Random
 object DeathLogic {
 
     private val STORED = hashMapOf<UUID, List<ItemStack>>()
-    private const val STARTER_GEAR_BREAK = 20 * 60 * 5
 
     @SubscribeEvent
     fun playerJoin(event: EntityJoinWorldEvent) {
@@ -61,7 +61,7 @@ object DeathLogic {
         val persistent = player.persistentData.getCompound(ServerPlayer.PERSISTED_NBT_TAG)
 
         if (updateDeathTime) persistent.putLong("${DivideMod.ID}_last_death", player.level.gameTime)
-        if (timeSince < STARTER_GEAR_BREAK) return listOf()
+        if (timeSince < Config.CONFIG.starterGearBreak) return listOf()
 
         val teamColor = player.team?.color ?: ChatFormatting.WHITE
 

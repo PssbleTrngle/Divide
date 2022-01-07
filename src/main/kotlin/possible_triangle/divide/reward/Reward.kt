@@ -59,14 +59,14 @@ data class Reward(
         get() = ACTIONS[idOf(this)] ?: throw  NullPointerException("Action for ${idOf(this)} missing")
 
     fun buy(ctx: RewardContext): Boolean {
-        val canBuy = CashLogic.get(ctx.world, ctx.team) >= price
+        val canBuy = CashLogic.get(ctx.server, ctx.team) >= price
         if (!canBuy) return false
 
         if (ctx.reward.requiresTarget && ctx.target.team?.name == ctx.player.team?.name) throw SAME_TEAM.create(ctx.target.name)
         if (!TeamLogic.isPlayer(ctx.target)) throw NOT_PLAYING.create(ctx.target.name)
 
         Action.run(action, ctx, duration)
-        val bought = CashLogic.modify(ctx.world, ctx.team, -price)
+        val bought = CashLogic.modify(ctx.server, ctx.team, -price)
         if (bought) TeamLogic.teammates(ctx.player).forEach {
             Chat.message(
                 it, TextComponent("Bought ${ctx.reward.display} for ").append(

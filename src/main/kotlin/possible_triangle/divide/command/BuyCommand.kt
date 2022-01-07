@@ -43,7 +43,7 @@ object BuyCommand {
         if (!reward.buy(
                 RewardContext(
                     TeamLogic.teamOf(ctx),
-                    ctx.source.level,
+                    ctx.source.server,
                     ctx.source.playerOrException,
                     target,
                     reward

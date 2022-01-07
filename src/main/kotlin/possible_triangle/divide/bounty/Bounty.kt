@@ -47,12 +47,12 @@ data class Bounty(val description: String, val amount: Amount) {
         val team = TeamLogic.teamOf(player)
 
         if (player is ServerPlayer && team != null) {
-            val bounties = BOUNTY_COUNTS.get(player.getLevel())
+            val bounties = BOUNTY_COUNTS[player.getLevel().server]
             val alreadyDone = bounties[team]
             val cashGained = (amount.get(alreadyDone) * modifier).toInt()
 
             if (cashGained > 0) {
-                CashLogic.modify(player.getLevel(), team, cashGained)
+                CashLogic.modify(player.getLevel().server, team, cashGained)
 
                 TeamLogic.teammates(player).forEach { teammate ->
                     //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
