@@ -44,16 +44,21 @@ object Glowing {
         packet.unpackedData?.filterNotNull()?.forEach { assign(cloned, it) }
 
         val glowing = isGlowingFor(packet.id, recipient)
-        val current = cloned.get(Entity.DATA_SHARED_FLAGS_ID)
-        cloned.set(
-            Entity.DATA_SHARED_FLAGS_ID,
-            if (glowing)
-                ((current or 1).toInt() shl 6).toByte()
-            else
-                current and (1 shl 6).inv()
-        )
 
-        return ClientboundSetEntityDataPacket(packet.id, cloned, false)
+        return try {
+            val current = cloned.get(Entity.DATA_SHARED_FLAGS_ID)
+            cloned.set(
+                Entity.DATA_SHARED_FLAGS_ID,
+                if (glowing)
+                    ((current or 1).toInt() shl 6).toByte()
+                else
+                    current and (1 shl 6).inv()
+            )
+
+            ClientboundSetEntityDataPacket(packet.id, cloned, false)
+        } catch (e: NullPointerException) {
+            packet
+        }
     }
 
     fun updateGlowingData(entity: Entity, server: MinecraftServer) {

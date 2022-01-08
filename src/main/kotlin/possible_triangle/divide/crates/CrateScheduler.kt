@@ -3,34 +3,25 @@ package possible_triangle.divide.crates
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.NbtOps
-import net.minecraft.nbt.NbtUtils
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.EntityType
-import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.BarrelBlock
-import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity
-import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerCallbacks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.scores.Team
-import net.minecraftforge.event.entity.player.PlayerEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.CrateEvents.CRATE_TAG
+import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.logic.Glowing
 import possible_triangle.divide.logic.TeamLogic
 import java.util.*
 import java.util.stream.Collectors
 
-@Mod.EventBusSubscriber
 object CrateScheduler {
 
     init {
@@ -39,15 +30,12 @@ object CrateScheduler {
         TimerCallbacks.SERVER_CALLBACKS.register(CleanCallback.Serializer)
     }
 
-    @SubscribeEvent
-    fun preventBreaking(event: PlayerEvent.BreakSpeed) {
-        val crate = crateAt(event.entity.server ?: return, event.pos) ?: return
-        if (crate.tileData.getBoolean("${DivideMod.ID}:unbreakable")) event.newSpeed = 0F
-    }
-
-    fun crateAt(server: MinecraftServer, pos: BlockPos): RandomizableContainerBlockEntity? {
+    fun crateAt(server: MinecraftServer, pos: BlockPos, ignoreTag: Boolean = false): RandomizableContainerBlockEntity? {
         val tile = server.overworld().getBlockEntity(pos)
-        if (tile is RandomizableContainerBlockEntity) return tile
+        if (tile is RandomizableContainerBlockEntity) {
+            if (ignoreTag) return tile
+            else if (tile.tileData.getBoolean((CRATE_TAG))) return tile
+        }
         return null
     }
 
@@ -94,9 +82,9 @@ object CrateScheduler {
         val state = Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
         server.overworld().setBlock(pos, state, 2)
 
-        val crate = crateAt(server, pos) ?: throw NullPointerException("crate missing at $pos")
-        crate.tileData.putBoolean("${DivideMod.ID}:crate_marker", true)
-        crate.tileData.putBoolean("${DivideMod.ID}:unbreakable", true)
+        val crate = crateAt(server, pos, true) ?: throw NullPointerException("crate missing at $pos")
+        crate.tileData.putBoolean(CRATE_TAG, true)
+        crate.tileData.putBoolean(UNBREAKABLE_TAG, true)
         setLock(crate, UUID.randomUUID().toString())
     }
 
@@ -110,7 +98,7 @@ object CrateScheduler {
         marker.deserializeNBT(nbt)
         marker.moveTo(pos.x + 0.5, pos.y + 0.25, pos.z + 0.5)
         server.overworld().addFreshEntity(marker)
-        marker.tags.add("${DivideMod.ID}:crate_marker")
+        marker.tags.add(CRATE_TAG)
         marker.addEffect(
             MobEffectInstance(
                 MobEffects.INVISIBILITY,

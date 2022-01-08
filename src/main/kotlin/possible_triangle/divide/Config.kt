@@ -1,6 +1,5 @@
 package possible_triangle.divide
 
-import kotlinx.serialization.SerialInfo
 import kotlinx.serialization.Serializable
 import possible_triangle.divide.data.DefaultedResource
 
@@ -32,6 +31,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     @Serializable
     data class CrateValues(
         val cleanUpTime: Int = 20,
+        val cleanNonEmpty: Boolean = false,
     )
 
     @Serializable

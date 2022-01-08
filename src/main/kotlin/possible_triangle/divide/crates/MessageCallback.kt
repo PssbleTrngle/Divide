@@ -17,7 +17,7 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
 
     object Serializer :
         TimerCallback.Serializer<MinecraftServer, MessageCallback>(
-            ResourceLocation(DivideMod.ID, "crates"),
+            ResourceLocation(DivideMod.ID, "crate_message"),
             MessageCallback::class.java
         ) {
 
