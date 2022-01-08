@@ -11,6 +11,7 @@ import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.effect.MobEffects
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.BarrelBlock
@@ -28,7 +29,6 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
-import possible_triangle.divide.logic.Glowing
 import possible_triangle.divide.logic.TeamLogic
 import java.util.*
 import java.util.stream.Collectors
@@ -46,7 +46,7 @@ object CrateScheduler {
     private val ORDERS =
         PerTeamData<MutableMap<Order?, MutableList<ItemStack>>, CompoundTag>("orders", mutableMapOf(), { orders ->
             val tag = CompoundTag()
-            orders.forEach { (order, stacks) ->
+            orders.filter { it.value.isNotEmpty() }.forEach { (order, stacks) ->
                 val list = ListTag()
                 stacks.forEach { ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it).get().ifLeft(list::add) }
                 tag.put(if (order != null) Order.idOf(order) else "", list)
@@ -67,6 +67,12 @@ object CrateScheduler {
         TimerCallbacks.SERVER_CALLBACKS.register(FillLootCallback.Serializer)
         TimerCallbacks.SERVER_CALLBACKS.register(MessageCallback.Serializer)
         TimerCallbacks.SERVER_CALLBACKS.register(CleanCallback.Serializer)
+    }
+
+    fun markersAt(server: MinecraftServer, pos: BlockPos): List<Entity> {
+        return server.overworld().getEntitiesOfClass(Entity::class.java, AABB(pos).inflate(0.5)) {
+            it.tags.contains(CRATE_TAG)
+        }
     }
 
     fun crateAt(server: MinecraftServer, pos: BlockPos, ignoreTag: Boolean = false): RandomizableContainerBlockEntity? {
@@ -171,8 +177,6 @@ object CrateScheduler {
                 false
             )
         )
-
-        Glowing.addReason(marker, server.playerList.players, 1000000)
     }
 
     fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos) {

@@ -15,3 +15,5 @@ gamerule doLimitedCrafting true
 gamerule playersSleepingPercentage 30
 gamerule doInsomnia false
 gamerule doImmediateRespawn true
+gamerule doTraderSpawning false
+gamerule doPatrolSpawning false

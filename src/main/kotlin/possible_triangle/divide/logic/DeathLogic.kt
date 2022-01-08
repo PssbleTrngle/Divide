@@ -185,7 +185,7 @@ object DeathLogic {
         val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
 
         STORED[player.uuid] = starterGear(player) + keep.map {
-            val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count) else it.item.count
+            val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count + 1) else it.item.count
             if (taken >= it.item.count) {
                 it.makeFakeItem()
                 it.setRemoved(Entity.RemovalReason.DISCARDED)

@@ -2,7 +2,6 @@ package possible_triangle.divide.logic
 
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.scores.Objective
 import net.minecraft.world.scores.Scoreboard
 import net.minecraft.world.scores.Team
@@ -51,7 +50,7 @@ object Scores {
         val lines = mapOf(
             "Rank" to rank,
             "Score" to TeamLogic.score(server, team),
-            "Cash" to CashLogic.get(server, team),
+            "Points" to CashLogic.get(server, team),
         ).mapKeys { it.key.padEnd(10) }
 
         server.scoreboard.getPlayerScores(scoreboard)

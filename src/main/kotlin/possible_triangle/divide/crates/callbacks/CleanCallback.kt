@@ -9,10 +9,8 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
-import net.minecraft.world.phys.AABB
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.crates.CrateEvents.CRATE_TAG
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.CrateScheduler
 
@@ -20,9 +18,7 @@ class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
 
     companion object {
         fun cleanMarker(server: MinecraftServer, pos: BlockPos) {
-            server.overworld().getEntitiesOfClass(Entity::class.java, AABB(pos).inflate(0.5)) {
-                it.tags.contains(CRATE_TAG)
-            }.forEach {
+            CrateScheduler.markersAt(server, pos).forEach {
                 it.remove(Entity.RemovalReason.DISCARDED)
             }
         }
