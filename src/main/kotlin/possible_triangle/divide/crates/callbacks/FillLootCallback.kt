@@ -1,4 +1,4 @@
-package possible_triangle.divide.crates
+package possible_triangle.divide.crates.callbacks
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
@@ -8,19 +8,18 @@ import net.minecraft.nbt.NbtOps
 import net.minecraft.nbt.NbtUtils
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.entity.Entity
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.timers.TimerCallback
-import net.minecraft.world.level.timers.TimerCallbacks
 import net.minecraft.world.level.timers.TimerQueue
-import net.minecraft.world.phys.AABB
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.CrateScheduler
+import possible_triangle.divide.crates.loot.CrateLoot
 
 class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List<ItemStack>) :
     TimerCallback<MinecraftServer> {
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-        val loot = table.generate()
+        val loot = table.generate() + orders
         val crate = CrateScheduler.crateAt(server, pos) ?: return
 
         CrateScheduler.setLock(crate, null)

@@ -32,6 +32,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     data class CrateValues(
         val cleanUpTime: Int = 20,
         val cleanNonEmpty: Boolean = false,
+        val itemSaveChance: Double = 0.5,
     )
 
     @Serializable

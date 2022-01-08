@@ -1,4 +1,4 @@
-package possible_triangle.divide.crates
+package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

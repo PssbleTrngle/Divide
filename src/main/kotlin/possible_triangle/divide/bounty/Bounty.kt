@@ -7,8 +7,8 @@ import net.minecraft.world.entity.player.Player
 import possible_triangle.divide.Chat
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.data.PerTeamIntData
 import possible_triangle.divide.logic.CashLogic
-import possible_triangle.divide.logic.PerTeamData
 import possible_triangle.divide.logic.TeamLogic
 
 @Serializable
@@ -16,7 +16,7 @@ data class Bounty(val description: String, val amount: Amount) {
 
     companion object : DefaultedResource<Bounty>("bounty", { Bounty.serializer() }) {
 
-        private val BOUNTY_COUNTS = PerTeamData("bounties")
+        private val BOUNTY_COUNTS = PerTeamIntData("bounties")
 
         val PLAYER_KILL by defaulted("PLAYER_KILL") { Bounty("Kill a Player", Amount(CONSTANT, listOf(100))) }
         val BLOWN_UP by defaulted("BLOWN_UP") { Bounty("Blow a player up", Amount(CONSTANT, listOf(200))) }

@@ -1,4 +1,4 @@
-package possible_triangle.divide.crates
+package possible_triangle.divide.crates.callbacks
 
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag

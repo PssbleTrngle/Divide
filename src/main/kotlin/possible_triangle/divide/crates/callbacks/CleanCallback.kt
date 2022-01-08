@@ -1,4 +1,4 @@
-package possible_triangle.divide.crates
+package possible_triangle.divide.crates.callbacks
 
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
@@ -14,6 +14,7 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateEvents.CRATE_TAG
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
+import possible_triangle.divide.crates.CrateScheduler
 
 class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
 

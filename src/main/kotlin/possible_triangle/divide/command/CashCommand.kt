@@ -2,7 +2,7 @@ package possible_triangle.divide.command
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
@@ -16,12 +16,12 @@ import possible_triangle.divide.logic.TeamLogic
 @Mod.EventBusSubscriber
 object CashCommand {
 
-    val NOT_ENOUGH = SimpleCommandExceptionType(TextComponent("Not enough cash"))
+    val NOT_ENOUGH = DynamicCommandExceptionType { TextComponent("You need at least $it points") }
 
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            literal("cash")
+            literal("points")
                 .executes(::getCash)
                 .then(literal("add").requires { it.hasPermission(2) }
                     .then(argument("amount", IntegerArgumentType.integer(1)).executes(::addCash)))
@@ -42,10 +42,8 @@ object CashCommand {
     private fun addCash(ctx: CommandContext<CommandSourceStack>): Int {
         val team = TeamLogic.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        if (CashLogic.modify(ctx.source.server, team, amount))
-            ctx.source.sendSuccess(TextComponent("You added $amount to ${team.name}"), false)
-        else
-            throw NOT_ENOUGH.create()
+        CashLogic.modify(ctx.source.server, team, amount)
+        ctx.source.sendSuccess(TextComponent("You added $amount to ${team.name}"), false)
         return amount
     }
 
@@ -55,7 +53,7 @@ object CashCommand {
         if (CashLogic.modify(ctx.source.server, team, -amount))
             ctx.source.sendSuccess(TextComponent("You removed $amount from ${team.name}"), false)
         else
-            throw NOT_ENOUGH.create()
+            throw NOT_ENOUGH.create(amount)
         return amount
     }
 

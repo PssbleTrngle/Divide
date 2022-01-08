@@ -3,16 +3,14 @@ package possible_triangle.divide.data
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.KSerializer
 import net.minecraft.server.MinecraftServer
-import possible_triangle.divide.DivideMod
 import java.io.File
-import java.lang.IllegalArgumentException
 import kotlin.reflect.KProperty
 
 abstract class DefaultedResource<Entry>(
     dir: String,
     serializer: () -> KSerializer<Entry>
 ) :
-    ReloadedResource<Entry, Entry>(dir, serializer) {
+    ReloadedResource<Entry>(dir, serializer) {
 
     private val defaults = hashMapOf<String, () -> Entry>()
 
@@ -22,10 +20,6 @@ abstract class DefaultedResource<Entry>(
         defaults[lower] = supplier
         values[lower] = supplier()
         return Delegate(lower, supplier)
-    }
-
-    override fun map(raw: Entry, server: MinecraftServer): Entry {
-        return raw
     }
 
     protected fun save(id: String, entry: Entry) {
@@ -51,7 +45,6 @@ abstract class DefaultedResource<Entry>(
 
     inner class Delegate(private val id: String, private val supplier: () -> Entry) {
         operator fun getValue(thisRef: Any?, property: KProperty<*>): Entry {
-            DivideMod.LOGGER.info("Delegated ${property.name}")
             return values[id] ?: supplier()
         }
     }

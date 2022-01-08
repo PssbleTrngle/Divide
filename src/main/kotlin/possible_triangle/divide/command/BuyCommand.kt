@@ -49,7 +49,7 @@ object BuyCommand {
                     reward
                 )
             )
-        ) throw CashCommand.NOT_ENOUGH.create()
+        ) throw CashCommand.NOT_ENOUGH.create(reward.price)
 
         return 1
     }

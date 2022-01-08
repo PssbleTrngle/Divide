@@ -1,4 +1,4 @@
-package possible_triangle.divide.crates
+package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
 import net.minecraft.core.Registry
@@ -41,15 +41,14 @@ data class CrateLoot(val weight: Int, val entries: List<LootEntry>) {
             return values.values.random()
         }
 
-        override fun map(raw: CrateLoot, server: MinecraftServer): CrateLoot {
-            val list = super.map(raw, server)
+        override fun populate(entry: CrateLoot, server: MinecraftServer) {
+            super.populate(entry, server)
             val items = server.registryAccess().registryOrThrow(Registry.ITEM_REGISTRY)
-            list.entries.forEach { entry ->
+            entry.entries.forEach { entry ->
                 entry.item =
                     items[ResourceLocation(entry.id)]
                         ?: throw IllegalArgumentException("Item ${entry.id} does not exists")
             }
-            return list
         }
 
     }

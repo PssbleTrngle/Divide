@@ -16,14 +16,14 @@ import java.nio.file.StandardWatchEventKinds.*
 import java.nio.file.attribute.BasicFileAttributes
 
 
-abstract class ReloadedResource<Raw, Entry>(
+abstract class ReloadedResource<Entry>(
     protected val dir: String,
-    protected val serializer: () -> KSerializer<Raw>
+    protected val serializer: () -> KSerializer<Entry>
 ) {
 
     @Mod.EventBusSubscriber
     companion object {
-        private val WATCHERS = arrayListOf<Pair<ReloadedResource<*, *>, WatchService>>()
+        private val WATCHERS = arrayListOf<Pair<ReloadedResource<*>, WatchService>>()
         private var IS_LOADING = false
 
         @SubscribeEvent
@@ -48,7 +48,7 @@ abstract class ReloadedResource<Raw, Entry>(
             }
         }
 
-        fun register(resource: ReloadedResource<*, *>) {
+        fun register(resource: ReloadedResource<*>) {
             FORGE_BUS.addListener(resource::setup)
             DivideMod.LOGGER.info("registered resource ${resource.dir}")
         }
@@ -65,7 +65,7 @@ abstract class ReloadedResource<Raw, Entry>(
     protected val folder
         get() = File("config/divide/$dir")
 
-    abstract fun map(raw: Raw, server: MinecraftServer): Entry?
+    open fun populate(entry: Entry, server: MinecraftServer) {}
 
     private fun registerRecursive(root: Path, watchService: WatchService) {
         root.toFile().mkdirs()
@@ -114,10 +114,12 @@ abstract class ReloadedResource<Raw, Entry>(
             id to parsed
         }
 
-        values = raw.mapValues { (id, value) ->
-            if (value == null) onError(id)
-            else map(value, server)
-        }
+        values = raw
+            .mapValues { (id, value) -> value ?: onError(id) }
+            .mapValues { (_, value) ->
+                if (value != null) populate(value, server)
+                value
+            }
             .filterValues { it != null }
             .mapValues { it.value as Entry }
             .toMutableMap()

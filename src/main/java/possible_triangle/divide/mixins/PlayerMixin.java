@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import possible_triangle.divide.logic.events.Eras;
 
 @Mixin(Player.class)
-public abstract class PlayerMixin {
+public class PlayerMixin {
 
     @Inject(at = @At("HEAD"), method = "canHarmPlayer(Lnet/minecraft/world/entity/player/Player;)Z", cancellable = true)
     public void canHarmPlayer(Player player, CallbackInfoReturnable<Boolean> callback) {
