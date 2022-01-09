@@ -1,6 +1,8 @@
 scoreboard objectives add health health "Health"
 scoreboard objectives setdisplay list health
 scoreboard objectives add deaths deathCount "Deaths"
+scoreboard objectives add playerKills playerKillCount "Player Kills"
+scoreboard objectives add totalKills totalKillCount "Total Kills"
 scoreboard objectives add damage_taken custom:damage_taken "Damage Taken"
 scoreboard objectives add damage_dealt custom:damage_dealt "Damage Dealt"
 scoreboard objectives add jumps custom:jump "Jumps"

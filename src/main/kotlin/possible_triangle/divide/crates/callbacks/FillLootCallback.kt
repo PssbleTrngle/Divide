@@ -6,11 +6,14 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
 import net.minecraft.nbt.NbtUtils
+import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
+import net.minecraft.sounds.SoundSource
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
+import net.minecraft.world.phys.Vec3
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
@@ -34,9 +37,9 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
         val split = grouped.map { (stack, total) ->
             var remaining = total
             val counts = mutableListOf<Int>()
-            while(remaining > 0) {
+            while (remaining > 0) {
                 val max = min(total, stack.maxStackSize)
-                val count = if(max == 1) 1
+                val count = if (max == 1) 1
                 else Random.nextInt(1, max)
                 remaining -= count
                 counts.add(count)
@@ -50,17 +53,28 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
 
         CrateScheduler.setLock(crate, null)
         val slots = (0 until crate.containerSize).toList().shuffled()
-        if(split.size > crate.containerSize)  DivideMod.LOGGER.warn("too much loot to fit into barrel")
+        if (split.size > crate.containerSize) DivideMod.LOGGER.warn("too much loot to fit into barrel")
 
         slots.forEachIndexed { i, slot ->
             crate.setItem(slot, split.getOrElse(i) { ItemStack.EMPTY })
         }
 
+        val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
+        val soundPacket = ClientboundCustomSoundPacket(
+            ResourceLocation("entity.experience_orb.pickup"),
+            SoundSource.MASTER,
+            vec,
+            1F,
+            0.1F
+        )
         server.playerList.players.forEach {
+
+            it.connection.send(soundPacket)
+
             server.overworld()
                 .sendParticles(
                     it, ParticleTypes.FIREWORK, false,
-                    pos.x + 0.5, pos.y.toDouble() + 0.5, pos.z.toDouble() + 0.5,
+                    vec.x, vec.y, vec.z,
                     20, 0.5, 0.5, 0.5, 0.1
                 )
         }

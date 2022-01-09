@@ -20,12 +20,14 @@ object BountyEvents {
         if (player !is ServerPlayer) return
 
         if (event.advancement.id.path.startsWith("recipes/")) return
+        if (event.advancement.display?.shouldShowToast() != true) return
+        val announced = event.advancement.display?.shouldAnnounceChat() == true
 
         val alreadyUnlocked = TeamLogic.teammates(player, false).any {
             it.advancements.getOrStartProgress(event.advancement).isDone
         }
 
-        if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(event.player)
+        if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(event.player, if (announced) 1.0 else 0.5)
     }
 
     @SubscribeEvent

@@ -26,6 +26,9 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val staySmallFor: Int = 60 * 1,
         val stayBigFor: Int = 60 * 5,
         val moveTime: Int = 60,
+        val showBar: Boolean = false,
+        val damagePerBlock: Double = 1.0,
+        val damageSafeZone: Double = 2.0,
     )
 
     @Serializable
@@ -39,6 +42,8 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     data class EraValues(
         val peaceTime: Int = 60 * 5,
         val warTime: Int = 60 * 60,
+        val showPeaceBar: Boolean = true,
+        val showWarBar: Boolean = false,
     )
 
 }

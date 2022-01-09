@@ -25,6 +25,7 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
 
         val inSeconds = (time - now) / 20
         players.forEach {
+            CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)
             val posComponent = TextComponent("${pos.x}/${pos.y}/${pos.z}").withStyle(ChatFormatting.GOLD)
             Chat.message(
                 it, TextComponent(

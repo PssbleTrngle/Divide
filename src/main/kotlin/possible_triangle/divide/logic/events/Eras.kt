@@ -8,7 +8,6 @@ import net.minecraft.world.level.saveddata.SavedData
 import possible_triangle.divide.Chat
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.logic.TeamLogic
 
 object Eras : CycleEvent("eras") {
 
@@ -22,8 +21,7 @@ object Eras : CycleEvent("eras") {
         val bar = bar(server)
         bar.name = TextComponent("Peace Era")
         bar.color = BossEvent.BossBarColor.GREEN
-        bar.players = server.playerList.players.filter(TeamLogic::isPlayer)
-        bar.isVisible = true
+        bar.isVisible = Config.CONFIG.eras.showPeaceBar
     }
 
     fun war(server: MinecraftServer) {
@@ -33,7 +31,10 @@ object Eras : CycleEvent("eras") {
             Chat.title(it, "⚔")
         }
 
-        bar(server).isVisible = false
+        val bar = bar(server)
+        bar.name = TextComponent("War Era")
+        bar.color = BossEvent.BossBarColor.RED
+        bar.isVisible = Config.CONFIG.eras.showWarBar
     }
 
     override fun handle(server: MinecraftServer, index: Int): Int {

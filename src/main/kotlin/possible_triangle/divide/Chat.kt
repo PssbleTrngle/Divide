@@ -14,7 +14,8 @@ object Chat {
     }
 
     fun message(player: ServerPlayer, message: Component, status: Boolean = true) {
-        player.sendMessage(message, if(status) ChatType.GAME_INFO else ChatType.SYSTEM, player.uuid)
+        player.sendMessage(message, ChatType.GAME_INFO, player.uuid)
+        if (!status) player.sendMessage(message, ChatType.SYSTEM, player.uuid)
     }
 
     fun title(player: ServerPlayer, message: String) {
@@ -30,7 +31,7 @@ object Chat {
     }
 
     fun subtitle(player: ServerPlayer, message: Component, setTitle: Boolean = true) {
-        if(setTitle) title(player, "")
+        if (setTitle) title(player, "")
         player.connection.send(ClientboundSetSubtitleTextPacket(message))
     }
 

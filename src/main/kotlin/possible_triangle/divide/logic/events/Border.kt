@@ -13,7 +13,7 @@ object Border : CycleEvent("border") {
         val verb = if (worldborder.size < size.toDouble()) "grow" else "shrink"
         if (message)
             server.playerList.players.forEach {
-                Chat.message(it, "border started to $verb")
+                Chat.subtitle(it, "border started to $verb")
             }
     }
 
@@ -28,7 +28,13 @@ object Border : CycleEvent("border") {
         val pause = if (grow) Config.CONFIG.border.stayBigFor else Config.CONFIG.border.staySmallFor
         val moveTime = if (index > 0) Config.CONFIG.border.moveTime else 60
 
+        server.overworld().worldBorder.damagePerBlock =  Config.CONFIG.border.damagePerBlock
+        server.overworld().worldBorder.damageSafeZone = Config.CONFIG.border.damageSafeZone
+
         resize(server, size, moveTime, index > 0)
+
+        bar(server).isVisible = Config.CONFIG.border.showBar
+
         return pause
     }
 

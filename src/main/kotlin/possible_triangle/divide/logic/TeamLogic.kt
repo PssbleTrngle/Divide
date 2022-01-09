@@ -14,6 +14,7 @@ import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
+import kotlin.math.max
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object TeamLogic {
@@ -21,7 +22,15 @@ object TeamLogic {
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
 
     fun score(server: MinecraftServer, team: Team): Int {
-        return CashLogic.getTotal(server, team)
+        val total = CashLogic.getTotal(server, team)
+        val players = players(server).filter { it.team?.name == team.name }
+        val killObjective = server.scoreboard.getObjective("playerKills") ?: return 0
+        val deathObjective = server.scoreboard.getObjective("deaths") ?: return 0
+        val kills = players.map { server.scoreboard.getOrCreatePlayerScore(it.scoreboardName, killObjective) }
+            .sumOf { it.score }
+        val deaths = players.map { server.scoreboard.getOrCreatePlayerScore(it.scoreboardName, deathObjective) }
+            .sumOf { it.score }
+        return max(0, total - deaths * 10 + kills * 50)
     }
 
     fun teamOf(player: Player): PlayerTeam? {

@@ -9,6 +9,7 @@ import net.minecraft.nbt.NbtOps
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.BossEvent
 import net.minecraft.world.effect.MobEffectInstance
 import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.Entity
@@ -30,11 +31,14 @@ import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
 import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.events.Countdown
 import java.util.*
 import java.util.stream.Collectors
 import kotlin.random.Random
 
 object CrateScheduler {
+
+    internal val COUNTDOWN = Countdown("loot_crate", "Loot Drop")
 
     private val ORDERED_MAX =
         Dynamic3CommandExceptionType { item, max, already ->
@@ -154,6 +158,7 @@ object CrateScheduler {
         val crate = crateAt(server, pos, true) ?: throw NullPointerException("crate missing at $pos")
         crate.tileData.putBoolean(CRATE_TAG, true)
         crate.tileData.putBoolean(UNBREAKABLE_TAG, true)
+        crate.customName = TextComponent("Loot Crate")
         setLock(crate, UUID.randomUUID().toString())
     }
 
@@ -186,6 +191,9 @@ object CrateScheduler {
         spawnMarker(server, pos)
 
         val time = world.gameTime + seconds * 20
+        COUNTDOWN.countdown(server, seconds)
+        COUNTDOWN.bar(server).isVisible = true
+        COUNTDOWN.bar(server).color = BossEvent.BossBarColor.YELLOW
 
         val orders = ORDERS[server].values.map { it.value.values }
             .flatten().flatten()
