@@ -1,4 +1,4 @@
-package possible_triangle.divide
+package possible_triangle.divide.logic
 
 import net.minecraft.network.chat.ChatType
 import net.minecraft.network.chat.Component
@@ -9,13 +9,13 @@ import net.minecraft.server.level.ServerPlayer
 
 object Chat {
 
-    fun message(player: ServerPlayer, message: String, status: Boolean = true) {
-        message(player, TextComponent(message), status)
+    fun message(player: ServerPlayer, message: String, log: Boolean = false) {
+        message(player, TextComponent(message), log)
     }
 
-    fun message(player: ServerPlayer, message: Component, status: Boolean = true) {
+    fun message(player: ServerPlayer, message: Component, log: Boolean = false) {
         player.sendMessage(message, ChatType.GAME_INFO, player.uuid)
-        if (!status) player.sendMessage(message, ChatType.SYSTEM, player.uuid)
+        if (log) player.sendMessage(message, ChatType.SYSTEM, player.uuid)
     }
 
     fun title(player: ServerPlayer, message: String) {

@@ -1,4 +1,4 @@
-package possible_triangle.divide.logic.events
+package possible_triangle.divide.events
 
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.resources.ResourceLocation
@@ -7,7 +7,7 @@ import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerCallbacks
 import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Teams
 
 @Suppress("LeakingThis")
 abstract class CycleEvent(val id: String) : Countdown(id) {
@@ -47,10 +47,15 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         }
     }
 
-    private fun schedule(server: MinecraftServer, seconds: Int, index: Int) {
+    private fun schedule(server: MinecraftServer, seconds: Int, index: Int, invisible: Boolean = false) {
         clear(server)
-        countdown(server, seconds)
-        bar(server).players = server.playerList.players.filter(TeamLogic::isPlayer)
+        val bar = bar(server)
+        if (invisible) {
+            bar.players = listOf()
+        } else {
+            countdown(server, seconds)
+            bar.players = server.playerList.players.filter(Teams::isPlayer)
+        }
         server.worldData.overworldData().scheduledEvents.schedule(
             "${DivideMod.ID}:$id",
             server.overworld().gameTime + seconds * 20,
@@ -60,12 +65,17 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
 
     abstract fun handle(server: MinecraftServer, index: Int): Int
 
+    abstract fun isEnabled(server: MinecraftServer): Boolean
+
     class Callback(val index: Int, val id: String) : TimerCallback<MinecraftServer> {
 
         override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
             val event = EVENTS[id] ?: return
-            val pause = event.handle(server, index)
-            event.schedule(server, pause, index + 1)
+            if (event.isEnabled(server)) {
+                event.schedule(server, event.handle(server, index), index + 1)
+            } else {
+                event.schedule(server, 10, index, invisible = true)
+            }
         }
 
     }

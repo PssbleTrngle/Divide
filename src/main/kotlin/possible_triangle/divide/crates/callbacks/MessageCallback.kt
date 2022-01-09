@@ -9,16 +9,16 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
-import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
+import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Glowing
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Teams
 
 class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) : TimerCallback<MinecraftServer> {
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, now: Long) {
-        val players = TeamLogic.players(server).filter { it.team?.name == teamName }
+        val players = Teams.players(server).filter { it.team?.name == teamName }
 
         val marker = CrateScheduler.markersAt(server, pos).firstOrNull()
         if (marker != null) Glowing.addReason(marker, players, 1000000)
@@ -34,7 +34,7 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
                     else
                         "Loot will drop in $inSeconds seconds at "
                 ).append(posComponent),
-                status = false
+                log = true
             )
 
         }

@@ -20,14 +20,16 @@ import net.minecraft.world.level.GameType
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import possible_triangle.divide.Chat
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.CrateEvent
 import possible_triangle.divide.crates.CrateScheduler
-import possible_triangle.divide.logic.DeathLogic
-import possible_triangle.divide.logic.TeamLogic
-import possible_triangle.divide.logic.events.Border
-import possible_triangle.divide.logic.events.CycleEvent
-import possible_triangle.divide.logic.events.Eras
+import possible_triangle.divide.events.Border
+import possible_triangle.divide.events.CycleEvent
+import possible_triangle.divide.events.Eras
+import possible_triangle.divide.events.PlayerBounty
+import possible_triangle.divide.logic.Chat
+import possible_triangle.divide.logic.DeathEvents
+import possible_triangle.divide.logic.Teams
 
 @Mod.EventBusSubscriber
 object AdminCommand {
@@ -37,13 +39,13 @@ object AdminCommand {
 
     private val NO_CRATE_POS = DynamicCommandExceptionType { TextComponent("Could no find a valid pos around $it") }
 
-    private val EVENTS = listOf(Border, Eras)
+    private val EVENTS = listOf(Border, Eras, CrateEvent, PlayerBounty)
 
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
             literal(DivideMod.ID)
-                .requires(TeamLogic::isAdmin)
+                .requires(Teams::isAdmin)
                 .then(
                     literal("team")
                         .then(
@@ -120,7 +122,7 @@ object AdminCommand {
         worldborder.setCenter(pos.x, pos.z)
         Border.lobby(ctx.source.server)
 
-        TeamLogic.players(ctx.source.server).filter { ctx.source.entity != it }.forEach {
+        Teams.players(ctx.source.server).filter { ctx.source.entity != it }.forEach {
             it.teleportTo(ctx.source.level, pos.x, pos.y, pos.z, it.yRot, it.xRot)
             ctx.source.level.setDefaultSpawnPos(BlockPos(pos), 0F)
         }
@@ -133,9 +135,9 @@ object AdminCommand {
             it.startCycle(ctx.source.server)
         }
 
-        TeamLogic.players(ctx.source.server).forEach { player ->
+        Teams.players(ctx.source.server).forEach { player ->
             player.setGameMode(GameType.SURVIVAL)
-            DeathLogic.starterGear(player).forEach { player.addItem(it) }
+            DeathEvents.starterGear(player).forEach { player.addItem(it) }
             Chat.subtitle(player, "Started")
         }
 

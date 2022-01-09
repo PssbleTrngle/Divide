@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import possible_triangle.divide.logic.events.Eras;
+import possible_triangle.divide.events.Eras;
 
 @Mixin(Player.class)
 public class PlayerMixin {

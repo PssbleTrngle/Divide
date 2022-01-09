@@ -1,4 +1,4 @@
-package possible_triangle.divide.logic.actions
+package possible_triangle.divide.actions
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.ChatFormatting
@@ -6,9 +6,9 @@ import net.minecraft.network.chat.BaseComponent
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
-import possible_triangle.divide.Chat
-import possible_triangle.divide.logic.Action
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Chat
+import possible_triangle.divide.reward.Action
+import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.reward.RewardContext
 
 object TrackPlayer : GlowingAction() {
@@ -21,7 +21,7 @@ object TrackPlayer : GlowingAction() {
     }
 
     override fun visibleTo(ctx: RewardContext): List<ServerPlayer> {
-        return TeamLogic.teammates(ctx.player)
+        return Teams.teammates(ctx.player)
     }
 
     override fun onStart(ctx: RewardContext) {
@@ -30,7 +30,7 @@ object TrackPlayer : GlowingAction() {
 
         with(ctx) {
             if (target.level.dimension() != player.level.dimension())
-                TeamLogic.teammates(ctx.player).forEach {
+                Teams.teammates(ctx.player).forEach {
                     Chat.subtitle(
                         it,
                         TextComponent("Target is in ").append(
@@ -46,7 +46,7 @@ object TrackPlayer : GlowingAction() {
     }
 
     override fun onStop(ctx: RewardContext) {
-        TeamLogic.teammates(ctx.player).forEach {
+        Teams.teammates(ctx.player).forEach {
             Chat.subtitle(it, TextComponent("No longer tracking ").append(ctx.target.name))
         }
         Chat.subtitle(ctx.target, "You are no longer being tracked")

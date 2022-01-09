@@ -1,6 +1,6 @@
-package possible_triangle.divide.logic.actions
+package possible_triangle.divide.actions
 
-import possible_triangle.divide.logic.Action
+import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
 object PeaceTime : Action {

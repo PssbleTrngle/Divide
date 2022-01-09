@@ -18,16 +18,16 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.actions.Buff
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
-import possible_triangle.divide.logic.actions.Buff
 import possible_triangle.divide.reward.Reward
 import java.util.*
 import kotlin.math.max
 import kotlin.random.Random
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-object DeathLogic {
+object DeathEvents {
 
     private val STORED = hashMapOf<UUID, List<ItemStack>>()
 
@@ -156,7 +156,7 @@ object DeathLogic {
     fun onPlayerDrops(event: LivingDropsEvent) {
         val player = event.entity
         if (player !is ServerPlayer) return
-        if (!TeamLogic.isPlayer(player)) return
+        if (!Teams.isPlayer(player)) return
 
         val killerEntity = event.source.entity
         val killer = if (killerEntity is ServerPlayer && killerEntity.team != player.team)

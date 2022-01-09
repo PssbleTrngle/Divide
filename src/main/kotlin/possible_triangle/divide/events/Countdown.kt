@@ -1,4 +1,4 @@
-package possible_triangle.divide.logic.events
+package possible_triangle.divide.events
 
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.resources.ResourceLocation

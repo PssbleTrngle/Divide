@@ -15,7 +15,7 @@ import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.bounty.Bounty
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Teams
 import java.util.*
 
 @Mod.EventBusSubscriber
@@ -30,7 +30,7 @@ object SellCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            literal("sell").requires { TeamLogic.isPlayer(it.playerOrException) }
+            literal("sell").requires { Teams.isPlayer(it.playerOrException) }
                 .then(literal("heart").executes(::sellHeart))
                 .then(literal("child").executes { throw NO_CHILD.create() })
         )

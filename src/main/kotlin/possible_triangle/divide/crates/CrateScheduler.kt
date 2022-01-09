@@ -30,8 +30,8 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
-import possible_triangle.divide.logic.TeamLogic
-import possible_triangle.divide.logic.events.Countdown
+import possible_triangle.divide.events.Countdown
+import possible_triangle.divide.logic.Teams
 import java.util.*
 import java.util.stream.Collectors
 import kotlin.random.Random
@@ -216,7 +216,7 @@ object CrateScheduler {
             CleanCallback(pos)
         )
 
-        val teams = TeamLogic.ranked(server).reversed()
+        val teams = Teams.ranked(server).reversed()
         teams.forEachIndexed { index, team ->
             scheduleMessage(server, seconds * index / teams.size, pos, time, team)
         }

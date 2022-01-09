@@ -1,10 +1,14 @@
-package possible_triangle.divide.logic.events
+package possible_triangle.divide.events
 
 import net.minecraft.server.MinecraftServer
-import possible_triangle.divide.Chat
 import possible_triangle.divide.Config
+import possible_triangle.divide.logic.Chat
 
 object Border : CycleEvent("border") {
+
+    override fun isEnabled(server: MinecraftServer): Boolean {
+        return  Config.CONFIG.border.enabled
+    }
 
     private fun resize(server: MinecraftServer, size: Int, seconds: Int = 0, message: Boolean = true) {
         val worldborder = server.overworld().worldBorder
@@ -35,7 +39,7 @@ object Border : CycleEvent("border") {
 
         bar(server).isVisible = Config.CONFIG.border.showBar
 
-        return pause
+        return pause.value
     }
 
 }

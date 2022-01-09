@@ -8,7 +8,7 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.PerTeamIntData
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-object CashLogic {
+object Points {
 
     private val CASH = PerTeamIntData("cash", Config.CONFIG.starterCash)
     private val TOTAL = PerTeamIntData("total_cash", Config.CONFIG.starterCash)

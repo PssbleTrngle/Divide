@@ -17,12 +17,12 @@ import possible_triangle.divide.DivideMod
 import kotlin.math.max
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-object TeamLogic {
+object Teams {
 
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
 
     fun score(server: MinecraftServer, team: Team): Int {
-        val total = CashLogic.getTotal(server, team)
+        val total = Points.getTotal(server, team)
         val players = players(server).filter { it.team?.name == team.name }
         val killObjective = server.scoreboard.getObjective("playerKills") ?: return 0
         val deathObjective = server.scoreboard.getObjective("deaths") ?: return 0

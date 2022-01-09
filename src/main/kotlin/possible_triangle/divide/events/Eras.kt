@@ -1,15 +1,19 @@
-package possible_triangle.divide.logic.events
+package possible_triangle.divide.events
 
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.BossEvent
 import net.minecraft.world.level.saveddata.SavedData
-import possible_triangle.divide.Chat
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.logic.Chat
 
 object Eras : CycleEvent("eras") {
+
+    override fun isEnabled(server: MinecraftServer): Boolean {
+        return  Config.CONFIG.eras.enabled
+    }
 
     fun peace(server: MinecraftServer) {
         Data[server] = true
@@ -44,7 +48,7 @@ object Eras : CycleEvent("eras") {
         if (peace) peace(server)
         else war(server)
 
-        return pause
+        return pause.value
     }
 
     class Data(private var isPeace: Boolean = false) : SavedData() {

@@ -14,7 +14,7 @@ import net.minecraft.world.level.ItemLike
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.data.DefaultedResource
-import possible_triangle.divide.logic.CashLogic
+import possible_triangle.divide.logic.Points
 
 @Serializable
 data class Order(
@@ -52,7 +52,7 @@ data class Order(
 
         val price = amount * cost
 
-        return CashLogic.modify(server, team, -price) {
+        return Points.modify(server, team, -price) {
             CrateScheduler.order(server, team, ItemStack(item, amount), this)
         }
     }

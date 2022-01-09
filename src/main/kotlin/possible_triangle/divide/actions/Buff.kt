@@ -1,11 +1,10 @@
-package possible_triangle.divide.logic.actions
+package possible_triangle.divide.actions
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.network.chat.TextComponent
-import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.reward.Reward
-import possible_triangle.divide.logic.Action
+import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
 object Buff : Action {

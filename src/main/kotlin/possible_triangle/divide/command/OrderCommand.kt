@@ -9,7 +9,7 @@ import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.crates.Order
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Teams
 
 @Mod.EventBusSubscriber
 object OrderCommand {
@@ -18,7 +18,7 @@ object OrderCommand {
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
             Order.values.entries.toList().fold(
-                literal("order").requires { TeamLogic.isPlayer(it.playerOrException) }
+                literal("order").requires { Teams.isPlayer(it.playerOrException) }
             ) { node, entry ->
                 node.then(literal(entry.key)
                     .executes { order(it, entry.value) }
@@ -32,7 +32,7 @@ object OrderCommand {
 
     private fun order(ctx: CommandContext<CommandSourceStack>, order: Order): Int {
 
-        val team = TeamLogic.teamOf(ctx)
+        val team = Teams.teamOf(ctx)
 
         val amount = try {
             IntegerArgumentType.getInteger(ctx, "amount")

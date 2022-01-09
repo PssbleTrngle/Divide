@@ -10,8 +10,8 @@ import net.minecraft.network.chat.TextComponent
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
-import possible_triangle.divide.logic.CashLogic
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Points
+import possible_triangle.divide.logic.Teams
 
 @Mod.EventBusSubscriber
 object CashCommand {
@@ -33,24 +33,24 @@ object CashCommand {
     }
 
     private fun getCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = TeamLogic.teamOf(ctx)
-        val amount = CashLogic.get(ctx.source.server, team)
+        val team = Teams.teamOf(ctx)
+        val amount = Points.get(ctx.source.server, team)
         ctx.source.sendSuccess(TextComponent("Your team has $amount"), false)
         return amount
     }
 
     private fun addCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = TeamLogic.teamOf(ctx)
+        val team = Teams.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        CashLogic.modify(ctx.source.server, team, amount)
+        Points.modify(ctx.source.server, team, amount)
         ctx.source.sendSuccess(TextComponent("You added $amount to ${team.name}"), false)
         return amount
     }
 
     private fun removeCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = TeamLogic.teamOf(ctx)
+        val team = Teams.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        if (CashLogic.modify(ctx.source.server, team, -amount))
+        if (Points.modify(ctx.source.server, team, -amount))
             ctx.source.sendSuccess(TextComponent("You removed $amount from ${team.name}"), false)
         else
             throw NOT_ENOUGH.create(amount)
@@ -58,9 +58,9 @@ object CashCommand {
     }
 
     private fun setCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = TeamLogic.teamOf(ctx)
+        val team = Teams.teamOf(ctx)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
-        CashLogic.set(ctx.source.server, team, amount)
+        Points.set(ctx.source.server, team, amount)
         ctx.source.sendSuccess(TextComponent("You set ${team.name} to $amount"), false)
         return amount
     }

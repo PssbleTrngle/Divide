@@ -2,11 +2,18 @@ package possible_triangle.divide
 
 import kotlinx.serialization.Serializable
 import possible_triangle.divide.data.DefaultedResource
+import kotlin.random.Random
 
 
 object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
 
     val CONFIG by defaulted("config") { Values() }
+
+    @Serializable
+    data class PauseRange(private val min: Int, private val max: Int) {
+        val value
+            get() = if (min >= max) min else Random.nextInt(min, max)
+    }
 
     @Serializable
     data class Values(
@@ -16,15 +23,17 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val border: BorderValues = BorderValues(),
         val crate: CrateValues = CrateValues(),
         val eras: EraValues = EraValues(),
+        val bounties: BountyValues = BountyValues(),
     )
 
     @Serializable
     data class BorderValues(
+        val enabled: Boolean = true,
         val lobbySize: Int = 10,
         val bigBorder: Int = 400,
         val smallBorder: Int = 150,
-        val staySmallFor: Int = 60 * 1,
-        val stayBigFor: Int = 60 * 5,
+        val staySmallFor: PauseRange = PauseRange(60, 60),
+        val stayBigFor: PauseRange = PauseRange(60 * 5, 60 * 5),
         val moveTime: Int = 60,
         val showBar: Boolean = false,
         val damagePerBlock: Double = 1.0,
@@ -33,17 +42,29 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
 
     @Serializable
     data class CrateValues(
+        val enabled: Boolean = true,
+        val lockedFor: Int = 20,
+        val pause: PauseRange = PauseRange(10, 20),
         val cleanUpTime: Int = 20,
         val cleanNonEmpty: Boolean = false,
+        val clearOnCleanup: Boolean = false,
         val itemSaveChance: Double = 0.5,
     )
 
     @Serializable
     data class EraValues(
-        val peaceTime: Int = 60 * 5,
-        val warTime: Int = 60 * 60,
+        val enabled: Boolean = true,
+        val peaceTime: PauseRange = PauseRange(60 * 5, 60 * 5),
+        val warTime: PauseRange = PauseRange(60 * 60, 60 * 60),
         val showPeaceBar: Boolean = true,
         val showWarBar: Boolean = false,
+    )
+
+    @Serializable
+    data class BountyValues(
+        val enabled: Boolean = true,
+        val baseAmount: Int = 100,
+        val pause: PauseRange = PauseRange(20, 60),
     )
 
 }

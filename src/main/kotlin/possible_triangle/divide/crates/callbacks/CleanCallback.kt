@@ -25,18 +25,20 @@ class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
     }
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-        val crate = CrateScheduler.crateAt(server, pos)
+        val crate = CrateScheduler.crateAt(server, pos) ?: return
 
         cleanMarker(server, pos)
 
-        if (crate != null) {
-            crate.tileData.putBoolean(UNBREAKABLE_TAG, false)
-            if (Config.CONFIG.crate.cleanNonEmpty || crate.isEmpty) crate.level?.setBlock(
+        crate.tileData.putBoolean(UNBREAKABLE_TAG, false)
+        if (Config.CONFIG.crate.cleanNonEmpty || crate.isEmpty) {
+            if (Config.CONFIG.crate.clearOnCleanup) crate.clearContent()
+            crate.level?.setBlock(
                 pos,
                 Blocks.AIR.defaultBlockState(),
                 2
             )
         }
+
     }
 
     object Serializer :

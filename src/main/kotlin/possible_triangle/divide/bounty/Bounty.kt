@@ -2,14 +2,16 @@ package possible_triangle.divide.bounty
 
 import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.TextComponent
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
-import possible_triangle.divide.Chat
+import net.minecraft.world.scores.Team
+import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.PerTeamIntData
-import possible_triangle.divide.logic.CashLogic
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Points
+import possible_triangle.divide.logic.Teams
 
 @Serializable
 data class Bounty(val description: String, val amount: Amount) {
@@ -43,18 +45,22 @@ data class Bounty(val description: String, val amount: Amount) {
 
     }
 
+    fun nextPoints(team: Team, server: MinecraftServer): Int {
+        val bounties = BOUNTY_COUNTS[server]
+        val alreadyDone = bounties[team]
+        return amount.get(alreadyDone)
+    }
+
     fun gain(player: Player, modifier: Double = 1.0) {
-        val team = TeamLogic.teamOf(player)
+        val team = Teams.teamOf(player)
 
         if (player is ServerPlayer && team != null) {
-            val bounties = BOUNTY_COUNTS[player.getLevel().server]
-            val alreadyDone = bounties[team]
-            val cashGained = (amount.get(alreadyDone) * modifier).toInt()
+            val cashGained = (nextPoints(team, player.server) * modifier).toInt()
 
             if (cashGained > 0) {
-                CashLogic.modify(player.getLevel().server, team, cashGained)
+                Points.modify(player.getLevel().server, team, cashGained)
 
-                TeamLogic.teammates(player).forEach { teammate ->
+                Teams.teammates(player).forEach { teammate ->
                     //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
                     Chat.subtitle(
                         teammate,
@@ -64,7 +70,7 @@ data class Bounty(val description: String, val amount: Amount) {
                 }
             }
 
-            bounties[team] = alreadyDone + 1
+            BOUNTY_COUNTS[player.server][team]++
         }
     }
 

@@ -5,15 +5,14 @@ import kotlinx.serialization.Serializable
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.BaseComponent
 import net.minecraft.network.chat.TextComponent
-import possible_triangle.divide.Chat
+import possible_triangle.divide.actions.Buff
+import possible_triangle.divide.actions.FindGrave
+import possible_triangle.divide.actions.HideNametags
+import possible_triangle.divide.actions.TrackPlayer
 import possible_triangle.divide.data.DefaultedResource
-import possible_triangle.divide.logic.Action
-import possible_triangle.divide.logic.CashLogic
-import possible_triangle.divide.logic.TeamLogic
-import possible_triangle.divide.logic.actions.Buff
-import possible_triangle.divide.logic.actions.FindGrave
-import possible_triangle.divide.logic.actions.HideNametags
-import possible_triangle.divide.logic.actions.TrackPlayer
+import possible_triangle.divide.logic.Chat
+import possible_triangle.divide.logic.Points
+import possible_triangle.divide.logic.Teams
 
 @Serializable
 data class Reward(
@@ -59,13 +58,13 @@ data class Reward(
         get() = ACTIONS[idOf(this)] ?: throw  NullPointerException("Action for ${idOf(this)} missing")
 
     fun buy(ctx: RewardContext): Boolean {
-        return CashLogic.modify(ctx.server, ctx.team, -price) {
+        return Points.modify(ctx.server, ctx.team, -price) {
 
             if (ctx.reward.requiresTarget && ctx.target.team?.name == ctx.player.team?.name) throw SAME_TEAM.create(ctx.target.name)
-            if (!TeamLogic.isPlayer(ctx.target)) throw NOT_PLAYING.create(ctx.target.name)
+            if (!Teams.isPlayer(ctx.target)) throw NOT_PLAYING.create(ctx.target.name)
 
             Action.run(action, ctx, duration)
-            TeamLogic.teammates(ctx.player).forEach {
+            Teams.teammates(ctx.player).forEach {
                 Chat.message(
                     it, TextComponent("Bought ${ctx.reward.display} for ").append(
                         TextComponent("${ctx.reward.price}").withStyle(

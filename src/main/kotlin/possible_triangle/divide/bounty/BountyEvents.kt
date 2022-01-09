@@ -8,7 +8,7 @@ import net.minecraftforge.event.world.BlockEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.logic.TeamLogic
+import possible_triangle.divide.logic.Teams
 
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -23,7 +23,7 @@ object BountyEvents {
         if (event.advancement.display?.shouldShowToast() != true) return
         val announced = event.advancement.display?.shouldAnnounceChat() == true
 
-        val alreadyUnlocked = TeamLogic.teammates(player, false).any {
+        val alreadyUnlocked = Teams.teammates(player, false).any {
             it.advancements.getOrStartProgress(event.advancement).isDone
         }
 

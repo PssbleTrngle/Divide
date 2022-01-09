@@ -1,4 +1,4 @@
-package possible_triangle.divide.logic
+package possible_triangle.divide.reward
 
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
@@ -10,8 +10,6 @@ import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.reward.Reward
-import possible_triangle.divide.reward.RewardContext
 
 fun interface Action {
 
