@@ -23,7 +23,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.crates.CrateEvents.CRATE_TAG
+import possible_triangle.divide.crates.CrateEvents.CRATE_UUID_TAG
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.callbacks.CleanCallback
 import possible_triangle.divide.crates.callbacks.FillLootCallback
@@ -75,15 +75,21 @@ object CrateScheduler {
 
     fun markersAt(server: MinecraftServer, pos: BlockPos): List<Entity> {
         return server.overworld().getEntitiesOfClass(Entity::class.java, AABB(pos).inflate(0.5)) {
-            it.tags.contains(CRATE_TAG)
+            it.tags.contains(CRATE_UUID_TAG)
         }
     }
 
-    fun crateAt(server: MinecraftServer, pos: BlockPos, ignoreTag: Boolean = false): RandomizableContainerBlockEntity? {
+    fun crateAt(
+        server: MinecraftServer,
+        pos: BlockPos,
+        ignoreTag: Boolean = false,
+        uuid: UUID? = null
+    ): RandomizableContainerBlockEntity? {
         val tile = server.overworld().getBlockEntity(pos)
         if (tile is RandomizableContainerBlockEntity) {
+            val isCrate = tile.tileData.hasUUID(CRATE_UUID_TAG)
             if (ignoreTag) return tile
-            else if (tile.tileData.getBoolean((CRATE_TAG))) return tile
+            else if (isCrate && (uuid == null || uuid == tile.tileData.getUUID(CRATE_UUID_TAG))) return tile
         }
         return null
     }
@@ -151,15 +157,17 @@ object CrateScheduler {
             .firstOrNull()
     }
 
-    fun spawnCrate(server: MinecraftServer, pos: BlockPos) {
+    fun spawnCrate(server: MinecraftServer, pos: BlockPos): UUID {
         val state = Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
         server.overworld().setBlock(pos, state, 2)
 
         val crate = crateAt(server, pos, true) ?: throw NullPointerException("crate missing at $pos")
-        crate.tileData.putBoolean(CRATE_TAG, true)
+        val uuid =  UUID.randomUUID()
+        crate.tileData.putUUID(CRATE_UUID_TAG, uuid)
         crate.tileData.putBoolean(UNBREAKABLE_TAG, true)
         crate.customName = TextComponent("Loot Crate")
         setLock(crate, UUID.randomUUID().toString())
+        return uuid
     }
 
     fun spawnMarker(server: MinecraftServer, pos: BlockPos) {
@@ -172,7 +180,7 @@ object CrateScheduler {
         marker.deserializeNBT(nbt)
         marker.moveTo(pos.x + 0.5, pos.y + 0.25, pos.z + 0.5)
         server.overworld().addFreshEntity(marker)
-        marker.tags.add(CRATE_TAG)
+        marker.tags.add(CRATE_UUID_TAG)
         marker.addEffect(
             MobEffectInstance(
                 MobEffects.INVISIBILITY,
@@ -184,10 +192,10 @@ object CrateScheduler {
         )
     }
 
-    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos) {
+    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot = CrateLoot.random()) {
         val world = server.overworld()
 
-        spawnCrate(server, pos)
+        val uuid = spawnCrate(server, pos)
         spawnMarker(server, pos)
 
         val time = world.gameTime + seconds * 20
@@ -207,13 +215,13 @@ object CrateScheduler {
         server.worldData.overworldData().scheduledEvents.schedule(
             "${DivideMod.ID}:crate",
             time,
-            FillLootCallback(pos, CrateLoot.random(), orders)
+            FillLootCallback(pos, type, orders, uuid)
         )
 
         server.worldData.overworldData().scheduledEvents.schedule(
             "${DivideMod.ID}:crate_cleanup",
             time + 20 * Config.CONFIG.crate.cleanUpTime,
-            CleanCallback(pos)
+            CleanCallback(pos, uuid)
         )
 
         val teams = Teams.ranked(server).reversed()

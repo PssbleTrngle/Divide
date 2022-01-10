@@ -1,11 +1,12 @@
 package possible_triangle.divide.data
 
 import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import net.minecraft.server.MinecraftServer
 import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.server.ServerStartingEvent
+import net.minecraftforge.event.server.ServerAboutToStartEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
@@ -21,8 +22,15 @@ abstract class ReloadedResource<Entry>(
     protected val serializer: () -> KSerializer<Entry>
 ) {
 
+    open fun config(): YamlConfiguration {
+        return CONFIG
+    }
+
     @Mod.EventBusSubscriber
     companion object {
+
+        val CONFIG = YamlConfiguration(encodeDefaults = false)
+
         private val WATCHERS = arrayListOf<Pair<ReloadedResource<*>, WatchService>>()
         private var IS_LOADING = false
 
@@ -55,11 +63,15 @@ abstract class ReloadedResource<Entry>(
     }
 
     fun idOf(entry: Entry): String {
-        return values.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for $dir")
+        return registry.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for $dir")
     }
 
     operator fun get(id: String): Entry? {
-        return values[id]
+        return registry[id]
+    }
+
+    fun getOrThrow(id: String): Entry {
+        return registry[id] ?: throw  NullPointerException("$dir with id $id missing")
     }
 
     protected val folder
@@ -78,15 +90,23 @@ abstract class ReloadedResource<Entry>(
     }
 
     @SubscribeEvent
-    fun setup(event: ServerStartingEvent) {
+    fun setup(event: ServerAboutToStartEvent) {
         load(event.server)
         val watcher = FileSystems.getDefault().newWatchService()
         registerRecursive(folder.toPath(), watcher)
         WATCHERS.add(this to watcher)
     }
 
-    var values = mutableMapOf<String, Entry>()
-        private set
+    protected var registry = mutableMapOf<String, Entry>()
+
+    val keys
+        get() = registry.keys.toList()
+
+    val values
+        get() = registry.values.toList()
+
+    val entries
+        get() = registry.toMap()
 
     open fun afterLoad(server: MinecraftServer) {}
 
@@ -105,7 +125,7 @@ abstract class ReloadedResource<Entry>(
             val id = File(it).nameWithoutExtension.lowercase()
 
             val parsed = try {
-                Yaml.default.decodeFromStream(serializer, stream)
+                Yaml(configuration = CONFIG).decodeFromStream(serializer, stream)
             } catch (e: SerializationException) {
                 DivideMod.LOGGER.warn("an error occurred loading $dir '$id'")
                 null
@@ -114,7 +134,7 @@ abstract class ReloadedResource<Entry>(
             id to parsed
         }
 
-        values = raw
+        registry = raw
             .mapValues { (id, value) -> value ?: onError(id) }
             .mapValues { (_, value) ->
                 if (value != null) populate(value, server)
@@ -126,7 +146,7 @@ abstract class ReloadedResource<Entry>(
 
         afterLoad(server)
 
-        DivideMod.LOGGER.info("Reloaded $dir with ${values.size} values")
+        DivideMod.LOGGER.info("Reloaded $dir with ${registry.size} values")
 
         IS_LOADING = false
     }

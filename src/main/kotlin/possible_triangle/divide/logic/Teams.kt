@@ -21,9 +21,11 @@ object Teams {
 
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
 
+    val ADMIN_TAG = "${DivideMod.ID}_admin"
+
     fun score(server: MinecraftServer, team: Team): Int {
         val total = Points.getTotal(server, team)
-        val players = players(server).filter { it.team?.name == team.name }
+        val players = players(server, team)
         val killObjective = server.scoreboard.getObjective("playerKills") ?: return 0
         val deathObjective = server.scoreboard.getObjective("deaths") ?: return 0
         val kills = players.map { server.scoreboard.getOrCreatePlayerScore(it.scoreboardName, killObjective) }
@@ -53,7 +55,7 @@ object Teams {
 
     fun isAdmin(source: CommandSourceStack): Boolean {
         val entity = source.entity
-        return source.hasPermission(2) || entity is ServerPlayer && entity.tags.contains("admin")
+        return source.hasPermission(2) || entity is ServerPlayer && entity.tags.contains(ADMIN_TAG)
     }
 
     fun isSpectator(player: Player): Boolean {
@@ -70,6 +72,10 @@ object Teams {
 
     fun players(server: MinecraftServer): List<ServerPlayer> {
         return server.playerList.players.filter { isPlayer(it) }
+    }
+
+    fun players(server: MinecraftServer, team: Team): List<ServerPlayer> {
+        return players(server).filter { it.team != null && it.team?.name == team.name }
     }
 
     fun teams(server: MinecraftServer): List<PlayerTeam> {

@@ -1,6 +1,7 @@
 package possible_triangle.divide.data
 
 import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import net.minecraft.server.MinecraftServer
 import java.io.File
@@ -18,12 +19,12 @@ abstract class DefaultedResource<Entry>(
         val lower = id.lowercase()
         if (defaults.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
         defaults[lower] = supplier
-        values[lower] = supplier()
+        registry[lower] = supplier()
         return Delegate(lower, supplier)
     }
 
-    protected fun save(id: String, entry: Entry) {
-        val encoded = Yaml.default.encodeToString(serializer(), entry)
+    private fun save(id: String, entry: Entry) {
+        val encoded = Yaml(configuration = config()).encodeToString(serializer(), entry)
         val file = File(folder, "$id.yml")
         if (!file.exists()) file.createNewFile()
         val writer = file.writer()
@@ -39,13 +40,13 @@ abstract class DefaultedResource<Entry>(
 
     final override fun afterLoad(server: MinecraftServer) {
         defaults
-            .filterNot { values.containsKey(it.key) }
+            .filterNot { registry.containsKey(it.key) }
             .forEach { (id, entry) -> save(id, entry()) }
     }
 
     inner class Delegate(private val id: String, private val supplier: () -> Entry) {
         operator fun getValue(thisRef: Any?, property: KProperty<*>): Entry {
-            return values[id] ?: supplier()
+            return registry[id] ?: supplier()
         }
     }
 

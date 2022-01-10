@@ -16,7 +16,7 @@ import possible_triangle.divide.crates.callbacks.CleanCallback
 object CrateEvents {
 
     const val UNBREAKABLE_TAG = "${DivideMod.ID}:unbreakable"
-    const val CRATE_TAG = "${DivideMod.ID}:crate"
+    const val CRATE_UUID_TAG = "${DivideMod.ID}:crate"
 
     @SubscribeEvent
     fun preventBreaking(event: PlayerEvent.BreakSpeed) {

@@ -68,9 +68,24 @@ data class CrateLoot(val weight: Int, val pools: List<LootPools>) {
                                 LootEntry(Items.WOLF_SPAWN_EGG, 5),
                             )
                         ), LootPools(
+                            rolls = 1,
+                            listOf(
+                                LootEntry(Items.POTION, 10, functions = listOf(LootFunction.BREW_RANDOM)),
+                                LootEntry(Items.POTION, 10, functions = listOf(LootFunction.BREW_GOOD)),
+                                LootEntry(Items.POTION, 10, functions = listOf(LootFunction.BREW_BAD)),
+                                LootEntry(Items.SPLASH_POTION, 5, functions = listOf(LootFunction.BREW_RANDOM)),
+                                LootEntry(Items.SPLASH_POTION, 5, functions = listOf(LootFunction.BREW_GOOD)),
+                                LootEntry(Items.SPLASH_POTION, 5, functions = listOf(LootFunction.BREW_BAD)),
+                                LootEntry(Items.LINGERING_POTION, 2, functions = listOf(LootFunction.BREW_RANDOM)),
+                                LootEntry(Items.LINGERING_POTION, 2, functions = listOf(LootFunction.BREW_GOOD)),
+                                LootEntry(Items.LINGERING_POTION, 2, functions = listOf(LootFunction.BREW_BAD)),
+                                LootEntry(Items.TIPPED_ARROW, 1, functions = listOf(LootFunction.BREW_RANDOM)),
+                                LootEntry(Items.TIPPED_ARROW, 1, functions = listOf(LootFunction.BREW_GOOD)),
+                                LootEntry(Items.TIPPED_ARROW, 1, functions = listOf(LootFunction.BREW_BAD)),
+                            )
+                        ),LootPools(
                             rolls = 2,
                             listOf(
-                                LootEntry(Items.POTION, 1, functions = listOf(LootFunction.BREW)),
                                 LootEntry(Items.IRON_PICKAXE, 5, functions = listOf(LootFunction.ENCHANT)),
                                 LootEntry(Items.IRON_SHOVEL, 5, functions = listOf(LootFunction.ENCHANT)),
                                 LootEntry(Items.IRON_AXE, 5, functions = listOf(LootFunction.ENCHANT)),
@@ -114,7 +129,7 @@ data class CrateLoot(val weight: Int, val pools: List<LootPools>) {
 
         fun random(): CrateLoot {
             // TODO use weight
-            return values.values.random()
+            return registry.values.random()
         }
 
         override fun populate(entry: CrateLoot, server: MinecraftServer) {

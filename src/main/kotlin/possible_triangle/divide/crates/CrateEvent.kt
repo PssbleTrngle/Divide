@@ -10,14 +10,14 @@ import kotlin.random.Random
 object CrateEvent : CycleEvent("crates") {
 
     override fun isEnabled(server: MinecraftServer): Boolean {
-        return  Config.CONFIG.crate.enabled
+        return Config.CONFIG.crate.enabled
     }
 
     override fun handle(server: MinecraftServer, index: Int): Int {
 
         val border = server.overworld().worldBorder
 
-        try {
+        if (index >= Config.CONFIG.crate.startAt) try {
             val y = 70
             val x = Random.nextInt(border.minX.toInt() + 15, border.maxX.toInt() - 15)
             val z = Random.nextInt(border.minZ.toInt() + 15, border.maxZ.toInt() - 15)

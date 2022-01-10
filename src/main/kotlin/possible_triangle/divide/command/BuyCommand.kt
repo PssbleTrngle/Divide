@@ -18,23 +18,24 @@ object BuyCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            Reward.values.entries.toList().fold(
+            Reward.keys.toList().fold(
                 literal("buy").requires { Teams.isPlayer(it.playerOrException) }
-            ) { node, entry ->
-                val base = literal(entry.key.lowercase())
-                if (entry.value.requiresTarget) node.then(
+            ) { node, key ->
+                val base = literal(key)
+                if (Reward.getOrThrow(key).requiresTarget) node.then(
                     base.then(
                         argument(
                             "target",
                             EntityArgument.player()
-                        ).executes { buyReward(it, entry.value) })
+                        ).executes { buyReward(it) { Reward.getOrThrow(key) } })
                 )
-                else node.then(base.executes { buyReward(it, entry.value) })
+                else node.then(base.executes { buyReward(it){ Reward.getOrThrow(key) } })
             }
         )
     }
 
-    private fun buyReward(ctx: CommandContext<CommandSourceStack>, reward: Reward): Int {
+    private fun buyReward(ctx: CommandContext<CommandSourceStack>, supplier: () -> Reward): Int {
+        val reward = supplier()
 
         val target = if (reward.requiresTarget) {
             EntityArgument.getPlayer(ctx, "target")

@@ -38,8 +38,7 @@ fun interface Action {
                 val player = world.getPlayerByUUID(it.getUUID("player"))
                 val target = world.getPlayerByUUID(it.getUUID("target"))
 
-                val rewardId = it.getString(("reward"))
-                val reward = Reward[rewardId] ?: throw NullPointerException("Missing $rewardId")
+                val reward = Reward.getOrThrow(it.getString("reward"))
 
                 if (team != null && player is ServerPlayer && target is ServerPlayer) {
                     val ctx = RewardContext(team, world.server, player, target, reward)
@@ -75,7 +74,7 @@ fun interface Action {
 
         @SubscribeEvent
         fun tick(event: TickEvent.WorldTickEvent) {
-        val server = event.world.server ?: return
+            val server = event.world.server ?: return
 
             val data = getData(server)
             val now = server.overworld().gameTime

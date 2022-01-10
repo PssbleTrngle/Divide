@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.logic.Chat
@@ -21,9 +22,9 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
         val players = Teams.players(server).filter { it.team?.name == teamName }
 
         val marker = CrateScheduler.markersAt(server, pos).firstOrNull()
-        if (marker != null) Glowing.addReason(marker, players, 1000000)
-
         val inSeconds = (time - now) / 20
+        if (marker != null) Glowing.addReason(marker, players, inSeconds.toInt() + Config.CONFIG.crate.cleanUpTime)
+
         players.forEach {
             CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)
             val posComponent = TextComponent("${pos.x}/${pos.y}/${pos.z}").withStyle(ChatFormatting.GOLD)

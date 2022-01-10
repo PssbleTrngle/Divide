@@ -14,6 +14,7 @@ import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.crates.Order
+import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.reward.Reward
 
 @Mod.EventBusSubscriber
@@ -89,20 +90,24 @@ object Scores {
 
         val extra = EXTRAS[team.name] ?: return listOf()
         val info: List<String> = when (extra) {
-            Extra.bounties -> Bounty.values
+            Extra.bounties -> PlayerBountyEvent.currentBounties(server).map { (target, bounty) ->
+                "${apply("Kill ${target.scoreboardName}", GOLD)}: ${points(bounty.price)}"
+            } + Bounty.entries
                 .mapKeys { it.value.description }
                 .mapValues { it.value.nextPoints(team, server) }
                 .filterValues { it > 0 }
                 .entries.sortedBy { it.value }
                 .map { "${it.key}: ${points(it.value)}" }
-            Extra.prices -> Reward.values.values.map { "${it.display}: ${points(it.price)}" }
-            Extra.orders -> Order.values.values.map { "${it.id}: ${points(it.cost)}" }
+            Extra.prices -> Reward.values.map { "${it.display}: ${points(it.price)}" }
+            Extra.orders -> Order.values.map { "${it.id}: ${points(it.cost)}" }
             Extra.ranks -> getRanks(server)
             Extra.commands -> listOf(
                 "/order: ${apply("pre-order item into next loot drop", GRAY)}",
                 "/buy: ${apply("spend points to unlock rewards", GRAY)}",
                 "/sell: ${apply("sell integral parts of your life for points", GRAY)}",
                 "/show: ${apply("toggle between different info views", GRAY)}",
+                "/teammsg: ${apply("send a message to your teammates", GRAY)}",
+                "/w: ${apply("send a message to one player", GRAY)}",
             )
         }
         return listOf("") + info

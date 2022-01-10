@@ -25,7 +25,7 @@ data class LootEntry(
     }
 
     constructor(
-        item: ItemLike, weight: Int, amounts: List<Int> = listOf(),
+        item: ItemLike, weight: Int, amounts: List<Int>? = null,
         functions: List<LootFunction>? = null,
     ) : this(
         item.asItem().registryName?.path ?: throw NullPointerException(),

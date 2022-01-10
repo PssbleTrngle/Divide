@@ -17,15 +17,17 @@ import net.minecraft.world.phys.Vec3
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
+import java.util.*
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
-class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List<ItemStack>) :
+class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List<ItemStack>, val uuid: UUID) :
     TimerCallback<MinecraftServer> {
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
         val loot = table.generate() + orders
-        val crate = CrateScheduler.crateAt(server, pos) ?: return
+        val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
         val grouped = loot.fold(hashMapOf<ItemStack, Int>()) { map, stack ->
             val match = map.keys.find { stack.sameItem(it) }
@@ -40,7 +42,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
             while (remaining > 0) {
                 val max = min(total, stack.maxStackSize)
                 val count = if (max == 1) 1
-                else Random.nextInt(1, max)
+                else Random.nextInt(max(1, max / 3), max)
                 remaining -= count
                 counts.add(count)
             }
@@ -97,6 +99,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
                     encoded.get().ifLeft(list::add)
                 }
                 nbt.put("orders", list)
+                nbt.putUUID("uuid", uuid)
             }
         }
 
@@ -110,9 +113,10 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
                 .map { it.get() }
 
             val tableName = nbt.getString("table")
-            val table = CrateLoot[tableName] ?: throw NullPointerException("missing crate loot table $tableName")
+            val table = CrateLoot.getOrThrow(tableName)
+            val uuid = nbt.getUUID("uuid")
 
-            return FillLootCallback(pos, table, orders)
+            return FillLootCallback(pos, table, orders, uuid)
         }
     }
 

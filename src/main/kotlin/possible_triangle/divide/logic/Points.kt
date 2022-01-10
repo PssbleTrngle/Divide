@@ -41,4 +41,9 @@ object Points {
         }
     }
 
+    fun reset(server: MinecraftServer, team: Team) {
+        CASH[server][team] = Config.CONFIG.starterCash
+        TOTAL[server][team] = Config.CONFIG.starterCash
+    }
+
 }

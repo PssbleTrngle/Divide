@@ -6,10 +6,10 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.scores.Team
-import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.PerTeamIntData
+import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
 
@@ -19,6 +19,10 @@ data class Bounty(val description: String, val amount: Amount) {
     companion object : DefaultedResource<Bounty>("bounty", { Bounty.serializer() }) {
 
         private val BOUNTY_COUNTS = PerTeamIntData("bounties")
+
+        fun reset(server: MinecraftServer, team: Team) {
+            BOUNTY_COUNTS[server][team] = 0
+        }
 
         val PLAYER_KILL by defaulted("PLAYER_KILL") { Bounty("Kill a Player", Amount(CONSTANT, listOf(100))) }
         val BLOWN_UP by defaulted("BLOWN_UP") { Bounty("Blow a player up", Amount(CONSTANT, listOf(200))) }

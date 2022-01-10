@@ -17,20 +17,21 @@ object OrderCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            Order.values.entries.toList().fold(
+            Order.keys.toList().fold(
                 literal("order").requires { Teams.isPlayer(it.playerOrException) }
-            ) { node, entry ->
-                node.then(literal(entry.key)
-                    .executes { order(it, entry.value) }
+            ) { node, key ->
+                node.then(literal(key)
+                    .executes { order(it) { Order.getOrThrow(key) } }
                     .then(argument("amount", IntegerArgumentType.integer(1))
-                        .executes { order(it, entry.value) }
+                        .executes { order(it) { Order.getOrThrow(key) } }
                     )
                 )
             }
         )
     }
 
-    private fun order(ctx: CommandContext<CommandSourceStack>, order: Order): Int {
+    private fun order(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {
+        val order = supplier()
 
         val team = Teams.teamOf(ctx)
 

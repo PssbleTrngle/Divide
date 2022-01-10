@@ -12,7 +12,7 @@ import possible_triangle.divide.logic.Chat
 object Eras : CycleEvent("eras") {
 
     override fun isEnabled(server: MinecraftServer): Boolean {
-        return  Config.CONFIG.eras.enabled
+        return Config.CONFIG.eras.enabled
     }
 
     fun peace(server: MinecraftServer) {
@@ -45,8 +45,10 @@ object Eras : CycleEvent("eras") {
         val peace = index % 2 == 0
         val pause = if (peace) Config.CONFIG.eras.peaceTime else Config.CONFIG.eras.warTime
 
-        if (peace) peace(server)
-        else war(server)
+        if (index >= Config.CONFIG.eras.startAt) {
+            if (peace) peace(server)
+            else war(server)
+        }
 
         return pause.value
     }

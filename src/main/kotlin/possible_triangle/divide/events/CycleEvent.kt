@@ -11,6 +11,8 @@ import possible_triangle.divide.logic.Teams
 
 @Suppress("LeakingThis")
 abstract class CycleEvent(val id: String) : Countdown(id) {
+    
+    private val callbackId = "${DivideMod.ID}:$id"
 
     companion object {
         private val EVENTS = hashMapOf<String, CycleEvent>()
@@ -24,23 +26,32 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         EVENTS[id] = this
     }
 
-    fun stop(server: MinecraftServer) {
-        clear(server)
+    fun isRunning(server: MinecraftServer): Boolean {
+        return server.worldData.overworldData().scheduledEvents.eventsIds.contains(callbackId)
+    }
+
+    fun stop(server: MinecraftServer): Boolean {
         bar(server).value = 0
+        return clear(server)
     }
 
-    private fun clear(server: MinecraftServer) {
-        server.worldData.overworldData().scheduledEvents.remove("${DivideMod.ID}:$id")
+    private fun clear(server: MinecraftServer): Boolean {
+        val events = server.worldData.overworldData().scheduledEvents
+        val cleared = isRunning(server)
+        events.remove(callbackId)
+        return cleared
     }
 
-    fun startCycle(server: MinecraftServer, at: Int = 0) {
+    fun startCycle(server: MinecraftServer, at: Int = 0): Boolean {
         val next = handle(server, at)
+        val alreadyRun = clear(server)
         schedule(server, next, at + 1)
+        return alreadyRun
     }
 
     fun skip(server: MinecraftServer) {
         val queue = server.worldData.overworldData().scheduledEvents
-        val event = queue.events.row("${DivideMod.ID}:$id").values.toList()
+        val event = queue.events.row(callbackId).values.toList()
         clear(server)
         event.forEach {
             it.callback.handle(server, queue, server.overworld().gameTime)
@@ -57,7 +68,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
             bar.players = server.playerList.players.filter(Teams::isPlayer)
         }
         server.worldData.overworldData().scheduledEvents.schedule(
-            "${DivideMod.ID}:$id",
+            callbackId,
             server.overworld().gameTime + seconds * 20,
             Callback(index, id)
         )

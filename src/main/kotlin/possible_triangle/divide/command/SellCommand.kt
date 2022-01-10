@@ -6,6 +6,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
 import net.minecraft.network.chat.TextComponent
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.entity.ai.attributes.Attributes
@@ -34,6 +35,11 @@ object SellCommand {
                 .then(literal("heart").executes(::sellHeart))
                 .then(literal("child").executes { throw NO_CHILD.create() })
         )
+    }
+
+    fun resetHearts(player: ServerPlayer) {
+        val attribute = player.getAttribute(Attributes.MAX_HEALTH) ?: throw NullPointerException()
+        attribute.removeModifier(HEARTS_UUID)
     }
 
     private fun sellHeart(ctx: CommandContext<CommandSourceStack>): Int {

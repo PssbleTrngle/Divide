@@ -13,8 +13,9 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.CrateScheduler
+import java.util.*
 
-class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
+class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<MinecraftServer> {
 
     companion object {
         fun cleanMarker(server: MinecraftServer, pos: BlockPos) {
@@ -25,7 +26,7 @@ class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
     }
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-        val crate = CrateScheduler.crateAt(server, pos) ?: return
+        val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
         cleanMarker(server, pos)
 
@@ -49,11 +50,13 @@ class CleanCallback(val pos: BlockPos) : TimerCallback<MinecraftServer> {
 
         override fun serialize(nbt: CompoundTag, callback: CleanCallback) {
             nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
+            nbt.putUUID("uuid", callback.uuid)
         }
 
         override fun deserialize(nbt: CompoundTag): CleanCallback {
             val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
-            return CleanCallback(pos)
+            val uuid = nbt.getUUID("uuid")
+            return CleanCallback(pos, uuid)
         }
     }
 
