@@ -6,10 +6,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.PlayerData
-import possible_triangle.divide.logic.Chat
-import possible_triangle.divide.logic.DeathEvents
-import possible_triangle.divide.logic.Points
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.*
 
 object PlayerBountyEvent : CycleEvent("player_bounty") {
 
@@ -19,13 +16,9 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
 
     override fun handle(server: MinecraftServer, index: Int): Int {
 
-        val players = Teams.players(server).sortedBy {
-            -DeathEvents.timeSinceDeath(it)
-        }
+        val target = makeWeightedDecition(Teams.players(server).associateWith { DeathEvents.timeSinceDeath(it) / 20 / 60 })
 
-        val target = players.firstOrNull()
-
-        if (target != null && index >= Config.CONFIG.bounties.startAt) {
+        if (index >= Config.CONFIG.bounties.startAt) {
             val price = Config.CONFIG.bounties.baseAmount
             val opponents = Teams.players(server).filter { it.team?.isAlliedTo(target.team) != true }
 

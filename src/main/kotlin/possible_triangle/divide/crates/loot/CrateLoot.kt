@@ -1,11 +1,11 @@
 package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
-import net.minecraft.core.Registry
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.logic.makeWeightedDecition
 
 
 @Serializable
@@ -83,7 +83,7 @@ data class CrateLoot(val weight: Int, val pools: List<LootPools>) {
                                 LootEntry(Items.TIPPED_ARROW, 1, functions = listOf(LootFunction.BREW_GOOD)),
                                 LootEntry(Items.TIPPED_ARROW, 1, functions = listOf(LootFunction.BREW_BAD)),
                             )
-                        ),LootPools(
+                        ), LootPools(
                             rolls = 2,
                             listOf(
                                 LootEntry(Items.IRON_PICKAXE, 5, functions = listOf(LootFunction.ENCHANT)),
@@ -128,13 +128,11 @@ data class CrateLoot(val weight: Int, val pools: List<LootPools>) {
         }
 
         fun random(): CrateLoot {
-            // TODO use weight
-            return registry.values.random()
+            return makeWeightedDecition(values.associateWith { it.weight })
         }
 
         override fun populate(entry: CrateLoot, server: MinecraftServer) {
             super.populate(entry, server)
-            val items = server.registryAccess().registryOrThrow(Registry.ITEM_REGISTRY)
             entry.pools.forEach { it.populate(server) }
         }
 
