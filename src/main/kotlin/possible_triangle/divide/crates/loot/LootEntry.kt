@@ -13,7 +13,7 @@ import kotlin.random.Random
 @Serializable
 data class LootEntry(
     @SerialName("item") internal val id: String,
-    val weight: Int,
+    val weight: Double = 1.0,
     @SerialName("amount") private val amounts: List<Int>? = null,
     val functions: List<LootFunction>? = null,
 ) {
@@ -25,12 +25,14 @@ data class LootEntry(
     }
 
     constructor(
-        item: ItemLike, weight: Int, amounts: List<Int>? = null,
+        item: ItemLike, weight: Double  = 1.0, amounts: List<Int>? = null,
         functions: List<LootFunction>? = null,
     ) : this(
         item.asItem().registryName?.path ?: throw NullPointerException(),
-        weight, amounts, functions,
-    )
+        weight, amounts, functions?.filter { it.canApply(ItemStack(item)) },
+    ) {
+        this.item = item
+    }
 
     @Transient
     lateinit var item: ItemLike

@@ -1,17 +1,27 @@
 package possible_triangle.divide.logic
 
-fun <T> makeWeightedDecition(rolls: Int, values: Map<T, Number>): List<T> {
-    val weighted = arrayListOf<T>()
+import kotlin.random.Random
 
-    values.forEach { (entry, weight) ->
-        repeat(weight.toInt()) {
-            weighted.add(entry)
-        }
+fun <T> makeWeightedDecision(rolls: Int, values: Map<T, Number>): List<T> {
+    val weighted = hashMapOf<T, Double>()
+
+    var total = 0.0
+    values.mapValues { it.value.toDouble() }.forEach { (entry, weight) ->
+        weighted[entry] = total
+        total += weight
     }
 
-    return weighted.shuffled().take(rolls)
+    if (total <= 0.0) throw  IllegalArgumentException("Total weight is 0")
+
+    return (0..rolls)
+        .map { Random.nextDouble(0.0, total) }
+        .map { roll ->
+            weighted.entries.findLast { it.value <= roll }
+                ?: throw NullPointerException("Could not find entry for $roll in map $weighted with total $total")
+        }
+        .map { it.key }
 }
 
-fun <T> makeWeightedDecition(values: Map<T, Number>): T {
-    return makeWeightedDecition(1, values).first()
+fun <T> makeWeightedDecision(values: Map<T, Number>): T? {
+    return makeWeightedDecision(1, values).firstOrNull()
 }

@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
 import net.minecraft.world.phys.Vec3
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
@@ -26,39 +27,42 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
     TimerCallback<MinecraftServer> {
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-        val loot = table.generate() + orders
+        val loot = orders + table.generate()
         val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
-        val grouped = loot.fold(hashMapOf<ItemStack, Int>()) { map, stack ->
-            val match = map.keys.find { stack.sameItem(it) }
-            if (match != null) map[match] = stack.count + match.count
-            else map[stack] = stack.count
-            map
-        }
+        val shuffled = if (Config.CONFIG.crate.splitAndShuffle) {
+            val grouped = loot.fold(hashMapOf<ItemStack, Int>()) { map, stack ->
+                val match = map.keys.find { stack.sameItem(it) }
+                if (match != null) map[match] = map[match]!! + stack.count
+                else map[stack] = stack.count
+                map
+            }
 
-        val split = grouped.map { (stack, total) ->
-            var remaining = total
-            val counts = mutableListOf<Int>()
-            while (remaining > 0) {
-                val max = min(total, stack.maxStackSize)
-                val count = if (max == 1) 1
-                else Random.nextInt(max(1, max / 3), max)
-                remaining -= count
-                counts.add(count)
-            }
-            counts.map {
-                val clone = stack.copy()
-                clone.count = it
-                clone
-            }
-        }.flatten()
+            grouped.map { (stack, total) ->
+                var remaining = total
+                val counts = mutableListOf<Int>()
+                while (remaining > 0) {
+                    val max = min(total, stack.maxStackSize)
+                    val count = if (max == 1) 1
+                    else Random.nextInt(max(1, max / 3), max)
+                    remaining -= count
+                    counts.add(count)
+                }
+                counts.map {
+                    val clone = stack.copy()
+                    clone.count = it
+                    clone
+                }
+            }.flatten()
+        } else loot
 
         CrateScheduler.setLock(crate, null)
-        val slots = (0 until crate.containerSize).toList().shuffled()
-        if (split.size > crate.containerSize) DivideMod.LOGGER.warn("too much loot to fit into barrel")
+        val slots = (0 until crate.containerSize).toList()
+        val shuffledSlots = if (Config.CONFIG.crate.splitAndShuffle) slots.shuffled() else slots
+        if (shuffled.size > crate.containerSize) DivideMod.LOGGER.warn("too much loot to fit into barrel")
 
-        slots.forEachIndexed { i, slot ->
-            crate.setItem(slot, split.getOrElse(i) { ItemStack.EMPTY })
+        shuffledSlots.forEachIndexed { i, slot ->
+            crate.setItem(slot, shuffled.getOrElse(i) { ItemStack.EMPTY })
         }
 
         val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)

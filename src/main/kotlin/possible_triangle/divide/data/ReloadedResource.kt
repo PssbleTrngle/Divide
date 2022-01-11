@@ -59,6 +59,7 @@ abstract class ReloadedResource<Entry>(
         fun register(resource: ReloadedResource<*>) {
             FORGE_BUS.addListener(resource::setup)
             DivideMod.LOGGER.info("registered resource ${resource.dir}")
+            resource.preLoad()
         }
     }
 
@@ -99,8 +100,10 @@ abstract class ReloadedResource<Entry>(
 
     protected var registry = mutableMapOf<String, Entry>()
 
+    private var preloadedKeys = listOf<String>()
+
     val keys
-        get() = registry.keys.toList()
+        get() = (registry.keys.toList() + preloadedKeys).distinct()
 
     val values
         get() = registry.values.toList()
@@ -114,15 +117,26 @@ abstract class ReloadedResource<Entry>(
         return null
     }
 
+    private fun files(): Map<String, File> {
+        folder.mkdirs()
+        val children = folder.list { _, name -> name.endsWith(".yml") } ?: return mapOf()
+        return children.associate {
+            val file = File(folder.path, it)
+            File(it).nameWithoutExtension.lowercase() to file
+        }
+    }
+
+    private fun preLoad() {
+        preloadedKeys = files().keys.toList()
+    }
+
     private fun load(server: MinecraftServer) {
         IS_LOADING = true
 
-        val children = folder.list { _, name -> name.endsWith(".yml") } ?: return
         val serializer = serializer()
 
-        val raw = children.associate {
-            val stream = File(folder.path, it).inputStream()
-            val id = File(it).nameWithoutExtension.lowercase()
+        val raw = files().mapValues { (id, file) ->
+            val stream = file.inputStream()
 
             val parsed = try {
                 Yaml(configuration = CONFIG).decodeFromStream(serializer, stream)
@@ -131,9 +145,10 @@ abstract class ReloadedResource<Entry>(
                 null
             }
 
-            id to parsed
+            parsed
         }
 
+        preloadedKeys = listOf()
         registry = raw
             .mapValues { (id, value) -> value ?: onError(id) }
             .mapValues { (_, value) ->

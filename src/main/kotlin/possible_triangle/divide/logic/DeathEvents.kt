@@ -84,7 +84,7 @@ object DeathEvents {
         val persistent = PlayerData.persistentData(player)
 
         if (updateDeathTime) persistent.putLong(DEATH_TIME_TAG, player.level.gameTime)
-        if (timeSince < (Config.CONFIG.starterGearBreak * 20)) return listOf()
+        if (timeSince < (Config.CONFIG.deaths.starterGearBreak * 20)) return listOf()
 
         return listOf(
             ItemStack(Items.JUNGLE_PLANKS, 10),
@@ -143,9 +143,9 @@ object DeathEvents {
         listOf<Item>(Items.IRON_BOOTS, Items.CHAINMAIL_BOOTS),
     )
 
-    fun degrade(stack: ItemStack): ItemStack {
+    private fun degrade(stack: ItemStack): ItemStack {
         val item = stack.item
-        if (Random.nextBoolean()) return stack
+        if (Random.nextDouble() <= Config.CONFIG.deaths.downgradeProbability) return stack
         val tier = TIERED.find { it.indexOf(item) > 0 }
         return if (tier != null) {
             val lower = tier.take(tier.indexOf(item)).last()
@@ -198,7 +198,7 @@ object DeathEvents {
             bounty.gain(killer, modifier)
         }
 
-        var keepPercent = Random.nextDouble(0.2, 0.8)
+        var keepPercent = Config.CONFIG.deaths.keepPercent.value
         if (killer != null && Buff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
 
         event.drops.filter { it.item.tag?.getBoolean("starter_gear") ?: false }

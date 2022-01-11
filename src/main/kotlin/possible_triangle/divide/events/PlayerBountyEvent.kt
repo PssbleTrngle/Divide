@@ -16,9 +16,10 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
 
     override fun handle(server: MinecraftServer, index: Int): Int {
 
-        val target = makeWeightedDecition(Teams.players(server).associateWith { DeathEvents.timeSinceDeath(it) / 20 / 60 })
+        val target =
+            makeWeightedDecision(Teams.players(server).associateWith { DeathEvents.timeSinceDeath(it) / 20 / 60 })
 
-        if (index >= Config.CONFIG.bounties.startAt) {
+        if (target != null && index >= Config.CONFIG.bounties.startAt) {
             val price = Config.CONFIG.bounties.baseAmount
             val opponents = Teams.players(server).filter { it.team?.isAlliedTo(target.team) != true }
 
