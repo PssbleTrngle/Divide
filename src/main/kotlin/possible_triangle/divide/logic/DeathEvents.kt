@@ -1,5 +1,6 @@
 package possible_triangle.divide.logic
 
+import kotlinx.serialization.Serializable
 import net.minecraft.ChatFormatting
 import net.minecraft.ChatFormatting.*
 import net.minecraft.core.BlockPos
@@ -22,15 +23,28 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.actions.Buff
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
+import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.PlayerData
 import possible_triangle.divide.events.PlayerBountyEvent
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.reward.Reward
 import java.util.*
 import kotlin.math.min
 import kotlin.random.Random
 
+@Serializable
+private data class Event(
+    val player: EventPlayer,
+    val killer: EventPlayer? = null,
+    val pos: EventPos,
+    val source: String
+)
+
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object DeathEvents {
+
+    private val LOGGER = EventLogger("death") { Event.serializer() }
 
     private val STORED = hashMapOf<UUID, List<ItemStack>>()
     private const val DEATH_POS_TAG = "${DivideMod.ID}_death_pos"
@@ -185,6 +199,16 @@ object DeathEvents {
             killerEntity
         else
             null
+
+        LOGGER.log(
+            player.server,
+            Event(
+                EventPlayer.of(player),
+                EventPlayer.optional(killer),
+                EventPos.of(player.blockPosition()),
+                event.source.msgId
+            )
+        )
 
         val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
         if (killer != null && !wasBounty) {

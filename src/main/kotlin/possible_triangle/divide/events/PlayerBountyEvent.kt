@@ -1,14 +1,22 @@
 package possible_triangle.divide.events
 
+import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
+import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.PlayerData
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.*
 
 object PlayerBountyEvent : CycleEvent("player_bounty") {
+
+    @Serializable
+    private data class Event(val target: EventPlayer, val killer: EventPlayer? = null, val bounty: Int)
+
+    private val LOGGER = EventLogger(id) { Event.serializer() }
 
     override fun isEnabled(server: MinecraftServer): Boolean {
         return Config.CONFIG.bounties.enabled
@@ -67,6 +75,8 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
                     TextComponent("☠ ").append(target.displayName).append(TextComponent(" ☠"))
                 )
             }
+
+            LOGGER.log(target.server, Event(EventPlayer.of(target), EventPlayer.optional(killer), bounty.price))
 
             val killerTeam = killer?.team
             if (killerTeam != null) {

@@ -21,11 +21,11 @@ object Points {
         return CASH[server][team]
     }
 
-    fun modify(server: MinecraftServer, team: Team, amount: Int, runnable: () -> Unit = {}): Boolean {
+    fun modify(server: MinecraftServer, team: Team, amount: Int, runnable: (pointsAfter: Int) -> Unit = {}): Boolean {
         if (amount == 0) return true
         val current = get(server, team)
         return if (current + amount >= 0) {
-            runnable()
+            runnable(current + amount)
             if (amount > 0) TOTAL[server][team] += amount
             CASH[server][team] = current + amount
             true

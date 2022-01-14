@@ -13,7 +13,9 @@ import net.minecraft.world.scores.Team
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import java.util.*
 import kotlin.math.max
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -53,9 +55,21 @@ object Teams {
             .filter { includeSelf || it.uuid != player.uuid }
     }
 
+    fun isAdmin(player: ServerPlayer): Boolean {
+        return Config.CONFIG.admins.any { UUID.fromString(it) == player.uuid }
+                || Config.CONFIG.admins.contains(player.scoreboardName)
+                || player.tags.contains(ADMIN_TAG)
+                || player.hasPermissions(2)
+    }
+
     fun isAdmin(source: CommandSourceStack): Boolean {
         val entity = source.entity
-        return source.hasPermission(2) || entity is ServerPlayer && entity.tags.contains(ADMIN_TAG)
+        if (source.hasPermission(2)) return true
+        return if (entity is ServerPlayer) {
+            isAdmin(entity)
+        } else {
+            false
+        }
     }
 
     fun isSpectator(player: Player): Boolean {

@@ -85,6 +85,7 @@ minecraft {
 
 configurations {
     library
+    packedLibs
     implementation.extendsFrom library
     api.extendsFrom library
     library.exclude group: 'org.jetbrains', module: 'annotations'
@@ -100,16 +101,21 @@ minecraft.runs.all {
 sourceSets.main.resources { srcDirs 'src/generated/resources/' }
 
 dependencies {
-    //library "io.ktor:ktor-server-core:${project.ktor_version}"
-    //library "io.ktor:ktor-server-netty:${project.ktor_version}"
-    //library "io.ktor:ktor-serialization:${project.ktor_version}"
-    //library "ch.qos.logback:logback-classic:${project.logback_version}"
+    library "io.ktor:ktor-server-core:${project.ktor_version}"
+    library "io.ktor:ktor-server-netty:${project.ktor_version}"
+    library "io.ktor:ktor-serialization:${project.ktor_version}"
+    library "io.ktor:ktor-auth:$ktor_version"
+    library "io.ktor:ktor-auth-jwt:$ktor_version"
+    library "ch.qos.logback:logback-classic:${project.logback_version}"
+    //library "io.ktor:ktor-utils-jvm:${project.ktor_version}"
 
     // Use the latest version of Minecraft Forge
     minecraft "net.minecraftforge:forge:${project.mc_version}-${project.forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     library "com.charleskorn.kaml:kaml:0.38.0"
+
+    //library files('build/libs/allLibs.jar')
 }
 
 mixin {
@@ -120,18 +126,18 @@ shadowJar {
     from sourceSets.main.output
 
     archiveClassifier.set("obf")
-    //configurations = [project.configurations.library]
+    configurations = [project.configurations.library]
 
 //    relocate('io.ktor', 'possible_triangle.io.ktor')
 
-    dependencies {
-        include(dependency("com.charleskorn.kaml:kaml"))
-    }
+    //dependencies {
+    //    include(dependency("com.charleskorn.kaml:kaml"))
+    //}
 
-    //exclude("org/jetbrains/")
-    //exclude("org/intellij/")
-    //exclude("kotlin/")
-    //exclude("kotlinx/")
+    exclude("org/jetbrains/")
+    exclude("org/intellij/")
+    exclude("kotlin/")
+    exclude("kotlinx/")
 }
 
 tasks.build.dependsOn shadowJar

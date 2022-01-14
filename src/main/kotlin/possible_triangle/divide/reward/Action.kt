@@ -10,6 +10,8 @@ import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.logging.EventLogger
 
 fun interface Action {
 
@@ -21,6 +23,8 @@ fun interface Action {
 
     @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     companion object {
+
+        private val LOGGER = EventLogger("reward_stop") { Reward.Event.serializer() }
 
         private fun getData(server: MinecraftServer): Data {
             return server.overworld().dataStorage.computeIfAbsent(
@@ -86,7 +90,12 @@ fun interface Action {
 
             if (due.isNotEmpty()) {
                 due.forEach { (ctx) ->
-                    DivideMod.LOGGER.info("Stopped '${ctx.reward.display}'")
+                    LOGGER.log(
+                        server, Reward.Event(
+                            Reward.idOf(ctx.reward), EventPlayer.of(ctx.player),
+                            if (ctx.reward.requiresTarget) EventPlayer.of(ctx.target) else null,
+                        )
+                    )
                     ctx.reward.action.stop(ctx)
                 }
 

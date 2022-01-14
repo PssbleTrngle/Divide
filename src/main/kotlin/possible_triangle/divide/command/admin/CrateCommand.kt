@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
@@ -16,6 +17,7 @@ import possible_triangle.divide.crates.loot.CrateLoot
 object CrateCommand {
 
     private val NO_CRATE_POS = DynamicCommandExceptionType { TextComponent("Could no find a valid pos around $it") }
+    private val NO_LOOT_DEFINED = SimpleCommandExceptionType(TextComponent("No crate loot defined"))
 
     fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack>? {
         return base.then(
@@ -33,7 +35,7 @@ object CrateCommand {
 
     private fun spawnCrate(
         ctx: CommandContext<CommandSourceStack>,
-        type: () -> CrateLoot = { CrateLoot.random() }
+        type: () -> CrateLoot? = { CrateLoot.random() }
     ): Int {
 
         val center = BlockPosArgument.getSpawnablePos(ctx, "pos")
@@ -46,7 +48,7 @@ object CrateCommand {
         }
 
         val seconds = timeTicks / 20
-        CrateScheduler.schedule(ctx.source.server, seconds, pos, type())
+        CrateScheduler.schedule(ctx.source.server, seconds, pos, type() ?: throw NO_LOOT_DEFINED.create())
 
         ctx.source.sendSuccess(
             TextComponent(

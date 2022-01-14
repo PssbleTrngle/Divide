@@ -35,6 +35,8 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val crate: CrateValues = CrateValues(),
         val eras: EraValues = EraValues(),
         val bounties: BountyValues = BountyValues(),
+        val admins: List<String> = listOf(),
+        val api: ApiValues = ApiValues(),
     )
 
     @Serializable
@@ -90,6 +92,14 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val pause: IntRange = IntRange(20, 60),
         val bountyTime: Int = 60,
         val clearOnDeath: Boolean = true
+    )
+
+    @Serializable
+    data class ApiValues(
+        val secret: String = "banana",
+        val port: Int = 8080,
+        val enabled: Boolean = true,
+        val host: String = "http://localhost",
     )
 
 }

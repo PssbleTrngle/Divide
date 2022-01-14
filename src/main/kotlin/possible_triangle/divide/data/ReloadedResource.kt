@@ -18,8 +18,8 @@ import java.nio.file.attribute.BasicFileAttributes
 
 
 abstract class ReloadedResource<Entry>(
-    protected val dir: String,
-    protected val serializer: () -> KSerializer<Entry>
+    val dir: String,
+    val serializer: () -> KSerializer<Entry>
 ) {
 
     open fun config(): YamlConfiguration {

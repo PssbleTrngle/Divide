@@ -1,5 +1,8 @@
+import { Buffer } from 'buffer'
 import { useMemo, VFC } from 'react'
 import { useQuery } from 'react-query'
+import styled from 'styled-components'
+import { get } from '../hooks/useApi'
 import { Player } from '../hooks/useSession'
 
 interface PlayerData {
@@ -11,20 +14,43 @@ interface PlayerData {
    }>
 }
 
-async function fetchData(uuid: string): Promise<PlayerData> {
+interface TextureData {
+   textures: Record<
+      'SKIN' | 'CAPE',
+      {
+         url: string
+      }
+   >
+}
+
+async function fetchData(uuid: string) {
    const url = `https://cors-anywhere.herokuapp.com/https://sessionserver.mojang.com/session/minecraft/profile/${uuid.replaceAll(
       '-',
       ''
    )}`
-   const response = await fetch(url)
-   if (!response.ok) throw new Error(response.statusText)
-   return response.json()
+   return get<PlayerData>(url)
 }
 
-const PlayerHead: VFC<Pick<Player, 'uuid'>> = ({ uuid }) => {
+const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name }) => {
    const { data } = useQuery(['skin', uuid], () => fetchData(uuid), { refetchInterval: false })
-   const texture = useMemo(() => data?.properties.find(p => p.name === 'textures')?.value, [data])
-   return <img src={`data:image/png;base64, ${texture}`} alt={data?.name} />
+   const texture = useMemo(() => {
+      const base = data?.properties.find(p => p.name === 'textures')?.value
+      if (!base) return
+      return JSON.parse(Buffer.from(base, 'base64').toString()) as TextureData
+   }, [data])
+
+   return <Head size='100px' src={texture?.textures?.SKIN?.url} />
 }
+
+const Head = styled.div<{ src?: string; size: string }>`
+   background: red;
+   background-image: url('${p => p.src}');
+   height: ${p => p.size};
+   width: ${p => p.size};
+   background-size: calc(${p => p.size} * 8);
+   background-position: calc(${p => p.size} * -1) calc(${p => p.size} * -1);
+   background-repeat: no-repeat;
+   image-rendering: pixelated;
+`
 
 export default PlayerHead

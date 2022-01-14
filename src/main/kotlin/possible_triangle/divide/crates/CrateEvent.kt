@@ -4,10 +4,11 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.events.CycleEvent
 import kotlin.random.Random
 
-object CrateEvent : CycleEvent("crates") {
+object CrateEvent : CycleEvent("loot_crates") {
 
     override fun isEnabled(server: MinecraftServer): Boolean {
         return Config.CONFIG.crate.enabled
@@ -24,8 +25,14 @@ object CrateEvent : CycleEvent("crates") {
 
             val spawnAt = CrateScheduler.findInRange(server, BlockPos(x, y, z), 20.0)
 
-            if (spawnAt != null) CrateScheduler.schedule(server, Config.CONFIG.crate.lockedFor, spawnAt)
-            else DivideMod.LOGGER.warn("Could not find a crate position around $x/$y/$z")
+            val lootTable = CrateLoot.random()
+
+            if (lootTable != null) {
+                if (spawnAt != null) CrateScheduler.schedule(server, Config.CONFIG.crate.lockedFor, spawnAt, lootTable)
+                else DivideMod.LOGGER.warn("Could not find a crate position around $x/$y/$z")
+            } else {
+                DivideMod.LOGGER.warn("No loot tables defined")
+            }
 
         } catch (e: IllegalArgumentException) {
             DivideMod.LOGGER.warn("Could not find a crate position because the border is too small")

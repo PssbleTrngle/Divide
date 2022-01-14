@@ -2,10 +2,13 @@ package possible_triangle.divide.command.admin
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
 import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.TextComponent
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.GameRules
 import net.minecraft.world.level.GameType
 import possible_triangle.divide.crates.CrateEvent
@@ -20,6 +23,14 @@ import possible_triangle.divide.logic.Teams
 object EventsCommand {
 
     private val EVENTS = listOf(Border, Eras, CrateEvent, PlayerBountyEvent)
+
+    private val PLAYERS_MISSING_TEAM = DynamicCommandExceptionType {
+        val players = it as List<ServerPlayer>
+        val names = players.map { it.displayName as MutableComponent }.reduce { component, name ->
+            component.append(TextComponent(", ")).append(name)
+        }
+        TextComponent("${players.size} players are missing not yet in a team: ").append(names)
+    }
 
     fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
         return base.then(literal("center").executes(::center))
@@ -65,6 +76,10 @@ object EventsCommand {
     }
 
     private fun start(ctx: CommandContext<CommandSourceStack>): Int {
+
+        val noTeam = Teams.players(ctx.source.server).filter { it.team == null }
+        if (noTeam.isNotEmpty()) throw PLAYERS_MISSING_TEAM.create(noTeam)
+
         EVENTS.forEach { it.startCycle(ctx.source.server) }
         ctx.source.server.gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(false, ctx.source.server)
 

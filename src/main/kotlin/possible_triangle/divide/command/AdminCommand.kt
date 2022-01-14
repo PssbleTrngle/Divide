@@ -2,7 +2,6 @@ package possible_triangle.divide.command
 
 import net.minecraft.commands.Commands.literal
 import net.minecraftforge.event.RegisterCommandsEvent
-import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
@@ -25,14 +24,6 @@ object AdminCommand {
         ResetCommand.register(base)
 
         event.dispatcher.register(base)
-    }
-
-    @SubscribeEvent
-    fun playerJoin(event: PlayerEvent.PlayerLoggedInEvent) {
-        val server = event.player.server ?: return
-        if (server.playerCount <= 1) {
-            event.player.tags.add(Teams.ADMIN_TAG)
-        }
     }
 
 }

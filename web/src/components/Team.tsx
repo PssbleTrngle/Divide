@@ -1,22 +1,11 @@
 import { VFC } from 'react'
-import { useQuery } from 'react-query'
 import styled from 'styled-components'
-import useSession, { Player } from '../hooks/useSession'
-import { delay } from '../util'
+import useApi from '../hooks/useApi'
+import { Player } from '../hooks/useSession'
 import PlayerRow from './PlayerRow'
 
 const Team: VFC = () => {
-   const { player } = useSession()
-   const { data } = useQuery<Player[]>(
-      'team',
-      delay([
-         {
-            name: 'Other Player',
-            uuid: 'ec70bcaf-702f-4bb8-b48d-276fa52a780c',
-         },
-         player,
-      ])
-   )
+   const { data } = useApi<Player[]>('team')
 
    return (
       <Style>

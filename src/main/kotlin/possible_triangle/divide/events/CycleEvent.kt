@@ -1,5 +1,6 @@
 package possible_triangle.divide.events
 
+import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
@@ -7,12 +8,22 @@ import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerCallbacks
 import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Teams
 
 @Suppress("LeakingThis")
 abstract class CycleEvent(val id: String) : Countdown(id) {
-    
+
+    @Serializable
+    private data class Event(val action: String)
+
+    @Serializable
+    private data class RunEvent(val timesRun: Int, val pause: Int, val action: String = "scheduled")
+
     private val callbackId = "${DivideMod.ID}:$id"
+
+    private val logger = EventLogger(id) { Event.serializer() }
+    private val runLogger = EventLogger(id) { RunEvent.serializer() }
 
     companion object {
         private val EVENTS = hashMapOf<String, CycleEvent>()
@@ -32,6 +43,9 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
 
     fun stop(server: MinecraftServer): Boolean {
         bar(server).value = 0
+
+        logger.log(server, Event(action = "stop"))
+
         return clear(server)
     }
 
@@ -46,6 +60,9 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val next = handle(server, at)
         val alreadyRun = clear(server)
         schedule(server, next, at + 1)
+
+        logger.log(server, Event(action = if (alreadyRun) "restart" else "start"))
+
         return alreadyRun
     }
 
@@ -53,6 +70,9 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val queue = server.worldData.overworldData().scheduledEvents
         val event = queue.events.row(callbackId).values.toList()
         clear(server)
+
+        logger.log(server, Event(action = "skip"))
+
         event.forEach {
             it.callback.handle(server, queue, server.overworld().gameTime)
         }
@@ -83,7 +103,9 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
             val event = EVENTS[id] ?: return
             if (event.isEnabled(server)) {
-                event.schedule(server, event.handle(server, index), index + 1)
+                val pause = event.handle(server, index)
+                event.runLogger.log(server, RunEvent(index, pause))
+                event.schedule(server, pause, index + 1)
             } else {
                 event.schedule(server, 10, index, invisible = true)
             }

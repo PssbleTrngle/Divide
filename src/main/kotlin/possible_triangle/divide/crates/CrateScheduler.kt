@@ -192,7 +192,7 @@ object CrateScheduler {
         )
     }
 
-    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot = CrateLoot.random()) {
+    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot) {
         val world = server.overworld()
 
         val uuid = spawnCrate(server, pos)

@@ -220,9 +220,8 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             }
         }
 
-        fun random(): CrateLoot {
+        fun random(): CrateLoot? {
             return makeWeightedDecision(values.associateWith { it.weight })
-                ?: throw NullPointerException("No create loot found")
         }
 
         override fun populate(entry: CrateLoot, server: MinecraftServer) {

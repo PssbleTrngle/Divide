@@ -1,38 +1,23 @@
 import { darken } from 'polished'
 import { VFC } from 'react'
-import { useQuery } from 'react-query'
 import styled from 'styled-components'
-import { delay } from '../util'
+import useApi from '../hooks/useApi'
 import Button from './Button'
 
 interface Reward {
-   name: string
+   display: string
    price: number
-   description: string
+   description?: string
+   duration?:  number
+   requiresTarget?: boolean
 }
 
 const Rewards: VFC = () => {
-   const { data } = useQuery<Reward[]>(
-      'rewards',
-      delay([
-         {
-            name: 'Buy hotdog',
-            price: 500,
-            description:
-               'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec odio nisl, interdum eget hendrerit ac, congue ut metus. Sed et.',
-         },
-         {
-            name: 'Go to the pool',
-            price: 500,
-            description:
-               'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis facilisis, nibh id feugiat gravida, tellus ipsum laoreet ligula, non tincidunt enim urna nec.',
-         },
-      ])
-   )
+   const { data } = useApi<Reward[]>('reward')
 
    return (
       <Style>
-         {data?.map(({ name, description, price }) => (
+         {data?.map(({ display: name, description, price }) => (
             <Panel key={name}>
                <h3>{name}</h3>
                <small>{price} smackles</small>

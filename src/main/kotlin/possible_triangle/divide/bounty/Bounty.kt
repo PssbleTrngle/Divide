@@ -8,7 +8,9 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.PerTeamIntData
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
@@ -16,7 +18,18 @@ import possible_triangle.divide.logic.Teams
 @Serializable
 data class Bounty(val description: String, val amount: Amount) {
 
+    @Serializable
+    private data class Event(
+        val bounty: String,
+        val pointsEarned: Int,
+        val pointsNow: Int,
+        val doneAlready: Int,
+        val fulfilledBy: EventPlayer
+    )
+
     companion object : DefaultedResource<Bounty>("bounty", { Bounty.serializer() }) {
+
+        private val LOGGER = EventLogger("bounty") { Event.serializer() }
 
         private val BOUNTY_COUNTS = PerTeamIntData("bounties")
 
@@ -62,7 +75,19 @@ data class Bounty(val description: String, val amount: Amount) {
             val cashGained = (nextPoints(team, player.server) * modifier).toInt()
 
             if (cashGained > 0) {
-                Points.modify(player.getLevel().server, team, cashGained)
+                Points.modify(player.getLevel().server, team, cashGained) { pointsNow ->
+                    LOGGER.log(
+                        player.server,
+                        Event(
+                            idOf(this),
+                            cashGained,
+                            pointsNow,
+                            BOUNTY_COUNTS[player.server][team],
+                            EventPlayer.of(player),
+                        )
+                    )
+                }
+
 
                 Teams.teammates(player).forEach { teammate ->
                     //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)

@@ -41,7 +41,7 @@ object OrderCommand {
             1
         }
 
-        if (!order.order(ctx.source.server, team, amount)) throw CashCommand.NOT_ENOUGH.create(amount * order.cost)
+        if (!order.order(ctx.source.playerOrException, team, amount)) throw CashCommand.NOT_ENOUGH.create(amount * order.cost)
 
         return amount
     }

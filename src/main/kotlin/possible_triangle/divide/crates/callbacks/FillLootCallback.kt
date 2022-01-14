@@ -1,5 +1,6 @@
 package possible_triangle.divide.crates.callbacks
 
+import kotlinx.serialization.Serializable
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.nbt.CompoundTag
@@ -18,6 +19,8 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
+import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.logging.EventLogger
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -25,6 +28,13 @@ import kotlin.random.Random
 
 class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List<ItemStack>, val uuid: UUID) :
     TimerCallback<MinecraftServer> {
+
+    companion object {
+        @Serializable
+        private data class Event(val pos: EventPos, val table: String, val orders: Int = 0)
+
+        private val LOGGER = EventLogger("loot_crate_filled") { Event.serializer() }
+    }
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
         val loot = orders + table.generate()
@@ -64,6 +74,8 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
         shuffledSlots.forEachIndexed { i, slot ->
             crate.setItem(slot, shuffled.getOrElse(i) { ItemStack.EMPTY })
         }
+
+        LOGGER.log(server, Event(EventPos.of(pos), CrateLoot.idOf(table), orders.size))
 
         val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
         val soundPacket = ClientboundCustomSoundPacket(

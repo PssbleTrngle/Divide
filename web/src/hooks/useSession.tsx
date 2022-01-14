@@ -7,6 +7,7 @@ import { delay } from '../util'
 export interface Player {
    name: string
    uuid: string
+   team?: string
 }
 
 export interface Session {

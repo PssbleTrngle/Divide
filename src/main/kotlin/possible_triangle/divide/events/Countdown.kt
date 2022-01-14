@@ -43,4 +43,8 @@ open class Countdown(private val id: String, private val display: String = id.re
 
     }
 
+    fun remaining(server: MinecraftServer): Int {
+        return bar(server).value
+    }
+
 }

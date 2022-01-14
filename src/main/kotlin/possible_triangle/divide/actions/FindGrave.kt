@@ -22,9 +22,11 @@ object FindGrave : GlowingAction() {
 
     override fun onStart(ctx: RewardContext) {
         val pos = getPos(ctx)
+        val timeDead = DeathEvents.timeSinceDeath(ctx.player)
+        val minutes = timeDead / 20 / 60
         Chat.message(
             ctx.player,
-            TextComponent("You died at [${pos.x}/${pos.y}/${pos.z}]").withStyle(ChatFormatting.GOLD),
+            TextComponent("You died at [${pos.x}/${pos.y}/${pos.z}] ${minutes}m ago").withStyle(ChatFormatting.GOLD),
             log = true
         )
     }

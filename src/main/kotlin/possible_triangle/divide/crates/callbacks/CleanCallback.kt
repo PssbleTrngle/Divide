@@ -1,5 +1,6 @@
 package possible_triangle.divide.crates.callbacks
 
+import kotlinx.serialization.Serializable
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtUtils
@@ -13,11 +14,18 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.CrateScheduler
+import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.logging.EventLogger
 import java.util.*
 
 class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<MinecraftServer> {
 
     companion object {
+        @Serializable
+        private data class Event(val pos: EventPos)
+
+        private val LOGGER = EventLogger("loot_crate_cleaned") { Event.serializer() }
+
         fun cleanMarker(server: MinecraftServer, pos: BlockPos) {
             CrateScheduler.markersAt(server, pos).forEach {
                 it.remove(Entity.RemovalReason.DISCARDED)
@@ -27,6 +35,8 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
         val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
+
+        LOGGER.log(server, Event(EventPos.of(pos)))
 
         cleanMarker(server, pos)
 
