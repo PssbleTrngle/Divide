@@ -20,7 +20,10 @@ import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 
 @Serializable
-data class Order(@SerialName("item") internal val id: String, val cost: Int, val max: Int?) {
+data class Order(@SerialName("item") internal val itemId: String, val cost: Int, val max: Int?) {
+
+    @Transient
+    lateinit var id: String
 
     companion object : DefaultedResource<Order>("orders", { Order.serializer() }) {
 
@@ -37,16 +40,24 @@ data class Order(@SerialName("item") internal val id: String, val cost: Int, val
 
         private val LOGGER = EventLogger("order") { Event.serializer() }
 
-        override fun populate(entry: Order, server: MinecraftServer) {
-            super.populate(entry, server)
+        override fun populate(entry: Order, server: MinecraftServer, id: String) {
+            entry.id = id
             val items = server.registryAccess().registryOrThrow(Registry.ITEM_REGISTRY)
-            entry.item = items[ResourceLocation(entry.id)]
-                ?: throw IllegalArgumentException("Item ${entry.id} does not exists")
+            entry.item = items[ResourceLocation(entry.itemId)]
+                ?: throw IllegalArgumentException("Item ${entry.itemId} does not exists")
         }
 
         init {
             defaulted("ender_pearl") { Order(Items.ENDER_PEARL, 200, 2) }
-            defaulted("tnt") { Order(Blocks.TNT, 500, 4) }
+            defaulted("tnt") { Order(Blocks.TNT, 100, 4) }
+            defaulted("dragon_breath") { Order(Items.DRAGON_BREATH, 100, 4) }
+
+            defaulted("cow") { Order(Items.COW_SPAWN_EGG, 50, 1) }
+            defaulted("pig") { Order(Items.PIG_SPAWN_EGG, 50, 1) }
+            defaulted("sheep") { Order(Items.SHEEP_SPAWN_EGG, 50, 1) }
+            defaulted("chicken") { Order(Items.CHICKEN_SPAWN_EGG, 50, 1) }
+            defaulted("horse") { Order(Items.HORSE_SPAWN_EGG, 50, 1) }
+            defaulted("wolf") { Order(Items.WOLF_SPAWN_EGG, 50, 1) }
         }
 
     }
@@ -57,13 +68,13 @@ data class Order(@SerialName("item") internal val id: String, val cost: Int, val
     )
 
     fun order(player: ServerPlayer, team: Team, amount: Int): Boolean {
-        if (max != null && amount > max) throw TOO_MUCH.create(id, max)
+        if (max != null && amount > max) throw TOO_MUCH.create(itemId, max)
 
         val price = amount * cost
 
         return Points.modify(player.server, team, -price) { pointsNow ->
             CrateScheduler.order(player.server, team, ItemStack(item, amount), this)
-            LOGGER.log(player.server, Event(id, amount, price, pointsNow, EventPlayer.of(player)))
+            LOGGER.log(player.server, Event(itemId, amount, price, pointsNow, EventPlayer.of(player)))
         }
 
     }

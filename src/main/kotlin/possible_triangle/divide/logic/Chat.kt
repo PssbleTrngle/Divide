@@ -3,11 +3,20 @@ package possible_triangle.divide.logic
 import net.minecraft.network.chat.ChatType
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.TextComponent
+import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundSource
+import net.minecraft.world.phys.Vec3
 
 object Chat {
+
+    fun sound(player: ServerPlayer, sound: ResourceLocation, at: Vec3 = player.position(), volume: Float = 1F, pitch: Float = 1F) {
+        val packet = ClientboundCustomSoundPacket(sound,SoundSource.MASTER,at,volume,  pitch)
+        player.connection.send(packet)
+    }
 
     fun message(player: ServerPlayer, message: String, log: Boolean = false) {
         message(player, TextComponent(message), log)

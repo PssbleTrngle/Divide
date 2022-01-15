@@ -1,11 +1,13 @@
 package possible_triangle.divide.crates
 
 import com.mojang.brigadier.exceptions.Dynamic3CommandExceptionType
+import net.minecraft.ChatFormatting.GREEN
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
+import net.minecraft.nbt.StringTag
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
@@ -115,7 +117,16 @@ object CrateScheduler {
     }
 
     fun saveItem(server: MinecraftServer, stack: ItemStack) {
-        if (Random.nextDouble() <= Config.CONFIG.crate.itemSaveChance) addOrder(server, stack = stack)
+
+        val lore = listOf(TextComponent("Saved").withStyle(GREEN))
+            .map { Component.Serializer.toJson(it) }
+            .mapTo(ListTag()) { StringTag.valueOf(it) }
+
+        stack.orCreateTag.getCompound("display").put("Lore", lore)
+
+        var chance =  Config.CONFIG.crate.itemSaveChance
+        if(!stack.isStackable) chance *= 4
+        if (Random.nextDouble() <= chance) addOrder(server, stack = stack)
     }
 
     fun order(server: MinecraftServer, team: Team, stack: ItemStack, order: Order) {

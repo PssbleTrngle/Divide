@@ -88,7 +88,7 @@ object DeathEvents {
 
     fun timeSinceDeath(player: ServerPlayer): Long {
         val persistent = PlayerData.persistentData(player)
-
+        if(!persistent.contains(DEATH_TIME_TAG)) return 0L
         val lastDeath = persistent.getLong(DEATH_TIME_TAG)
         return player.level.gameTime - lastDeath
     }
@@ -159,7 +159,7 @@ object DeathEvents {
 
     private fun degrade(stack: ItemStack): ItemStack {
         val item = stack.item
-        if (Random.nextDouble() <= Config.CONFIG.deaths.downgradeProbability) return stack
+        if (Random.nextDouble() > Config.CONFIG.deaths.downgradeProbability) return stack
         val tier = TIERED.find { it.indexOf(item) > 0 }
         return if (tier != null) {
             val lower = tier.take(tier.indexOf(item)).last()

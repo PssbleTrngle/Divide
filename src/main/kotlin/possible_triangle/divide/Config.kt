@@ -42,7 +42,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     @Serializable
     data class DeathValues(
         val keepPercent: DoubleRange = DoubleRange(0.2, 0.8),
-        val downgradeProbability: Double = 0.5,
+        val downgradeProbability: Double = 0.3,
         val starterGearBreak: Int = 60 * 5,
     )
 
@@ -52,10 +52,10 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val startAt: Int = 0,
         val lobbySize: Int = 10,
         val bigBorder: Int = 400,
-        val smallBorder: Int = 150,
-        val staySmallFor: IntRange = IntRange(60, 60),
-        val stayBigFor: IntRange = IntRange(60 * 5, 60 * 5),
-        val moveTime: Int = 60,
+        val smallBorder: Int = 200,
+        val staySmallFor: IntRange = IntRange(60 * 15, 60 * 30),
+        val stayBigFor: IntRange = IntRange(3600, 3600 * 2),
+        val moveTime: Int = 60 * 5,
         val showBar: Boolean = false,
         val damagePerBlock: Double = 1.0,
         val damageSafeZone: Double = 2.0,
@@ -64,13 +64,13 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     @Serializable
     data class CrateValues(
         val enabled: Boolean = true,
-        val startAt: Int = 5,
-        val lockedFor: Int = 20,
-        val pause: IntRange = IntRange(10, 20),
-        val cleanUpTime: Int = 20,
-        val cleanNonEmpty: Boolean = false,
-        val clearOnCleanup: Boolean = false,
-        val itemSaveChance: Double = 0.5,
+        val startAt: Int = 4,
+        val lockedFor: Int = 60 * 5,
+        val pause: IntRange = IntRange(3600 * 30, 3600 * 60),
+        val cleanUpTime: Int = 60 * 10,
+        val cleanNonEmpty: Boolean = true,
+        val clearOnCleanup: Boolean = true,
+        val itemSaveChance: Double = 0.125,
         val splitAndShuffle: Boolean = true,
     )
 
@@ -87,11 +87,12 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     @Serializable
     data class BountyValues(
         val enabled: Boolean = true,
-        val startAt: Int = 5,
-        val baseAmount: Int = 100,
-        val pause: IntRange = IntRange(20, 60),
-        val bountyTime: Int = 60,
-        val clearOnDeath: Boolean = true
+        val startAt: Int = 2,
+        val baseAmount: Int = 120,
+        val bonusPerAliveMinute: Int = 10,
+        val pause: IntRange = IntRange(3600, 3600 * 2),
+        val bountyTime: Int = 60 * 20,
+        val clearOnDeath: Boolean = false
     )
 
     @Serializable

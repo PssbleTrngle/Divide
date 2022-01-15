@@ -2,7 +2,7 @@ import { Buffer } from 'buffer'
 import { useMemo, VFC } from 'react'
 import { useQuery } from 'react-query'
 import styled from 'styled-components'
-import { get } from '../hooks/useApi'
+import { request } from '../hooks/useApi'
 import { Player } from '../hooks/useSession'
 
 interface PlayerData {
@@ -24,11 +24,11 @@ interface TextureData {
 }
 
 async function fetchData(uuid: string) {
-   const url = `https://cors-anywhere.herokuapp.com/https://sessionserver.mojang.com/session/minecraft/profile/${uuid.replaceAll(
+   const url = `http://localhost:8001/https://sessionserver.mojang.com/session/minecraft/profile/${uuid.replaceAll(
       '-',
       ''
    )}`
-   return get<PlayerData>(url)
+   return request<PlayerData>(url)
 }
 
 const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name }) => {
@@ -43,7 +43,7 @@ const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name })
 }
 
 const Head = styled.div<{ src?: string; size: string }>`
-   background: red;
+   background: #0001;
    background-image: url('${p => p.src}');
    height: ${p => p.size};
    width: ${p => p.size};

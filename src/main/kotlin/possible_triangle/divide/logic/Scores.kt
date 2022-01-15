@@ -5,6 +5,7 @@ import net.minecraft.ChatFormatting.*
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.scores.Objective
+import net.minecraft.world.scores.PlayerTeam
 import net.minecraft.world.scores.Scoreboard
 import net.minecraft.world.scores.Team
 import net.minecraft.world.scores.criteria.ObjectiveCriteria
@@ -34,10 +35,15 @@ object Scores {
         return apply("#${rank}", UNDERLINE, color)
     }
 
-    private fun getRanks(server: MinecraftServer): List<String> {
-        val teams = Teams.ranked(server)
-        return teams.mapIndexed { index, team ->
-            "${rankString(index + 1)} ${team.displayName.string}"
+    fun getRanks(server: MinecraftServer): Map<PlayerTeam, Int> {
+        return Teams.ranked(server).mapIndexed { index, team ->
+            team to (index + 1)
+        }.associate { it }
+    }
+
+    private fun rankDisplay(server: MinecraftServer): List<String> {
+        return getRanks(server).map { (team, rank) ->
+            "${rankString(rank)} ${team.displayName.string}"
         }
     }
 
@@ -48,7 +54,7 @@ object Scores {
 
         val overall = getObjective(server)
         server.scoreboard.setDisplayObjective(Scoreboard.DISPLAY_SLOT_SIDEBAR, overall)
-        update(overall, getRanks(server))
+        update(overall, rankDisplay(server))
 
         Teams.ranked(server).forEachIndexed { index, team ->
             updateForTeam(server, team, index + 1)
@@ -99,8 +105,8 @@ object Scores {
                 .entries.sortedBy { it.value }
                 .map { "${it.key}: ${points(it.value)}" }
             Extra.prices -> Reward.values.map { "${it.display}: ${points(it.price)}" }
-            Extra.orders -> Order.values.map { "${it.id}: ${points(it.cost)}" }
-            Extra.ranks -> getRanks(server)
+            Extra.orders -> Order.values.map { "${it.itemId}: ${points(it.cost)}" }
+            Extra.ranks -> rankDisplay(server)
             Extra.commands -> listOf(
                 "/order: ${apply("pre-order item into next loot drop", GRAY)}",
                 "/buy: ${apply("spend points to unlock rewards", GRAY)}",

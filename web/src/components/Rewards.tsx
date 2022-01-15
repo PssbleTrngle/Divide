@@ -1,54 +1,71 @@
 import { darken } from 'polished'
-import { VFC } from 'react'
+import { useCallback, VFC } from 'react'
 import styled from 'styled-components'
-import useApi from '../hooks/useApi'
+import useApi, { request } from '../hooks/useApi'
 import Button from './Button'
+import { GameStatus } from './Status'
 
 interface Reward {
+   id: string
    display: string
    price: number
    description?: string
-   duration?:  number
+   duration?: number
    requiresTarget?: boolean
 }
 
 const Rewards: VFC = () => {
-   const { data } = useApi<Reward[]>('reward')
+   const { data: status } = useApi<GameStatus>('status')
+   const { data: rewards } = useApi<Reward[]>('reward')
 
    return (
       <Style>
-         {data?.map(({ display: name, description, price }) => (
-            <Panel key={name}>
-               <h3>{name}</h3>
-               <small>{price} smackles</small>
-               <Desc>{description}</Desc>
-               <Button>Buy</Button>
-            </Panel>
+         {rewards?.map(reward => (
+            <RewardPanel key={reward.id} {...reward} canBuy={reward.price <= (status?.points ?? 0)} />
          ))}
       </Style>
    )
 }
 
+const RewardPanel: VFC<Reward & { canBuy: boolean }> = ({ id, display: name, price, canBuy }) => {
+   const buy = useCallback(() => request(`/api/buy/${id}`).catch(console.error), [id])
+
+   return (
+      <Panel key={name}>
+         <Name>{name}</Name>
+         <small>{price} points</small>
+         <Button onClick={buy} disabled={!canBuy}>
+            Buy
+         </Button>
+      </Panel>
+   )
+}
+
 const Style = styled.section`
+   min-width: 300px;
+   grid-area: rewards;
    display: grid;
    gap: 1rem;
 `
 
-const Desc = styled.p`
-   grid-area: desc;
+const Name = styled.h3`
+   grid-area: name;
+   text-align: left;
 `
 
 const Panel = styled.div`
-   border-radius: 1rem;
+   border-radius: 1em;
    background: ${p => darken(0.05, p.theme.bg)};
-   padding: 0.5rem;
+   padding: 0.5em 1em;
+   gap: 1em;
 
    display: grid;
    align-items: center;
+   justify-content: end;
 
    grid-template:
       'name price buy'
-      'desc desc desc';
+      / 3fr 1fr 1fr;
 `
 
 export default Rewards

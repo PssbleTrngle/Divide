@@ -2,7 +2,7 @@ import { createContext, FC, useContext, useEffect, useReducer } from 'react'
 import { useQuery } from 'react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LoggedOut from '../pages/LoggedOut'
-import { delay } from '../util'
+import { request } from './useApi'
 
 export interface Player {
    name: string
@@ -33,10 +33,7 @@ export const SessionProvider: FC = ({ children }) => {
       return v
    }, localStorage.getItem('token'))
 
-   const { data: player } = useQuery(
-      'player',
-      delay({ name: 'Example Player', uuid: 'c10aac8c-31cc-47bc-8ed8-b8e63cf5c1cc' }, false)
-   )
+   const { data: player } = useQuery('me', () => request<Player>('/api/auth', token ?? ''), { enabled: !!token })
 
    useEffect(() => {
       const queryToken = new URLSearchParams(search).get('token')

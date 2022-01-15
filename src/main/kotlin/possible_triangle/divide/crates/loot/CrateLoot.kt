@@ -85,15 +85,6 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                 LootEntry(Items.APPLE, 20.0, listOf(3, 11)),
             )
 
-            val spawnEggs = normalized(
-                LootEntry(Items.COW_SPAWN_EGG, 5.0, listOf(1, 2)),
-                LootEntry(Items.PIG_SPAWN_EGG, 5.0, listOf(1, 2)),
-                LootEntry(Items.SHEEP_SPAWN_EGG, 5.0, listOf(1, 2)),
-                LootEntry(Items.CHICKEN_SPAWN_EGG, 5.0, listOf(1, 2)),
-                LootEntry(Items.HORSE_SPAWN_EGG, 5.0),
-                LootEntry(Items.WOLF_SPAWN_EGG, 5.0),
-            )
-
             val potions = matrix(
                 normalized(
                     LootEntry(Items.POTION, 10.0),
@@ -153,17 +144,15 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                 ), enchanted
             )
 
-            val diamondTools = matrix(
-                normalized(
-                    LootEntry(Items.DIAMOND_PICKAXE),
-                    LootEntry(Items.DIAMOND_SHOVEL),
-                    LootEntry(Items.DIAMOND_AXE),
-                    LootEntry(Items.DIAMOND_SWORD),
-                    LootEntry(Items.DIAMOND_BOOTS),
-                    LootEntry(Items.DIAMOND_CHESTPLATE),
-                    LootEntry(Items.DIAMOND_LEGGINGS),
-                    LootEntry(Items.DIAMOND_HELMET),
-                ), enchanted
+            val diamondStuff = normalized(
+                LootEntry(Items.DIAMOND_PICKAXE),
+                LootEntry(Items.DIAMOND_SHOVEL),
+                LootEntry(Items.DIAMOND_AXE),
+                LootEntry(Items.DIAMOND_SWORD),
+                LootEntry(Items.DIAMOND_BOOTS),
+                LootEntry(Items.DIAMOND_CHESTPLATE),
+                LootEntry(Items.DIAMOND_LEGGINGS),
+                LootEntry(Items.DIAMOND_HELMET),
             )
 
             defaulted("common") {
@@ -173,9 +162,12 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                         LootPools(rolls = 1, redstone),
                         LootPools(rolls = 1, rarities),
                         LootPools(rolls = 3, food),
-                        LootPools(rolls = 1, spawnEggs),
                         LootPools(rolls = 1, potions),
-                        LootPools(rolls = 2, ironTools + tools + applyWeight(stoneTools, 2.0), functions = listOf(DAMAGE)),
+                        LootPools(
+                            rolls = 2,
+                            ironTools + tools + applyWeight(stoneTools, 2.0),
+                            functions = listOf(DAMAGE)
+                        ),
                     )
                 )
             }
@@ -186,11 +178,10 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                         LootPools(rolls = 3, resources),
                         LootPools(rolls = 2, rarities),
                         LootPools(rolls = 2, food),
-                        LootPools(rolls = 1, spawnEggs),
                         LootPools(rolls = 2, potions),
                         LootPools(
                             rolls = 2,
-                            diamondTools + applyWeight(ironTools + tools, 2.0) + LootEntry(
+                            matrix(diamondStuff, enchanted) + applyWeight(ironTools + tools, 2.0) + LootEntry(
                                 Items.ELYTRA,
                                 20.0,
                                 functions = listOf(BREAK, VANISH)
@@ -203,6 +194,11 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             defaulted("trash") {
                 CrateLoot(
                     1.0, listOf(
+                        LootPools(
+                            rolls = 1,
+                            diamondStuff,
+                            functions = listOf(ENCHANT),
+                        ),
                         LootPools(
                             rolls = 10,
                             listOf(
@@ -224,8 +220,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             return makeWeightedDecision(values.associateWith { it.weight })
         }
 
-        override fun populate(entry: CrateLoot, server: MinecraftServer) {
-            super.populate(entry, server)
+        override fun populate(entry: CrateLoot, server: MinecraftServer, id: String) {
             entry.pools.forEach { it.populate(server) }
         }
 

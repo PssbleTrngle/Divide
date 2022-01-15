@@ -1,7 +1,6 @@
 package possible_triangle.divide.data
 
 import com.charleskorn.kaml.Yaml
-import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import net.minecraft.server.MinecraftServer
 import java.io.File

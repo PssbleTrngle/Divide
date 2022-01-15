@@ -7,10 +7,8 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
 import net.minecraft.nbt.NbtUtils
-import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.sounds.SoundSource
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
@@ -21,6 +19,7 @@ import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.logging.EventLogger
+import possible_triangle.divide.logic.Chat
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -78,17 +77,9 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
         LOGGER.log(server, Event(EventPos.of(pos), CrateLoot.idOf(table), orders.size))
 
         val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
-        val soundPacket = ClientboundCustomSoundPacket(
-            ResourceLocation("entity.experience_orb.pickup"),
-            SoundSource.MASTER,
-            vec,
-            1F,
-            0.1F
-        )
         server.playerList.players.forEach {
 
-            it.connection.send(soundPacket)
-
+            Chat.sound(it, ResourceLocation("entity.experience_orb.pickup"), vec, pitch = 0.1F)
             server.overworld()
                 .sendParticles(
                     it, ParticleTypes.FIREWORK, false,

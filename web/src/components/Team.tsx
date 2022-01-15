@@ -2,23 +2,31 @@ import { VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import { Player } from '../hooks/useSession'
-import PlayerRow from './PlayerRow'
+import PlayerHead from './PlayerHead'
 
 const Team: VFC = () => {
    const { data } = useApi<Player[]>('team')
 
    return (
       <Style>
-         {data?.map(p => (
-            <PlayerRow key={p.uuid} {...p} />
-         ))}
+         <h3>Your Team</h3>
+         <Heads>
+            {data?.map(p => (
+               <PlayerHead key={p.uuid} {...p} />
+            ))}
+         </Heads>
       </Style>
    )
 }
 
-const Style = styled.section`
+const Heads = styled.section`
    display: grid;
-   gap: 1rem;
+   grid-template-columns: repeat(2, 1fr);
+   gap: 5px;
+`
+
+const Style = styled.section`
+   grid-area: team;
 `
 
 export default Team

@@ -20,12 +20,12 @@ import io.ktor.server.netty.*
 import io.ktor.util.pipeline.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
-import net.minecraftforge.event.server.ServerAboutToStartEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
 import org.slf4j.event.Level
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
@@ -35,20 +35,23 @@ import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.ReloadedResource
 import possible_triangle.divide.events.Eras
 import possible_triangle.divide.logging.EventLogger
+import possible_triangle.divide.logic.Points
+import possible_triangle.divide.logic.Scores
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 import java.util.*
 
-@Mod.EventBusSubscriber
 object ServerApi {
 
     @Serializable
-    data class GameStatus(val peaceUntil: Int?)
+    data class GameStatus(val peaceUntil: Int?, val points: Int)
 
     private val ISSUER = "${Config.CONFIG.api.host}:${Config.CONFIG.api.port}"
     private val AUDIENCE = "$ISSUER/api"
-    private val REALM = "Access  to 'api'"
+    private const val REALM = "Access to 'api'"
+
+    private var webServer: NettyApplicationEngine? = null
 
     fun createToken(player: ServerPlayer): String {
         return JWT.create()
@@ -59,9 +62,9 @@ object ServerApi {
             .sign(Algorithm.HMAC256(Config.CONFIG.api.secret))
     }
 
-    @SubscribeEvent
-    fun onServerStart(event: ServerAboutToStartEvent) {
-        val server = event.server
+    fun start(server: MinecraftServer) {
+
+        stop()
 
         fun <T> Route.resource(path: String, resource: ReloadedResource<T>) {
             val serializer = resource.serializer()
@@ -87,7 +90,7 @@ object ServerApi {
             else runnable(player, team)
         }
 
-        val webServer = embeddedServer(Netty, port = 8080) {
+        webServer = embeddedServer(Netty, port = Config.CONFIG.api.port) {
 
             environment.monitor.subscribe(ApplicationStarted) {
                 DivideMod.LOGGER.info("Webserver started")
@@ -136,12 +139,14 @@ object ServerApi {
                     authenticate("auth-jwt", optional = true) {
                         route("/status") {
                             get {
-                                call.respond(
-                                    Json.encodeToString(
-                                        GameStatus.serializer(),
-                                        GameStatus(Eras.remaining(server))
+                                auth { _, team ->
+                                    call.respond(
+                                        Json.encodeToString(
+                                            GameStatus.serializer(),
+                                            GameStatus(Eras.remaining(server), Points.get(server, team))
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
 
@@ -149,6 +154,29 @@ object ServerApi {
                             get {
                                 auth { _, team ->
                                     val players = Teams.players(server, team).map { EventPlayer.of(it) }
+                                    call.respond(Json.encodeToString(ListSerializer(EventPlayer.serializer()), players))
+                                }
+                            }
+                        }
+
+                        route("/ranks") {
+                            get {
+                                val ranks = Scores.getRanks(server).mapKeys { it.key.name }
+                                call.respond(
+                                    Json.encodeToString(
+                                        MapSerializer(String.serializer(), Int.serializer()),
+                                        ranks
+                                    )
+                                )
+                            }
+                        }
+
+                        route("/opponents") {
+                            get {
+                                auth { _, team ->
+                                    val players = Teams.players(server)
+                                        .filter { team.name != it.team?.name }
+                                        .map { EventPlayer.of(it) }
                                     call.respond(Json.encodeToString(ListSerializer(EventPlayer.serializer()), players))
                                 }
                             }
@@ -179,6 +207,17 @@ object ServerApi {
                             }
                         }
 
+                        route("/order/{id}") {
+                            post {
+                                auth { player, team ->
+                                    val order = Order[call.parameters["id"] ?: return@auth call.respond(BadRequest)]
+                                        ?: return@auth call.respond(NotFound)
+                                    val amount = call.receiveParameters()["amount"]?.toInt() ?: 1
+                                    call.respond(if (order.order(player,team,amount)) OK else PaymentRequired)
+                                }
+                            }
+                        }
+
                         route("/events") {
                             get {
                                 auth { player, _ ->
@@ -202,7 +241,11 @@ object ServerApi {
             }
         }
 
-        Thread { webServer.start(wait = true) }.start()
+        Thread { webServer?.start(wait = true) }.start()
+    }
+
+    fun stop() {
+        webServer?.stop(1000L, 4000L)
     }
 
 }

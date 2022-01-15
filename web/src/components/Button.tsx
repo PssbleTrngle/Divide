@@ -30,6 +30,13 @@ const Button = styled.button`
    &:hover {
       box-shadow: 0 0 0 5px ${p => transparentize(0.5, p.theme.primary)};
    }
+
+   &:disabled {
+      box-shadow: none;
+      outline: none;
+      background: ${p => lighten(0.4, p.theme.bg)};
+      cursor: initial;
+   }
 `
 
 export default Button

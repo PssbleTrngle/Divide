@@ -78,7 +78,7 @@ abstract class ReloadedResource<Entry>(
     protected val folder
         get() = File("config/divide/$dir")
 
-    open fun populate(entry: Entry, server: MinecraftServer) {}
+    open fun populate(entry: Entry, server: MinecraftServer, id: String) {}
 
     private fun registerRecursive(root: Path, watchService: WatchService) {
         root.toFile().mkdirs()
@@ -151,8 +151,8 @@ abstract class ReloadedResource<Entry>(
         preloadedKeys = listOf()
         registry = raw
             .mapValues { (id, value) -> value ?: onError(id) }
-            .mapValues { (_, value) ->
-                if (value != null) populate(value, server)
+            .mapValues { (id, value) ->
+                if (value != null) populate(value, server, id)
                 value
             }
             .filterValues { it != null }

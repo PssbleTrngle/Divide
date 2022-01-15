@@ -2,9 +2,11 @@ package possible_triangle.divide.reward
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.BaseComponent
 import net.minecraft.network.chat.TextComponent
+import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.actions.Buff
 import possible_triangle.divide.actions.FindGrave
 import possible_triangle.divide.actions.HideNametags
@@ -23,6 +25,9 @@ data class Reward(
     val duration: Int?,
     val requiresTarget: Boolean = false
 ) {
+
+    @Transient
+    lateinit var id: String
 
     @Serializable
     data class Event(
@@ -50,20 +55,24 @@ data class Reward(
             return defaulted(id, reward)
         }
 
+        override fun populate(entry: Reward, server: MinecraftServer, id: String) {
+            entry.id = id
+        }
+
         val TRACK_PLAYER by register("TRACK_PLAYER", TrackPlayer) {
             Reward(
                 "Track Player",
-                1000,
-                duration = 10,
+                250,
+                duration = 60 * 5,
                 requiresTarget = true
             )
         }
 
-        val FIND_GRAVE by register("FIND_GRAVE", FindGrave) { Reward("Find Grave", 1000, duration = 10) }
+        val FIND_GRAVE by register("FIND_GRAVE", FindGrave) { Reward("Find Grave", 50, duration = 60 * 10) }
 
-        val HIDE_NAMES by register("HIDE_NAMES", HideNametags) { Reward("Hide Nametags", 500, duration = 10) }
+        val HIDE_NAMES by register("HIDE_NAMES", HideNametags) { Reward("Hide Nametags", 50, duration = 10) }
 
-        val BUFF_LOOT by register("BUFF_LOOT", Buff) { Reward("Buff Loot-Chance", 100, duration = 30) }
+        val BUFF_LOOT by register("BUFF_LOOT", Buff) { Reward("Buff Loot-Chance", 100, duration = 60 * 1) }
 
     }
 
