@@ -1,10 +1,14 @@
 import { useMemo, VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
+import MissionInfo, { Mission } from './Mission'
 
 export interface GameStatus {
    peaceUntil?: number
    points: number
+   mission?: Mission
+   paused: boolean
+   started: boolean
 }
 
 const Status: VFC = () => {
@@ -16,6 +20,7 @@ const Status: VFC = () => {
       <Style>
          {isPeace && <Peace>Peace {data?.peaceUntil}s</Peace>}
          <p>{data?.points} points</p>
+         {data?.mission && <MissionInfo {...data.mission} />}
       </Style>
    )
 }

@@ -1,3 +1,4 @@
+import { Settings } from 'luxon'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
@@ -6,7 +7,10 @@ import { createGlobalStyle, ThemeProvider } from 'styled-components'
 import App from './App'
 import { SessionProvider } from './hooks/useSession'
 import reportWebVitals from './reportWebVitals'
+import './styles/reset.css'
 import dark from './themes/dark'
+
+Settings.defaultLocale = 'de'
 
 const Global = createGlobalStyle`
   body, html {
@@ -21,8 +25,8 @@ const client = new QueryClient({
       queries: {
          refetchInterval: 1000,
          retry: false,
-      }
-   }
+      },
+   },
 })
 
 ReactDOM.render(

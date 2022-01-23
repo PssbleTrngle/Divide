@@ -7,7 +7,7 @@ export class RequestError extends Error {
    }
 }
 
-export async function request<T>(url: string, token?: string, config?: Partial<RequestInit>) {
+export async function request<T>(url: string, { token, ...config }: Partial<RequestInit> & { token?: string } = {}) {
    const response = await fetch(url, {
       ...config,
       headers: {
@@ -24,5 +24,5 @@ export async function request<T>(url: string, token?: string, config?: Partial<R
 
 export default function useApi<T>(uri: string) {
    const { token } = useSession()
-   return useQuery(uri, () => request<T>(`/api/${uri}`, token))
+   return useQuery(uri, () => request<T>(`/api/${uri}`, { token }))
 }

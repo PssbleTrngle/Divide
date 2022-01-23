@@ -6,6 +6,7 @@ import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
+import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Forbidden
 import io.ktor.http.HttpStatusCode.Companion.NotFound
@@ -29,6 +30,7 @@ import net.minecraft.world.scores.PlayerTeam
 import org.slf4j.event.Level
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.GameData
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.data.EventPlayer
@@ -38,15 +40,26 @@ import possible_triangle.divide.info.Scores
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
-import possible_triangle.divide.reward.ActionTarget
+import possible_triangle.divide.missions.Mission
+import possible_triangle.divide.missions.MissionEvent
+import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 import java.util.*
 
+@Serializable
+data class Resource<T>(val id: String, val value: T)
+
 object ServerApi {
 
     @Serializable
-    data class GameStatus(val peaceUntil: Int?, val points: Int)
+    data class GameStatus(
+        val peaceUntil: Int?,
+        val points: Int,
+        val mission: Mission?,
+        val paused: Boolean,
+        val started: Boolean
+    )
 
     private val ISSUER = "${Config.CONFIG.api.host}:${Config.CONFIG.api.port}"
     private val AUDIENCE = "$ISSUER/api"
@@ -67,11 +80,13 @@ object ServerApi {
 
         stop()
 
-        fun <T> Route.resource(path: String, resource: ReloadedResource<T>) {
+        fun <T> Route.resource(path: String, resource: ReloadedResource<T>, getId: (T) -> String) {
             val serializer = resource.serializer()
             route(path) {
                 get {
-                    val encoded = Json.encodeToString(ListSerializer(serializer), resource.values)
+                    val encoded = Json.encodeToString(
+                        ListSerializer(Resource.serializer(serializer)),
+                        resource.values.map { Resource(getId(it), it) })
                     call.respond(encoded)
                 }
             }
@@ -144,7 +159,13 @@ object ServerApi {
                                     call.respond(
                                         Json.encodeToString(
                                             GameStatus.serializer(),
-                                            GameStatus(Eras.remaining(server), Points.get(server, team))
+                                            GameStatus(
+                                                peaceUntil = if (Eras.isPeace(server)) Eras.remaining(server) else null,
+                                                points = Points.get(server, team),
+                                                mission = MissionEvent.ACTIVE[server]?.mission,
+                                                paused = GameData.DATA[server].paused,
+                                                started = GameData.DATA[server].started,
+                                            )
                                         )
                                     )
                                 }
@@ -197,13 +218,19 @@ object ServerApi {
                                     val reward = Reward[call.parameters["id"] ?: return@auth call.respond(BadRequest)]
                                         ?: return@auth call.respond(NotFound)
 
-                                    val target = if (reward.action.target == ActionTarget.PLAYER) {
-                                        val targetUUID = UUID.fromString(call.receiveParameters()["target"])
-                                        server.playerList.getPlayer(targetUUID) ?: return@auth call.respond(BadRequest)
-                                    } else Unit
+                                    suspend fun <R, T> parseFor(action: Action<R, T>): HttpStatusCode {
+                                        val target = action.target.fromString(
+                                            call.receiveParameters()["target"] ?: return BadRequest
+                                        )
 
-                                    val ctx = RewardContext<Any, Any>(team, server, player.uuid, target, reward)
-                                    call.respond(if (Reward.buy(ctx)) OK else PaymentRequired)
+                                        val ctx = RewardContext<R, T>(team, server, player.uuid, target, reward)
+                                        return ctx.ifComplete { _, _ ->
+                                            if (Reward.buy(ctx)) OK else PaymentRequired
+                                        } ?: BadRequest
+                                    }
+
+                                    call.respond(parseFor(reward.action))
+
                                 }
                             }
                         }
@@ -233,9 +260,9 @@ object ServerApi {
                             }
                         }
 
-                        resource("reward", Reward)
-                        resource("bounty", Bounty)
-                        resource("order", Order)
+                        resource("reward", Reward) { it.id }
+                        resource("bounty", Bounty) { it.id }
+                        resource("order", Order) { it.id }
 
                     }
                 }

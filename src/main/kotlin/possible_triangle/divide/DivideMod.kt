@@ -1,5 +1,6 @@
 package possible_triangle.divide
 
+import io.ktor.util.*
 import net.minecraftforge.event.server.ServerStartedEvent
 import net.minecraftforge.event.server.ServerStoppedEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -37,6 +38,9 @@ object DivideMod {
         listOf(Border, Eras, CrateEvent, PlayerBountyEvent, MissionEvent).forEach {
             it.register()
         }
+
+        PlatformUtils
+
     }
 
     @SubscribeEvent

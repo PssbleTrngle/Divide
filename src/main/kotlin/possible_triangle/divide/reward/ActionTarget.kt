@@ -11,11 +11,13 @@ import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.command.arguments.DividePlayerArgument
 import possible_triangle.divide.command.arguments.DivideTeamArgument
 import possible_triangle.divide.data.EventPlayer
+import java.util.*
 
 class ActionTarget<Raw, Target> private constructor(
     val id: String,
     val argument: () -> RequiredArgumentBuilder<CommandSourceStack, *>?,
     val fromContext: (CommandContext<CommandSourceStack>) -> Raw,
+    val fromString: (String) -> Raw,
     val deserialize: (CompoundTag) -> Raw?,
     val serialize: (CompoundTag, Raw) -> Unit,
     val fetch: (Raw, MinecraftServer) -> Target?,
@@ -25,46 +27,51 @@ class ActionTarget<Raw, Target> private constructor(
     companion object {
 
         val NONE = ActionTarget(
-            "none",
-            { null },
-            { },
-            { },
-            { _, _ -> },
-            { _, _ -> },
-            { null }
+            id = "none",
+            argument = { null },
+            fromContext = { },
+            deserialize = { },
+            serialize = { _, _ -> },
+            fetch = { _, _ -> },
+            toEvent = { null },
+            fromString = {},
         )
 
         val PLAYER = ActionTarget(
-            "player",
-            {
+            id = "player",
+            argument = {
                 Commands.argument("target", EntityArgument.player())
                     .suggests(DividePlayerArgument.suggestions(otherTeam = true))
             },
-            { DividePlayerArgument.getPlayer(it, "target").uuid },
-            { it.getUUID("player") },
-            { nbt, uuid -> nbt.putUUID("player", uuid) },
-            { uuid, server -> server.playerList.getPlayer(uuid) },
-            { EventPlayer.of(it) },
+            fromContext = { DividePlayerArgument.getPlayer(it, "target").uuid },
+            deserialize = { it.getUUID("player") },
+            serialize = { nbt, uuid -> nbt.putUUID("player", uuid) },
+            fetch = { uuid, server -> server.playerList.getPlayer(uuid) },
+            toEvent = { EventPlayer.of(it) },
+            fromString = { UUID.fromString(it) },
         )
 
         val TEAM = ActionTarget(
-            "team",
-            { Commands.argument("team", TeamArgument.team()).suggests(DivideTeamArgument.suggestions(true)) },
-            { DivideTeamArgument.getTeam(it, "team", otherTeam = true).name },
-            { it.getString("team") },
-            { nbt, name -> nbt.putString("team", name) },
-            { name, server -> server.scoreboard.getPlayerTeam(name) },
-            { EventPlayer(it.name) },
+            id = "team",
+            argument = {
+                Commands.argument("team", TeamArgument.team()).suggests(DivideTeamArgument.suggestions(true))
+            },
+            fromContext = { DivideTeamArgument.getTeam(it, "team", otherTeam = true).name },
+            deserialize = { it.getString("team") },
+            serialize = { nbt, name -> nbt.putString("team", name) },
+            fetch = { name, server -> server.scoreboard.getPlayerTeam(name) },
+            toEvent = { EventPlayer(it.name) },
+            fromString = { it }
         )
 
-        fun <R,T> serialize(ctx: RewardContext<R,T>, nbt: CompoundTag) {
+        fun <R, T> serialize(ctx: RewardContext<R, T>, nbt: CompoundTag) {
             nbt.put("target", CompoundTag().apply {
                 ctx.action.target.serialize(this, ctx.rawTarget)
                 putString("type", ctx.action.target.id)
             })
         }
 
-        fun <R,T> deserialize(action: Action<R, T>, nbt: CompoundTag): R? {
+        fun <R, T> deserialize(action: Action<R, T>, nbt: CompoundTag): R? {
             return nbt.getCompound("target").let {
                 val type = it.getString("type")
                 if (type != action.target.id) null

@@ -14,15 +14,11 @@ import possible_triangle.divide.logic.Teams
 abstract class CycleEvent(val id: String) : Countdown(id) {
 
     @Serializable
-    private data class Event(val action: String)
-
-    @Serializable
-    private data class RunEvent(val timesRun: Int, val pause: Int, val action: String = "scheduled")
+    private data class Event(val id: String, val action: String, val timesRun: Int? = null, val pause: Int? = null)
 
     private val callbackId = "${DivideMod.ID}:event_$id"
 
-    private val logger = EventLogger(id) { Event.serializer() }
-    private val runLogger = EventLogger(id) { RunEvent.serializer() }
+    private val logger = EventLogger("cycle_event") { Event.serializer() }
 
     companion object : CallbackHandler<Callback>("event", Callback::class.java) {
         private val REGISTRY = hashMapOf<String, CycleEvent>()
@@ -59,7 +55,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         bar(server).value = 0
         data[server] = null
 
-        logger.log(server, Event(action = "stop"))
+        logger.log(server, Event(id, "stop"))
 
         return cancel(server)
     }
@@ -70,7 +66,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         data[server] = at
         schedule(server, next, at + 1)
 
-        logger.log(server, Event(action = if (alreadyRun) "restart" else "start"))
+        logger.log(server, Event(id, if (alreadyRun) "restart" else "start"))
 
         return alreadyRun
     }
@@ -80,7 +76,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val event = queue.events.row(callbackId).values.toList()
         cancel(server)
 
-        logger.log(server, Event(action = "skip"))
+        logger.log(server, Event(id, "skip"))
 
         event.forEach {
             it.callback.handle(server, queue, server.overworld().gameTime)
@@ -109,7 +105,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
             val event = REGISTRY[id] ?: return
             if (event.isEnabled(server)) {
                 val pause = event.handle(server, index)
-                event.runLogger.log(server, RunEvent(index, pause))
+                event.logger.log(server, Event(id, "scheduled", index, pause))
                 event.schedule(server, pause, index + 1)
                 event.data[server] = index
             } else {

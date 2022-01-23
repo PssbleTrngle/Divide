@@ -1,12 +1,13 @@
 import { darken } from 'polished'
-import { useCallback, VFC } from 'react'
+import { VFC } from 'react'
 import styled from 'styled-components'
-import useApi, { request } from '../hooks/useApi'
+import useApi from '../hooks/useApi'
+import useResource from '../hooks/useResource'
+import useSubmit from '../hooks/useSubmit'
 import Button from './Button'
 import { GameStatus } from './Status'
 
 interface Reward {
-   id: string
    display: string
    price: number
    description?: string
@@ -16,19 +17,19 @@ interface Reward {
 
 const Rewards: VFC = () => {
    const { data: status } = useApi<GameStatus>('status')
-   const { data: rewards } = useApi<Reward[]>('reward')
+   const { data: rewards } = useResource<Reward>('reward')
 
    return (
       <Style>
-         {rewards?.map(reward => (
-            <RewardPanel key={reward.id} {...reward} canBuy={reward.price <= (status?.points ?? 0)} />
+         {rewards?.map(({ value: reward, id }) => (
+            <RewardPanel key={id} {...reward} id={id} canBuy={reward.price <= (status?.points ?? 0)} />
          ))}
       </Style>
    )
 }
 
-const RewardPanel: VFC<Reward & { canBuy: boolean }> = ({ id, display: name, price, canBuy }) => {
-   const buy = useCallback(() => request(`/api/buy/${id}`).catch(console.error), [id])
+const RewardPanel: VFC<Reward & { canBuy: boolean; id: string }> = ({ id, display: name, price, canBuy }) => {
+   const buy = useSubmit(`buy/${id}`, { method: 'POST' })
 
    return (
       <Panel key={name}>

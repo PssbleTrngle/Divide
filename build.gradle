@@ -41,7 +41,6 @@ minecraft {
             workingDirectory project.file('run')
             arg "-mixin.config=${project.modid}.mixins.json"
 
-            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -55,7 +54,6 @@ minecraft {
             workingDirectory project.file('run/server')
             arg "-mixin.config=${project.modid}.mixins.json"
 
-            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -69,7 +67,6 @@ minecraft {
             workingDirectory project.file('run')
             arg "-mixin.config=${project.modid}.mixins.json"
 
-            property 'forge.logging.markers', 'SCAN,LOADING,CORE'
             property 'forge.logging.console.level', 'debug'
 
             args '--mod', project.modid, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources')
@@ -78,6 +75,13 @@ minecraft {
                 divide {
                     source sourceSets.main
                 }
+            }
+        }
+
+        all {
+            lazyToken('minecraft_classpath') {
+                // "C:/Users/nik/Desktop/Repos/Minecraft/Divide/build/libs/Divide-libs-1.0.0.jar"
+                configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
             }
         }
     }
@@ -91,10 +95,18 @@ configurations {
     library.exclude group: 'org.jetbrains', module: 'annotations'
 }
 
-minecraft.runs.all {
-    lazyToken('minecraft_classpath') {
-        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+afterEvaluate {
+    configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies.each { dep ->
+        dependencies.annotationProcessor([group: dep.moduleGroup, name: dep.moduleName, version: dep.moduleVersion])
     }
+}
+
+task mergeLibs(type: Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.library.copyRecursive().resolve().collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
 }
 
 // Include assets and data from data generators

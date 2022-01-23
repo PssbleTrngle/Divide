@@ -12,9 +12,10 @@ const Ranks: VFC = () => {
       <Style>
          {data &&
             Object.entries(data).map(([team, rank]) => (
-               <p key={rank}>
-                  <Rank rank={rank}>#{rank}</Rank> {team}
-               </p>
+               <Line key={rank}>
+                  <Rank rank={rank}>#{rank}</Rank>
+                  <span>{team}</span>
+               </Line>
             ))}
       </Style>
    )
@@ -23,13 +24,19 @@ const Ranks: VFC = () => {
 const COLORS = ['#cea907', '#c7c7c7', '#da892d']
 
 const Rank = styled.div<{ rank: number }>`
-   display: inline-block;
    background: ${p => COLORS[p.rank - 1] ?? darken(0.1, p.theme.bg)};
-   width: 1em;
    padding: 0.6em;
+   width: 2.2em;
    color: black;
    border-radius: 99999px;
    margin-right: 1em;
+`
+
+const Line = styled.div`
+   display: grid;
+   justify-content: start;
+   grid-auto-flow: column;
+   align-items: center;
 `
 
 const Style = styled.section`

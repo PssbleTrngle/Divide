@@ -19,10 +19,12 @@ const Home: VFC = () => {
 
 const Style = styled(Page)`
    gap: 1rem;
+   align-items: flex-start;
    grid-template:
       'status status'
       'rewards ranks'
-      'rewards team';
+      'rewards team'
+      'rewards .';
 `
 
 export default Home

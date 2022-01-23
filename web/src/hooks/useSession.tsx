@@ -27,13 +27,13 @@ export const SessionProvider: FC = ({ children }) => {
    const { search, pathname } = useLocation()
    const navigate = useNavigate()
 
-   const [token, setToken] = useReducer((_: string | null, v: string | null) => {
+   const [token, setToken] = useReducer((_: string | undefined, v: string | undefined) => {
       if (v) localStorage.setItem('token', v)
       else localStorage.removeItem('token')
       return v
-   }, localStorage.getItem('token'))
+   }, localStorage.getItem('token') ?? undefined)
 
-   const { data: player } = useQuery('me', () => request<Player>('/api/auth', token ?? ''), { enabled: !!token })
+   const { data: player } = useQuery('me', () => request<Player>('/api/auth', { token }), { enabled: !!token })
 
    useEffect(() => {
       const queryToken = new URLSearchParams(search).get('token')
