@@ -3,18 +3,13 @@ package possible_triangle.divide.command
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.commands.CommandSourceStack
-import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
-import net.minecraft.commands.arguments.EntityArgument
-import net.minecraft.commands.arguments.TeamArgument
 import net.minecraft.network.chat.TextComponent
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
-import possible_triangle.divide.command.arguments.DivideTeamArgument
 import possible_triangle.divide.logic.Teams
-import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 
@@ -30,21 +25,12 @@ object BuyCommand {
                 literal("buy").requires(Requirements::isPlayerInGame)
             ) { node, key ->
                 val base = literal(key)
-                when (Reward.getOrThrow(key).action.targets) {
-                    Action.Target.PLAYER -> node.then(
-                        base.then(
-                            argument(
-                                "target",
-                                EntityArgument.player()
-                            ).executes { buyReward(it) { Reward.getOrThrow(key) } })
-                    )
-                    Action.Target.TEAM -> node.then(
-                        base.then(
-                            argument("team", TeamArgument.team())
-                                .suggests(DivideTeamArgument.suggestions(ignoreOwn = true))
-                                .executes { buyReward(it) { Reward.getOrThrow(key) } })
-                    )
-                    else -> node.then(base.executes { buyReward(it) { Reward.getOrThrow(key) } })
+                val reward = Reward.getOrThrow(key)
+                val argument = reward.action.target.argument()
+                if (argument != null) {
+                    node.then(base.then(argument.executes { buyReward(it) { Reward.getOrThrow(key) } }))
+                } else {
+                    node.then(base.executes { buyReward(it) { Reward.getOrThrow(key) } })
                 }
             }
         )
@@ -53,20 +39,13 @@ object BuyCommand {
     private fun buyReward(ctx: CommandContext<CommandSourceStack>, supplier: () -> Reward): Int {
         val reward = supplier()
 
-        val target = when (reward.action.targets) {
-            Action.Target.PLAYER -> EntityArgument.getPlayer(ctx, "target")
-            Action.Target.TEAM -> {
-                val team = DivideTeamArgument.getTeam(ctx, "team", ignoreOwn = true)
-                ctx.source.server.playerList.players.find { it.team?.name == team.name }
-            }
-            else -> ctx.source.playerOrException
-        } ?: throw NO_TARGET.create()
+        val target = reward.action.target.fromContext(ctx) ?: throw NO_TARGET.create()
 
-        if (!reward.buy(
-                RewardContext(
+        if (!Reward.buy(
+                RewardContext<Any, Any>(
                     Teams.requiredTeam(ctx.source.playerOrException),
                     ctx.source.server,
-                    ctx.source.playerOrException,
+                    ctx.source.playerOrException.uuid,
                     target,
                     reward
                 )

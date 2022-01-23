@@ -7,7 +7,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 
 @Serializable
-data class EventPlayer(val name: String, val uuid: String, val team: String? = null) {
+data class EventPlayer(val name: String, val uuid: String? = null, val team: String? = null) {
     companion object {
         fun of(player: Player): EventPlayer {
             return EventPlayer(

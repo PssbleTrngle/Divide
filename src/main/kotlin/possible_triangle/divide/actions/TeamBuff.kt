@@ -9,8 +9,8 @@ import possible_triangle.divide.reward.RewardContext
 
 object TeamBuff : BaseBuff() {
 
-    override fun buffs(ctx: RewardContext): List<ServerPlayer> {
-        return Teams.teammates(ctx.player)
+    override fun buffs(ctx: RewardContext<Unit, Unit>): List<ServerPlayer> {
+        return Teams.teammates(ctx.player ?: return emptyList())
     }
 
     fun isBuffed(server: MinecraftServer, team: Team, reward: Reward): Boolean {

@@ -8,44 +8,50 @@ import possible_triangle.divide.data.Util
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.RewardContext
+import java.util.*
 
-object TrackPlayerWeak : DataAction(GLOWING) {
+object TrackPlayerWeak : DataAction<UUID, ServerPlayer>(GLOWING, ActionTarget.PLAYER) {
 
     private const val TARGET_TAG = "${DivideMod.ID}:tracking"
 
-    private fun getMarker(ctx: RewardContext): Entity? {
-        val id = Util.persistentData(ctx.target).getInt(TARGET_TAG)
-        return ctx.player.level.getEntity(id)
+    private fun getMarker(ctx: RewardContext<UUID, ServerPlayer>): Entity? {
+        return ctx.ifComplete { player, target ->
+            val id = Util.persistentData(target).getInt(TARGET_TAG)
+            player.level.getEntity(id)
+        }
     }
 
-    override fun targets(ctx: RewardContext): List<Entity> {
+    override fun targets(ctx: RewardContext<UUID, ServerPlayer>): List<Entity> {
         return listOfNotNull(getMarker(ctx))
     }
 
-    override fun visibleTo(ctx: RewardContext, target: Entity): List<ServerPlayer> {
-        return Teams.teammates(ctx.player)
+    override fun visibleTo(ctx: RewardContext<UUID, ServerPlayer>, target: Entity): List<ServerPlayer> {
+        return Teams.teammates(ctx.player ?: return emptyList())
     }
 
-    override fun onStop(ctx: RewardContext) {
+    override fun onStop(ctx: RewardContext<UUID, ServerPlayer>) {
         getMarker(ctx)?.remove(Entity.RemovalReason.DISCARDED)
     }
 
-    override fun onPrepare(ctx: RewardContext) {
+    override fun onPrepare(ctx: RewardContext<UUID, ServerPlayer>) {
         TrackPlayer.checkRequirements(ctx)
 
-        val pos = ctx.target.blockPosition().above()
-        val marker = Util.spawnMarker(EntityType.SLIME, ctx.target.getLevel(), pos) {
-            it.putInt("Size", 0)
-            it.putUUID(TARGET_TAG, ctx.target.uuid)
-        }
+        ctx.ifComplete { player, target ->
+            val pos = target.blockPosition().above()
+            val marker = Util.spawnMarker(EntityType.SLIME, target.getLevel(), pos) {
+                it.putInt("Size", 0)
+                it.putUUID(TARGET_TAG, target.uuid)
+            }
 
-        Util.withoutCollision(marker, ctx.server, ctx.target.team)
-        Util.persistentData(ctx.target).putInt(TARGET_TAG, marker.id)
+            Util.withoutCollision(marker, ctx.server, target.team)
+            Util.persistentData(target).putInt(TARGET_TAG, marker.id)
 
-        Chat.subtitle(ctx.target, "You will be tracked in ${ctx.reward.charge}s")
-        Teams.teammates(ctx.player).forEach {
-            Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
+            Chat.subtitle(target, "You will be tracked in ${ctx.reward.charge}s")
+            Teams.teammates(player).forEach {
+                Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
+            }
         }
     }
 

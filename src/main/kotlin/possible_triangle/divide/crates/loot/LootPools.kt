@@ -15,7 +15,7 @@ data class LootPools(val rolls: Int, val entries: List<LootEntry>, val functions
 
     fun generate(): List<ItemStack> {
         val rolls = Random.nextInt(this.rolls - 1, this.rolls + 2)
-        if (rolls == 0) return listOf()
+        if (rolls == 0) return emptyList()
 
         return makeWeightedDecision(rolls, entries.associateWith { it.weight })
             .map { it.createStack() }.onEach { stack -> functions?.forEach { it.apply(stack) } }

@@ -1,10 +1,8 @@
 package possible_triangle.divide.reward
 
-import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.ChatFormatting
-import net.minecraft.network.chat.BaseComponent
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.actions.*
@@ -33,25 +31,20 @@ data class Reward(
     @Serializable
     data class Event(
         val reward: String,
-        val boughtBy: EventPlayer,
+        val boughtBy: EventPlayer? = null,
         val target: EventPlayer? = null,
         val pointsPaid: Int? = null,
         val pointsNow: Int? = null,
     )
 
-    companion object : DefaultedResource<Reward>("rewards", { Reward.serializer() }) {
+    companion object :
+        DefaultedResource<Reward>("rewards", { Reward.serializer() }) {
 
         private val LOGGER = EventLogger("reward") { Event.serializer() }
 
-        private val SAME_TEAM =
-            DynamicCommandExceptionType { (it as BaseComponent).append(TextComponent(" is in your own team")) }
+        private val ACTIONS = hashMapOf<String, Action<*, *>>()
 
-        private val NOT_PLAYING =
-            DynamicCommandExceptionType { (it as BaseComponent).append(TextComponent(" is not playing")) }
-
-        private val ACTIONS = hashMapOf<String, Action>()
-
-        private fun register(id: String, action: Action, reward: () -> Reward): Delegate {
+        private fun <R, T> register(id: String, action: Action<R, T>, reward: () -> Reward): Delegate {
             ACTIONS[id.lowercase()] = action
             return defaulted(id, reward)
         }
@@ -97,44 +90,45 @@ data class Reward(
             )
         }
 
-    }
 
-    val action: Action
-        get() = ACTIONS[id] ?: throw NullPointerException("Action for $id missing")
+        fun <R, T> buy(ctx: RewardContext<R, T>): Boolean {
+            return ctx.ifComplete { player, _ ->
+                with(ctx.reward) {
+                    Points.modify(ctx.server, ctx.team, -price) { pointsNow ->
 
-    fun buy(ctx: RewardContext): Boolean {
-        return Points.modify(ctx.server, ctx.team, -price) { pointsNow ->
-
-            if (ctx.reward.action.targets != null && ctx.target.team?.name == ctx.player.team?.name) throw SAME_TEAM.create(
-                ctx.target.name
-            )
-            if (!Teams.isPlayer(ctx.target)) throw NOT_PLAYING.create(ctx.target.name)
-
-            Action.run(action, ctx, duration)
-
-            LOGGER.log(
-                ctx.server,
-                Event(
-                    id,
-                    EventPlayer.of(ctx.player),
-                    EventPlayer.of(ctx.target).takeIf { ctx.target != ctx.player },
-                    price,
-                    pointsNow,
-                )
-            )
-
-            Teams.teammates(ctx.player).forEach {
-                Chat.message(
-                    it, TextComponent("Bought ${ctx.reward.display} for ").append(
-                        TextComponent("${ctx.reward.price}").withStyle(
-                            ChatFormatting.LIGHT_PURPLE
+                        LOGGER.log(
+                            ctx.server,
+                            Event(
+                                id,
+                                EventPlayer.optional(ctx.player),
+                                ctx.targetEvent(),
+                                price,
+                                pointsNow,
+                            )
                         )
-                    )
-                )
-            }
+
+                        Teams.teammates(player).forEach {
+                            Chat.message(
+                                it, TextComponent("Bought ${ctx.reward.display} for ").append(
+                                    TextComponent("${ctx.reward.price}").withStyle(
+                                        ChatFormatting.LIGHT_PURPLE
+                                    )
+                                )
+                            )
+                        }
+
+                        Action.run(ctx, duration)
+
+                    }
+                }
+            } ?: throw Action.NOT_ONLINE.create()
         }
+
     }
 
+    @Suppress("UNCHECKED_CAST")
+    val action: Action<*, *>
+        get() = (ACTIONS[id] ?: throw NullPointerException("Action for $id missing"))
 
 }
 

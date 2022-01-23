@@ -2,6 +2,7 @@ package possible_triangle.divide.command
 
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.GameData
 import possible_triangle.divide.logic.Teams
 
@@ -15,6 +16,14 @@ object Requirements {
         } else {
             false
         }
+    }
+
+    fun optionalPlayer(source: CommandSourceStack): ServerPlayer? {
+        return if (source.entity is ServerPlayer) source.playerOrException else null
+    }
+
+    fun optionalTeam(source: CommandSourceStack): PlayerTeam? {
+        return optionalPlayer(source)?.let { Teams.teamOf(it) }
     }
 
     fun isPlayer(source: CommandSourceStack): Boolean {

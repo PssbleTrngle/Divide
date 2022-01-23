@@ -13,58 +13,68 @@ import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.RewardContext
+import java.util.*
 
-object TrackPlayer : DataAction(GLOWING) {
+object TrackPlayer : DataAction<UUID,ServerPlayer>(GLOWING, ActionTarget.PLAYER) {
 
-    private val PEACE =  SimpleCommandExceptionType(TextComponent("Cannot track players during peace time"))
+    private val PEACE = SimpleCommandExceptionType(TextComponent("Cannot track players during peace time"))
     private val IN_BASE =
         DynamicCommandExceptionType { (it as BaseComponent).append(TextComponent(" cannot be tracked")) }
 
-    override fun targets(ctx: RewardContext): List<Entity> {
-        return listOf(ctx.target)
+    override fun targets(ctx: RewardContext<UUID, ServerPlayer>): List<Entity> {
+        return listOfNotNull(ctx.target)
     }
 
-    override fun visibleTo(ctx: RewardContext, target: Entity): List<ServerPlayer> {
-        return Teams.teammates(ctx.player)
+    override fun visibleTo(ctx: RewardContext<UUID, ServerPlayer>, target: Entity): List<ServerPlayer> {
+        return Teams.teammates(ctx.player ?: return emptyList())
     }
 
-    fun checkRequirements(ctx: RewardContext) {
-        if (Bases.isInBase(ctx.target)) throw IN_BASE.create(ctx.target.name)
-        if(Eras.isPeace(ctx.server))throw PEACE.create()
+    fun checkRequirements(ctx: RewardContext<UUID, ServerPlayer>) {
+        ctx.ifComplete { _, target ->
+            if (Bases.isInBase(target)) throw IN_BASE.create(target.name)
+            if (Eras.isPeace(ctx.server)) throw PEACE.create()
+        } ?: throw NOT_ONLINE.create()
     }
 
-    override fun onPrepare(ctx: RewardContext) {
+    override fun onPrepare(ctx: RewardContext<UUID, ServerPlayer>) {
         checkRequirements(ctx)
 
-        Chat.subtitle(ctx.target, "You will be tracked in ${ctx.reward.charge}s")
-        Teams.teammates(ctx.player).forEach {
-            Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
+        ctx.ifComplete { player, target ->
+            Chat.subtitle(target, "You will be tracked in ${ctx.reward.charge}s")
+            Teams.teammates(player).forEach {
+                Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
+            }
         }
     }
 
-    override fun onStart(ctx: RewardContext) {
-        Teams.teammates(ctx.player).forEach {
-            Chat.subtitle(
-                it,
-                (ctx.target.displayName as MutableComponent).append(
-                    TextComponent(" is in ").append(
-                        TextComponent(ctx.target.level.dimension().location().path).withStyle(
-                            ChatFormatting.GOLD
+    override fun onStart(ctx: RewardContext<UUID, ServerPlayer>) {
+        ctx.ifComplete { player, target ->
+            Teams.teammates(player).forEach {
+                Chat.subtitle(
+                    it,
+                    (target.displayName as MutableComponent).append(
+                        TextComponent(" is in ").append(
+                            TextComponent(target.level.dimension().location().path).withStyle(
+                                ChatFormatting.GOLD
+                            )
                         )
                     )
                 )
-            )
-        }
+            }
 
-        Chat.subtitle(ctx.target, "You are being tracked")
+            Chat.subtitle(target, "You are being tracked")
+        }
     }
 
-    override fun onStop(ctx: RewardContext) {
-        Teams.teammates(ctx.player).forEach {
-            Chat.subtitle(it, TextComponent("No longer tracking ").append(ctx.target.name))
+    override fun onStop(ctx: RewardContext<UUID, ServerPlayer>) {
+        ctx.ifComplete { player, target ->
+            Teams.teammates(player).forEach {
+                Chat.subtitle(it, TextComponent("No longer tracking ").append(target.name))
+            }
+            Chat.subtitle(target, "You are no longer being tracked")
         }
-        Chat.subtitle(ctx.target, "You are no longer being tracked")
     }
 
 }

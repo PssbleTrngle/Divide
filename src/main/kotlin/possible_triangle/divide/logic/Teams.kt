@@ -57,7 +57,7 @@ object Teams {
     }
 
     fun teammates(player: ServerPlayer, includeSelf: Boolean = true): List<ServerPlayer> {
-        val team = teamOf(player) ?: return listOf()
+        val team = teamOf(player) ?: return emptyList()
         return player.getLevel().players()
             .filter { it.team?.name == team.name }
             .filter { includeSelf || it.uuid != player.uuid }

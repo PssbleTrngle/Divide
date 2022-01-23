@@ -12,7 +12,7 @@ fun <T> makeWeightedDecision(rolls: Int, values: Map<T, Number>): List<T> {
         total += weight
     }
 
-    if (total <= 0.0) return listOf()
+    if (total <= 0.0) return emptyList()
 
     return (0..rolls)
         .map { Random.nextDouble(0.0, total) }

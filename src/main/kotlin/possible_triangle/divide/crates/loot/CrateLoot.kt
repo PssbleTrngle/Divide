@@ -20,7 +20,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
     companion object : DefaultedResource<CrateLoot>("crate_loot", { CrateLoot.serializer() }) {
 
         private fun normalized(list: List<LootEntry>): List<LootEntry> {
-            if (list.isEmpty()) return listOf()
+            if (list.isEmpty()) return emptyList()
             val max = list.maxOf { it.weight }
             return list.map {
                 val copied = it.copy(weight = it.weight / max)

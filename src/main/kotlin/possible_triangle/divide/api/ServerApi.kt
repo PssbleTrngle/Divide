@@ -38,7 +38,7 @@ import possible_triangle.divide.info.Scores
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
-import possible_triangle.divide.reward.Action
+import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 import java.util.*
@@ -197,13 +197,13 @@ object ServerApi {
                                     val reward = Reward[call.parameters["id"] ?: return@auth call.respond(BadRequest)]
                                         ?: return@auth call.respond(NotFound)
 
-                                    val target = if (reward.action.targets == Action.Target.PLAYER) {
+                                    val target = if (reward.action.target == ActionTarget.PLAYER) {
                                         val targetUUID = UUID.fromString(call.receiveParameters()["target"])
                                         server.playerList.getPlayer(targetUUID) ?: return@auth call.respond(BadRequest)
-                                    } else player
+                                    } else Unit
 
-                                    val ctx = RewardContext(team, server, player, target, reward)
-                                    call.respond(if (reward.buy(ctx)) OK else PaymentRequired)
+                                    val ctx = RewardContext<Any, Any>(team, server, player.uuid, target, reward)
+                                    call.respond(if (Reward.buy(ctx)) OK else PaymentRequired)
                                 }
                             }
                         }
