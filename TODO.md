@@ -1,0 +1,20 @@
+-[ ] Order loot crate
+-[ ] Buy events (border)
+-[x] Remove tracking on death
+-[x] Tracking save zone
+-[x] Don't track instantly
+-[ ] Fix bed respawn
+-[x] Track location players has been 10s ago
+-[x] Unloaded entities don't glow
+-[x] Invincibility Time on Login
+-[x] No tracking during peace time
+-[x] Glow own team
+-[x] Loot Crate heights
+-[x] Lodestone & vanishing compass
+-[x] No pvp in lobby
+-[x] faster farms
+-[ ] Betrayal
+-[ ] Hot Potato
+-[ ] No downgrading
+-[ ] Remove team
+-[ ] Glow clear callback

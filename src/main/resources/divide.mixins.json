@@ -8,7 +8,8 @@
     "HopperBlockEntityMixin",
     "ItemStackMixin",
     "PlayerMixin",
-    "ServerGamePacketListenerImplMixin"
+    "ServerGamePacketListenerImplMixin",
+    "ServerLevelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

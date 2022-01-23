@@ -7,10 +7,9 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.BaseComponent
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
-import possible_triangle.divide.actions.Buff
-import possible_triangle.divide.actions.FindGrave
-import possible_triangle.divide.actions.HideNametags
-import possible_triangle.divide.actions.TrackPlayer
+import possible_triangle.divide.actions.*
+import possible_triangle.divide.actions.secret.BlindTeam
+import possible_triangle.divide.actions.secret.MiningFatigue
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.logging.EventLogger
@@ -22,12 +21,14 @@ import possible_triangle.divide.logic.Teams
 data class Reward(
     val display: String,
     val price: Int,
-    val duration: Int?,
-    val requiresTarget: Boolean = false
+    val duration: Int? = null,
+    val charge: Int? = null,
+    val secret: Boolean = false,
 ) {
 
     @Transient
     lateinit var id: String
+        private set
 
     @Serializable
     data class Event(
@@ -55,34 +56,58 @@ data class Reward(
             return defaulted(id, reward)
         }
 
-        override fun populate(entry: Reward, server: MinecraftServer, id: String) {
+        override fun populate(entry: Reward, server: MinecraftServer?, id: String) {
             entry.id = id
         }
 
-        val TRACK_PLAYER by register("TRACK_PLAYER", TrackPlayer) {
+        val TRACK_PLAYER by register("track_player", TrackPlayer) { Reward("Track Player", 1000, duration = 60 * 5) }
+        val TRACK_PLAYER_WEAK by register("track_player_weak", TrackPlayerWeak) {
             Reward(
-                "Track Player",
-                250,
-                duration = 60 * 5,
-                requiresTarget = true
+                "Track Players",
+                500,
+                duration = 60 * 5
             )
         }
 
-        val FIND_GRAVE by register("FIND_GRAVE", FindGrave) { Reward("Find Grave", 50, duration = 60 * 10) }
+        val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 60 * 10) }
 
-        val HIDE_NAMES by register("HIDE_NAMES", HideNametags) { Reward("Hide Nametags", 50, duration = 10) }
+        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 50, duration = 10) }
 
-        val BUFF_LOOT by register("BUFF_LOOT", Buff) { Reward("Buff Loot-Chance", 100, duration = 60 * 1) }
+        val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 60 * 1) }
+
+        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop Growth", 100, duration = 60 * 5) }
+
+        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a loot crate", 800, charge = 60 * 5) }
+
+        val BLIND_TEAM by register("blind_team", BlindTeam) {
+            Reward(
+                "Order a loot crate",
+                800,
+                duration = 60 * 5,
+                secret = true
+            )
+        }
+
+        val MINING_FATIGUE by register("slow_minespeed", MiningFatigue) {
+            Reward(
+                "Give a team mining fatigue",
+                800,
+                duration = 60 * 5,
+                secret = true
+            )
+        }
 
     }
 
     val action: Action
-        get() = ACTIONS[idOf(this)] ?: throw  NullPointerException("Action for ${idOf(this)} missing")
+        get() = ACTIONS[id] ?: throw NullPointerException("Action for $id missing")
 
     fun buy(ctx: RewardContext): Boolean {
         return Points.modify(ctx.server, ctx.team, -price) { pointsNow ->
 
-            if (ctx.reward.requiresTarget && ctx.target.team?.name == ctx.player.team?.name) throw SAME_TEAM.create(ctx.target.name)
+            if (ctx.reward.action.targets != null && ctx.target.team?.name == ctx.player.team?.name) throw SAME_TEAM.create(
+                ctx.target.name
+            )
             if (!Teams.isPlayer(ctx.target)) throw NOT_PLAYING.create(ctx.target.name)
 
             Action.run(action, ctx, duration)
@@ -90,9 +115,9 @@ data class Reward(
             LOGGER.log(
                 ctx.server,
                 Event(
-                    idOf(this),
+                    id,
                     EventPlayer.of(ctx.player),
-                    if (requiresTarget) EventPlayer.of(ctx.target) else null,
+                    EventPlayer.of(ctx.target).takeIf { ctx.target != ctx.player },
                     price,
                     pointsNow,
                 )

@@ -14,7 +14,7 @@ import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
 
 @Mod.EventBusSubscriber
-object CashCommand {
+object PointsCommand {
 
     val NOT_ENOUGH = DynamicCommandExceptionType { TextComponent("You need at least $it points") }
 
@@ -22,33 +22,33 @@ object CashCommand {
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
             literal("points")
-                .executes(::getCash)
+                .executes(::getPoints)
                 .then(literal("add").requires { it.hasPermission(2) }
-                    .then(argument("amount", IntegerArgumentType.integer(1)).executes(::addCash)))
+                    .then(argument("amount", IntegerArgumentType.integer(1)).executes(::addPoints)))
                 .then(literal("remove").requires { it.hasPermission(2) }
-                    .then(argument("amount", IntegerArgumentType.integer(1)).executes(::removeCash)))
+                    .then(argument("amount", IntegerArgumentType.integer(1)).executes(::removePoints)))
                 .then(literal("set").requires { it.hasPermission(2) }
-                    .then(argument("amount", IntegerArgumentType.integer(0)).executes(::setCash)))
+                    .then(argument("amount", IntegerArgumentType.integer(0)).executes(::setPoints)))
         )
     }
 
-    private fun getCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = Teams.teamOf(ctx)
+    private fun getPoints(ctx: CommandContext<CommandSourceStack>): Int {
+        val team = Teams.requiredTeam(ctx.source.playerOrException)
         val amount = Points.get(ctx.source.server, team)
         ctx.source.sendSuccess(TextComponent("Your team has $amount"), false)
         return amount
     }
 
-    private fun addCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = Teams.teamOf(ctx)
+    private fun addPoints(ctx: CommandContext<CommandSourceStack>): Int {
+        val team = Teams.requiredTeam(ctx.source.playerOrException)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
         Points.modify(ctx.source.server, team, amount)
         ctx.source.sendSuccess(TextComponent("You added $amount to ${team.name}"), false)
         return amount
     }
 
-    private fun removeCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = Teams.teamOf(ctx)
+    private fun removePoints(ctx: CommandContext<CommandSourceStack>): Int {
+        val team = Teams.requiredTeam(ctx.source.playerOrException)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
         if (Points.modify(ctx.source.server, team, -amount))
             ctx.source.sendSuccess(TextComponent("You removed $amount from ${team.name}"), false)
@@ -57,8 +57,8 @@ object CashCommand {
         return amount
     }
 
-    private fun setCash(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = Teams.teamOf(ctx)
+    private fun setPoints(ctx: CommandContext<CommandSourceStack>): Int {
+        val team = Teams.requiredTeam(ctx.source.playerOrException)
         val amount = IntegerArgumentType.getInteger(ctx, "amount")
         Points.set(ctx.source.server, team, amount)
         ctx.source.sendSuccess(TextComponent("You set ${team.name} to $amount"), false)

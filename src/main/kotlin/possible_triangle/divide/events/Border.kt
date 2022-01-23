@@ -1,5 +1,6 @@
 package possible_triangle.divide.events
 
+import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.MinecraftServer
@@ -20,9 +21,10 @@ object Border : CycleEvent("border") {
         if (worldborder.size == size.toDouble()) return
         worldborder.lerpSizeBetween(worldborder.size, size.toDouble(), 1000L * seconds)
         val verb = if (worldborder.size < size.toDouble()) "grow" else "shrink"
+        val color = if (worldborder.size < size.toDouble()) ChatFormatting.GREEN else ChatFormatting.RED
         if (message)
             server.playerList.players.forEach {
-                Chat.subtitle(it, "border started to $verb")
+                Chat.subtitle(it, Chat.apply("border started to $verb", color))
             }
     }
 

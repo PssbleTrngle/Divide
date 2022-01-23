@@ -30,11 +30,14 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
     data class Values(
         val minHearts: Int = 4,
         val starterCash: Int = 0,
+        val loginShield: Int = 5,
         val deaths: DeathValues = DeathValues(),
         val border: BorderValues = BorderValues(),
         val crate: CrateValues = CrateValues(),
         val eras: EraValues = EraValues(),
         val bounties: BountyValues = BountyValues(),
+        val bases: BaseValues = BaseValues(),
+        val missions: MissionValues = MissionValues(),
         val admins: List<String> = listOf(),
         val api: ApiValues = ApiValues(),
     )
@@ -72,6 +75,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val clearOnCleanup: Boolean = true,
         val itemSaveChance: Double = 0.125,
         val splitAndShuffle: Boolean = true,
+        val levels: List<Int> = listOf(70, 100, 120),
     )
 
     @Serializable
@@ -93,6 +97,18 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val pause: IntRange = IntRange(3600, 3600 * 2),
         val bountyTime: Int = 60 * 20,
         val clearOnDeath: Boolean = false
+    )
+
+    @Serializable
+    data class MissionValues(
+        val enabled: Boolean = true,
+        val startAt: Int = 2,
+        val pause: IntRange = IntRange(3600, 3600 * 2),
+    )
+
+    @Serializable
+    data class BaseValues(
+        val radius: Double = 8.0
     )
 
     @Serializable

@@ -5,6 +5,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.ChatFormatting.*
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.item.Item
@@ -20,14 +21,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.actions.Buff
+import possible_triangle.divide.actions.BaseBuff
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
 import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.EventPos
-import possible_triangle.divide.data.PlayerData
+import possible_triangle.divide.data.Util
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logging.EventLogger
+import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.reward.Reward
 import java.util.*
 import kotlin.math.min
@@ -72,14 +74,8 @@ object DeathEvents {
         }
     }
 
-    @SubscribeEvent
-    fun playerJoin(event: PlayerEvent.PlayerLoggedInEvent) {
-        val server = event.player.server ?: return
-        event.player.awardRecipes(server.recipeManager.recipes)
-    }
-
     fun getDeathPos(player: ServerPlayer): BlockPos? {
-        val persistent = PlayerData.persistentData(player)
+        val persistent = Util.persistentData(player)
         val i = persistent.getIntArray(DEATH_POS_TAG)
         return if (i.size == 3)
             BlockPos(i[0], i[1], i[2])
@@ -87,27 +83,30 @@ object DeathEvents {
     }
 
     fun timeSinceDeath(player: ServerPlayer): Long {
-        val persistent = PlayerData.persistentData(player)
-        if(!persistent.contains(DEATH_TIME_TAG)) return 0L
+        val persistent = Util.persistentData(player)
+        if (!persistent.contains(DEATH_TIME_TAG)) return 0L
         val lastDeath = persistent.getLong(DEATH_TIME_TAG)
         return player.level.gameTime - lastDeath
     }
 
-    fun starterGear(player: ServerPlayer, updateDeathTime: Boolean = true): List<ItemStack> {
-        val timeSince = timeSinceDeath(player)
-        val persistent = PlayerData.persistentData(player)
+    fun startedGear(player: ServerPlayer): List<ItemStack> {
+        return respawnGear(player, false) + ItemStack(bed(player.team?.color))
+    }
 
-        if (updateDeathTime) persistent.putLong(DEATH_TIME_TAG, player.level.gameTime)
-        if (timeSince < (Config.CONFIG.deaths.starterGearBreak * 20)) return listOf()
+    private fun respawnGear(player: ServerPlayer, checkPause: Boolean = true): List<ItemStack> {
+        val compass = listOfNotNull(Bases.createCompass(player))
+
+        if (checkPause) {
+            val timeSince = timeSinceDeath(player)
+            if (timeSince < (Config.CONFIG.deaths.starterGearBreak * 20)) return compass
+        }
+
+        Util.persistentData(player).putLong(DEATH_TIME_TAG, player.level.gameTime)
 
         return listOf(
             ItemStack(Items.JUNGLE_PLANKS, 10),
             ItemStack(Items.BREAD, 6),
-            ItemStack(bed(player.team?.color)),
-        ).map {
-            it.orCreateTag.putBoolean("starter_gear", true)
-            it
-        }
+        ) + compass
     }
 
     private val TIERED = listOf(
@@ -210,29 +209,37 @@ object DeathEvents {
             )
         )
 
+        if (event.source.isExplosion) Mission.EXPLODE.fulfill(player)
+        if (event.source == DamageSource.DROWN) Mission.DROWN.fulfill(player)
+
         val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
         if (killer != null && !wasBounty) {
             val livedFor = timeSinceDeath(player)
             val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
-            DivideMod.LOGGER.info("$livedFor $modifier")
+
+            Mission.KILL_PLAYER.fulfill(killer)
+
             val bounty = if (event.source.isExplosion)
                 Bounty.BLOWN_UP
             else
                 Bounty.PLAYER_KILL
+
             bounty.gain(killer, modifier)
         }
 
         var keepPercent = Config.CONFIG.deaths.keepPercent.value
-        if (killer != null && Buff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
+        if (killer != null && BaseBuff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
 
-        event.drops.filter { it.item.tag?.getBoolean("starter_gear") ?: false }
-            .forEach { it.setRemoved(Entity.RemovalReason.DISCARDED) }
+        event.drops.filter {
+            if (it.item.tag?.getBoolean("starter_gear") == true) true
+            else it.item.tag?.getBoolean(Bases.COMPASS_TAG) == true
+        }.forEach { it.setRemoved(Entity.RemovalReason.DISCARDED) }
 
-        val drops = event.drops.filterNot { it.isRemoved || it.item.tag?.getBoolean("starter_gear") ?: false }
+        val drops = event.drops.filterNot { it.isRemoved }
         val keepAmount = (drops.size * keepPercent).toInt()
         val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
 
-        STORED[player.uuid] = starterGear(player) + keep.map {
+        STORED[player.uuid] = respawnGear(player) + keep.map {
             val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count + 1) else it.item.count
             if (taken >= it.item.count) {
                 it.makeFakeItem()
@@ -244,7 +251,7 @@ object DeathEvents {
         }
 
         val pos = listOf(player.blockPosition().x, player.blockPosition().y, player.blockPosition().z)
-        PlayerData.persistentData(player).putIntArray(DEATH_POS_TAG, pos)
+        Util.persistentData(player).putIntArray(DEATH_POS_TAG, pos)
 
     }
 

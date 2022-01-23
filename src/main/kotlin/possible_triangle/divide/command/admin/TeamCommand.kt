@@ -12,6 +12,8 @@ import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.TeamArgument
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.network.chat.TranslatableComponent
+import possible_triangle.divide.command.arguments.DivideTeamArgument
+import possible_triangle.divide.logic.Teams
 
 object TeamCommand {
 
@@ -24,28 +26,22 @@ object TeamCommand {
                 .then(
                     literal("create").then(
                         argument("name", StringArgumentType.string()).then(
-                            argument(
-                                "color",
-                                ColorArgument.color()
-                            ).executes(::createTeam)
+                            argument("color", ColorArgument.color()).executes(::createTeam)
                         )
                     )
                 )
                 .then(
                     literal("join").then(
-                        argument("team", TeamArgument.team()).then(
-                            argument(
-                                "players",
-                                EntityArgument.players()
-                            ).executes(::addToTeam)
-                        )
+                        argument("team", TeamArgument.team())
+                            .suggests(DivideTeamArgument.suggestions())
+                            .then(argument("players", EntityArgument.players()).executes(::addToTeam))
                     )
                 )
         )
     }
 
     private fun addToTeam(ctx: CommandContext<CommandSourceStack>): Int {
-        val team = TeamArgument.getTeam(ctx, "team")
+        val team = DivideTeamArgument.getTeam(ctx, "team")
         EntityArgument.getPlayers(ctx, "players").forEach {
             it.tags.remove("spectator")
             ctx.source.server.scoreboard.addPlayerToTeam(it.scoreboardName, team)
@@ -58,10 +54,10 @@ object TeamCommand {
 
         val name = StringArgumentType.getString(ctx, "name")
         val color = ColorArgument.getColor(ctx, "color")
-        val id = name.replace("\\s+".toRegex(), "_").lowercase()
+        val id = Teams.TEAM_PREFIX + color.name.lowercase()
 
         if (scoreboard.getPlayerTeam(id) != null) throw TEAM_ALREADY_EXISTS.create()
-        if (scoreboard.playerTeams.any { it.color == color }) throw TEAM_ALREADY_EXISTS.create()
+        if (Teams.teams(ctx.source.server).any { it.color == color }) throw TEAM_ALREADY_EXISTS.create()
 
         val team = scoreboard.addPlayerTeam(id)
         team.displayName = TextComponent(name)

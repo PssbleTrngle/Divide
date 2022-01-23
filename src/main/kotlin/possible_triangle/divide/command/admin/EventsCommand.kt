@@ -9,20 +9,13 @@ import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.level.GameRules
-import net.minecraft.world.level.GameType
-import possible_triangle.divide.crates.CrateEvent
+import possible_triangle.divide.GameData
 import possible_triangle.divide.events.Border
 import possible_triangle.divide.events.CycleEvent
-import possible_triangle.divide.events.Eras
-import possible_triangle.divide.events.PlayerBountyEvent
-import possible_triangle.divide.logic.Chat
-import possible_triangle.divide.logic.DeathEvents
+import possible_triangle.divide.events.CycleEvent.Companion.EVENTS
 import possible_triangle.divide.logic.Teams
 
 object EventsCommand {
-
-    private val EVENTS = listOf(Border, Eras, CrateEvent, PlayerBountyEvent)
 
     private val PLAYERS_MISSING_TEAM = DynamicCommandExceptionType {
         val players = it as List<ServerPlayer>
@@ -33,22 +26,24 @@ object EventsCommand {
     }
 
     fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
+
+        fun forEvents(
+            literal: String,
+            withEvent: (CommandContext<CommandSourceStack>, CycleEvent) -> Int,
+            without: ((CommandContext<CommandSourceStack>) -> Int)? = null
+        ): LiteralArgumentBuilder<CommandSourceStack>? {
+            return EVENTS.fold(if (without == null) literal(literal) else literal(literal).executes { without(it) }) { node, event ->
+                node.then(literal(event.id).executes {
+                    withEvent(it, event)
+                })
+            }
+        }
+
         return base.then(literal("center").executes(::center))
-            .then(EVENTS.fold(literal("start").executes(::start)) { node, event ->
-                node.then(literal(event.id).executes {
-                    start(it, event)
-                })
-            })
-            .then(EVENTS.fold(literal("stop").executes(::stop)) { node, event ->
-                node.then(literal(event.id).executes {
-                    stop(it, event)
-                })
-            })
-            .then(EVENTS.fold(literal("skip")) { node, event ->
-                node.then(literal(event.id).executes {
-                    skip(it, event)
-                })
-            })
+            .then(forEvents("get", ::get))
+            .then(forEvents("start", ::start, ::start))
+            .then(forEvents("stop", ::stop, ::stop))
+            .then(forEvents("skip", ::skip))
             .then(literal("fix").executes(::fix))
     }
 
@@ -76,18 +71,10 @@ object EventsCommand {
     }
 
     private fun start(ctx: CommandContext<CommandSourceStack>): Int {
-
         val noTeam = Teams.players(ctx.source.server).filter { it.team == null }
         if (noTeam.isNotEmpty()) throw PLAYERS_MISSING_TEAM.create(noTeam)
 
-        EVENTS.forEach { it.startCycle(ctx.source.server) }
-        ctx.source.server.gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(false, ctx.source.server)
-
-        Teams.players(ctx.source.server).forEach { player ->
-            player.setGameMode(GameType.SURVIVAL)
-            DeathEvents.starterGear(player).forEach { player.addItem(it) }
-            Chat.subtitle(player, "Started")
-        }
+        GameData.setStarted(ctx.source.server, true)
 
         return 1
     }
@@ -98,6 +85,13 @@ object EventsCommand {
         return 1
     }
 
+    private fun get(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {
+        val index = event.data[ctx.source.server]
+        if (index != null) ctx.source.sendSuccess(TextComponent("${event.id} is at index $index"), false)
+        else ctx.source.sendFailure(TextComponent("${event.id} is not running"))
+        return 1
+    }
+
     private fun stop(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {
         event.stop(ctx.source.server)
         ctx.source.sendSuccess(TextComponent("Stopped ${event.id}"), true)
@@ -105,8 +99,7 @@ object EventsCommand {
     }
 
     private fun stop(ctx: CommandContext<CommandSourceStack>): Int {
-        EVENTS.forEach { it.stop(ctx.source.server) }
-        Border.lobby(ctx.source.server)
+        GameData.setStarted(ctx.source.server, false)
         ctx.source.sendSuccess(TextComponent("Stopped ${EVENTS.size} events"), true)
         return EVENTS.size
     }

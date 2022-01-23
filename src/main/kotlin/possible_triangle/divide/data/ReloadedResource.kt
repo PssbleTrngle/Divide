@@ -36,6 +36,7 @@ abstract class ReloadedResource<Entry>(
 
         @SubscribeEvent
         fun onTick(event: TickEvent.WorldTickEvent) {
+            if (Util.shouldSkip(event, { it.world }, ticks = 10))return
             val server = event.world.server ?: return
 
             WATCHERS.removeIf { (resource, watcher) ->
@@ -63,10 +64,6 @@ abstract class ReloadedResource<Entry>(
         }
     }
 
-    fun idOf(entry: Entry): String {
-        return registry.entries.find { it.value == entry }?.key ?: throw NullPointerException("ID missing for $dir")
-    }
-
     operator fun get(id: String): Entry? {
         return registry[id]
     }
@@ -78,7 +75,7 @@ abstract class ReloadedResource<Entry>(
     protected val folder
         get() = File("config/divide/$dir")
 
-    open fun populate(entry: Entry, server: MinecraftServer, id: String) {}
+    open fun populate(entry: Entry, server: MinecraftServer?, id: String) {}
 
     private fun registerRecursive(root: Path, watchService: WatchService) {
         root.toFile().mkdirs()

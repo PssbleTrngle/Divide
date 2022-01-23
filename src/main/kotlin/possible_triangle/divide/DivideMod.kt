@@ -8,9 +8,16 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import possible_triangle.divide.api.ServerApi
 import possible_triangle.divide.bounty.Bounty
+import possible_triangle.divide.command.admin.PauseCommand
+import possible_triangle.divide.crates.CrateEvent
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.ReloadedResource
+import possible_triangle.divide.events.Border
+import possible_triangle.divide.events.Eras
+import possible_triangle.divide.events.PlayerBountyEvent
+import possible_triangle.divide.missions.Mission
+import possible_triangle.divide.missions.MissionEvent
 import possible_triangle.divide.reward.Reward
 
 @Mod(DivideMod.ID)
@@ -23,21 +30,24 @@ object DivideMod {
     init {
         LOGGER.info("Divide booting")
 
-        ReloadedResource.register(CrateLoot)
-        ReloadedResource.register(Bounty)
-        ReloadedResource.register(Reward)
-        ReloadedResource.register(Config)
-        ReloadedResource.register(Order)
+        listOf(CrateLoot, Bounty, Reward, Config, Order, Mission).forEach {
+            ReloadedResource.register(it)
+        }
+
+        listOf(Border, Eras, CrateEvent, PlayerBountyEvent, MissionEvent).forEach {
+            it.register()
+        }
     }
 
     @SubscribeEvent
     fun onServerStart(event: ServerStartedEvent) {
-        if(Config.CONFIG.api.enabled) ServerApi.start(event.server)
+        if (GameData.DATA[event.server].paused) PauseCommand.showDisplay(event.server)
+        if (Config.CONFIG.api.enabled) ServerApi.start(event.server)
     }
 
     @SubscribeEvent
     fun onServerStop(event: ServerStoppedEvent) {
-        if(Config.CONFIG.api.enabled) ServerApi.stop()
+        if (Config.CONFIG.api.enabled) ServerApi.stop()
     }
 
 }

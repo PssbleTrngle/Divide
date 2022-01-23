@@ -8,6 +8,7 @@ import net.minecraft.commands.Commands.literal
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
+import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.logic.Teams
 
@@ -18,22 +19,22 @@ object OrderCommand {
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
             Order.keys.toList().fold(
-                literal("order").requires { Teams.isPlayer(it.playerOrException) }
+                literal("order").requires(Requirements::isPlayerInGame)
             ) { node, key ->
                 node.then(literal(key)
-                    .executes { order(it) { Order.getOrThrow(key) } }
+                    .executes { orderItem(it) { Order.getOrThrow(key) } }
                     .then(argument("amount", IntegerArgumentType.integer(1))
-                        .executes { order(it) { Order.getOrThrow(key) } }
+                        .executes { orderItem(it) { Order.getOrThrow(key) } }
                     )
                 )
             }
         )
     }
 
-    private fun order(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {
+    private fun orderItem(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {
         val order = supplier()
 
-        val team = Teams.teamOf(ctx)
+        val team = Teams.requiredTeam(ctx.source.playerOrException)
 
         val amount = try {
             IntegerArgumentType.getInteger(ctx, "amount")
@@ -41,7 +42,9 @@ object OrderCommand {
             1
         }
 
-        if (!order.order(ctx.source.playerOrException, team, amount)) throw CashCommand.NOT_ENOUGH.create(amount * order.cost)
+        if (!order.order(ctx.source.playerOrException, team, amount)) {
+            throw NOT_ENOUGH.create(amount * order.cost)
+        }
 
         return amount
     }

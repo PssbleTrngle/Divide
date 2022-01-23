@@ -18,6 +18,7 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import java.util.*
@@ -28,11 +29,42 @@ import kotlin.random.Random
 class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List<ItemStack>, val uuid: UUID) :
     TimerCallback<MinecraftServer> {
 
-    companion object {
+    companion object : CallbackHandler<FillLootCallback>("crates", FillLootCallback::class.java) {
         @Serializable
         private data class Event(val pos: EventPos, val table: String, val orders: Int = 0)
 
         private val LOGGER = EventLogger("loot_crate_filled") { Event.serializer() }
+
+        override fun serialize(nbt: CompoundTag, callback: FillLootCallback) {
+            with(callback) {
+                nbt.put("pos", NbtUtils.writeBlockPos(pos))
+                nbt.putString("table", table.id)
+
+                val list = ListTag()
+                orders.forEach {
+                    val encoded = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it)
+                    encoded.get().ifLeft(list::add)
+                }
+                nbt.put("orders", list)
+                nbt.putUUID("uuid", uuid)
+            }
+        }
+
+        override fun deserialize(nbt: CompoundTag): FillLootCallback {
+            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
+            val list = nbt.getList("orders", 10)
+            val orders = list
+                .map { ItemStack.CODEC.parse(NbtOps.INSTANCE, it) }
+                .map { it.get().left() }
+                .filter { it.isPresent }
+                .map { it.get() }
+
+            val tableName = nbt.getString("table")
+            val table = CrateLoot.getOrThrow(tableName)
+            val uuid = nbt.getUUID("uuid")
+
+            return FillLootCallback(pos, table, orders, uuid)
+        }
     }
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
@@ -74,7 +106,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
             crate.setItem(slot, shuffled.getOrElse(i) { ItemStack.EMPTY })
         }
 
-        LOGGER.log(server, Event(EventPos.of(pos), CrateLoot.idOf(table), orders.size))
+        LOGGER.log(server, Event(EventPos.of(pos), table.id, orders.size))
 
         val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
         server.playerList.players.forEach {
@@ -86,44 +118,6 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
                     vec.x, vec.y, vec.z,
                     20, 0.5, 0.5, 0.5, 0.1
                 )
-        }
-    }
-
-    object Serializer :
-        TimerCallback.Serializer<MinecraftServer, FillLootCallback>(
-            ResourceLocation(DivideMod.ID, "crates"),
-            FillLootCallback::class.java
-        ) {
-
-        override fun serialize(nbt: CompoundTag, callback: FillLootCallback) {
-            with(callback) {
-                nbt.put("pos", NbtUtils.writeBlockPos(pos))
-                nbt.putString("table", CrateLoot.idOf(table))
-
-                val list = ListTag()
-                orders.forEach {
-                    val encoded = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it)
-                    encoded.get().ifLeft(list::add)
-                }
-                nbt.put("orders", list)
-                nbt.putUUID("uuid", uuid)
-            }
-        }
-
-        override fun deserialize(nbt: CompoundTag): FillLootCallback {
-            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
-            val list = nbt.getList("orders", 10)
-            val orders = list
-                .map { ItemStack.CODEC.parse(NbtOps.INSTANCE, it) }
-                .map { it.get().left() }
-                .filter { it.isPresent }
-                .map { it.get() }
-
-            val tableName = nbt.getString("table")
-            val table = CrateLoot.getOrThrow(tableName)
-            val uuid = nbt.getUUID("uuid")
-
-            return FillLootCallback(pos, table, orders, uuid)
         }
     }
 

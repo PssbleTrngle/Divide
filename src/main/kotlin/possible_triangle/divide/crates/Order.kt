@@ -24,6 +24,7 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
     @Transient
     lateinit var id: String
+        private set
 
     companion object : DefaultedResource<Order>("orders", { Order.serializer() }) {
 
@@ -40,11 +41,13 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
         private val LOGGER = EventLogger("order") { Event.serializer() }
 
-        override fun populate(entry: Order, server: MinecraftServer, id: String) {
+        override fun populate(entry: Order, server: MinecraftServer?, id: String) {
             entry.id = id
-            val items = server.registryAccess().registryOrThrow(Registry.ITEM_REGISTRY)
-            entry.item = items[ResourceLocation(entry.itemId)]
-                ?: throw IllegalArgumentException("Item ${entry.itemId} does not exists")
+            if (server != null) {
+                val items = server.registryAccess().registryOrThrow(Registry.ITEM_REGISTRY)
+                entry.item = items[ResourceLocation(entry.itemId)]
+                    ?: throw IllegalArgumentException("Item ${entry.itemId} does not exists")
+            }
         }
 
         init {

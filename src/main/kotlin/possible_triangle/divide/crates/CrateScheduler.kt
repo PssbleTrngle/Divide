@@ -12,19 +12,15 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.BossEvent
-import net.minecraft.world.effect.MobEffectInstance
-import net.minecraft.world.effect.MobEffects
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.BarrelBlock
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity
-import net.minecraft.world.level.timers.TimerCallbacks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateEvents.CRATE_UUID_TAG
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.callbacks.CleanCallback
@@ -32,10 +28,11 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
+import possible_triangle.divide.data.Util.blocksIn
+import possible_triangle.divide.data.Util.spawnMarker
 import possible_triangle.divide.events.Countdown
 import possible_triangle.divide.logic.Teams
 import java.util.*
-import java.util.stream.Collectors
 import kotlin.random.Random
 
 object CrateScheduler {
@@ -55,7 +52,7 @@ object CrateScheduler {
             orders.filter { it.value.isNotEmpty() }.forEach { (order, stacks) ->
                 val list = ListTag()
                 stacks.forEach { ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it).get().ifLeft(list::add) }
-                tag.put(if (order != null) Order.idOf(order) else "", list)
+                tag.put(order?.id ?: "", list)
             }
             tag
         }, { tag ->
@@ -68,12 +65,6 @@ object CrateScheduler {
                 order to stacks
             }.toMutableMap()
         })
-
-    init {
-        TimerCallbacks.SERVER_CALLBACKS.register(FillLootCallback.Serializer)
-        TimerCallbacks.SERVER_CALLBACKS.register(MessageCallback.Serializer)
-        TimerCallbacks.SERVER_CALLBACKS.register(CleanCallback.Serializer)
-    }
 
     fun markersAt(server: MinecraftServer, pos: BlockPos): List<Entity> {
         return server.overworld().getEntitiesOfClass(Entity::class.java, AABB(pos).inflate(0.5)) {
@@ -103,12 +94,6 @@ object CrateScheduler {
         container.load(nbt)
     }
 
-    fun blocksIn(aabb: AABB): List<BlockPos> {
-        return BlockPos.betweenClosedStream(aabb)
-            .map { BlockPos(it) }
-            .collect(Collectors.toList())
-    }
-
     private fun addOrder(server: MinecraftServer, team: Team? = null, order: Order? = null, stack: ItemStack) {
         val orders = ORDERS[server]
         val stacks = orders[team].getOrPut(order) { mutableListOf() }
@@ -124,8 +109,8 @@ object CrateScheduler {
 
         stack.orCreateTag.getCompound("display").put("Lore", lore)
 
-        var chance =  Config.CONFIG.crate.itemSaveChance
-        if(!stack.isStackable) chance *= 4
+        var chance = Config.CONFIG.crate.itemSaveChance
+        if (!stack.isStackable) chance *= 4
         if (Random.nextDouble() <= chance) addOrder(server, stack = stack)
     }
 
@@ -168,12 +153,12 @@ object CrateScheduler {
             .firstOrNull()
     }
 
-    fun spawnCrate(server: MinecraftServer, pos: BlockPos): UUID {
+    private fun spawnCrate(server: MinecraftServer, pos: BlockPos): UUID {
         val state = Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.FACING, Direction.UP)
         server.overworld().setBlock(pos, state, 2)
 
         val crate = crateAt(server, pos, true) ?: throw NullPointerException("crate missing at $pos")
-        val uuid =  UUID.randomUUID()
+        val uuid = UUID.randomUUID()
         crate.tileData.putUUID(CRATE_UUID_TAG, uuid)
         crate.tileData.putBoolean(UNBREAKABLE_TAG, true)
         crate.customName = TextComponent("Loot Crate")
@@ -181,59 +166,45 @@ object CrateScheduler {
         return uuid
     }
 
-    fun spawnMarker(server: MinecraftServer, pos: BlockPos) {
-        val marker = EntityType.SLIME.create(server.overworld()) ?: throw NullPointerException()
-        val nbt = CompoundTag()
-        nbt.putBoolean("NoAI", true)
-        nbt.putInt("Size", 0)
-        nbt.putBoolean("Invulnerable", true)
-
-        marker.deserializeNBT(nbt)
-        marker.moveTo(pos.x + 0.5, pos.y + 0.25, pos.z + 0.5)
-        server.overworld().addFreshEntity(marker)
-        marker.tags.add(CRATE_UUID_TAG)
-        marker.addEffect(
-            MobEffectInstance(
-                MobEffects.INVISIBILITY,
-                1000000,
-                0,
-                false,
-                false
-            )
-        )
-    }
-
-    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot) {
+    fun prepare(
+        server: MinecraftServer,
+        seconds: Int,
+        pos: BlockPos,
+        type: CrateLoot,
+        withoutOrders: Boolean = false
+    ): Long {
         val world = server.overworld()
+        val time = server.overworld().gameTime + seconds * 20
 
         val uuid = spawnCrate(server, pos)
-        spawnMarker(server, pos)
+        val marker = spawnMarker(EntityType.SLIME, world, pos) {
+            it.putInt("Size", 0)
+        }
+        marker.tags.add(CRATE_UUID_TAG)
 
-        val time = world.gameTime + seconds * 20
         COUNTDOWN.countdown(server, seconds)
         COUNTDOWN.bar(server).isVisible = true
         COUNTDOWN.bar(server).color = BossEvent.BossBarColor.YELLOW
 
-        val orders = ORDERS[server].values.map { it.value.values }
-            .flatten().flatten()
-            .filterNot { it.isEmpty }
-            .map { it.copy() }
-
-        ORDERS[server].values.keys.forEach {
-            ORDERS[server][it] = mutableMapOf()
+        val orders = if (withoutOrders) listOf() else {
+            val items = ORDERS[server].values.map { it.value.values }
+                .flatten().flatten()
+                .filterNot { it.isEmpty }
+                .map { it.copy() }
+            ORDERS[server].values.keys.forEach {
+                ORDERS[server][it] = mutableMapOf()
+            }
+            items
         }
 
-        server.worldData.overworldData().scheduledEvents.schedule(
-            "${DivideMod.ID}:crate",
-            time,
-            FillLootCallback(pos, type, orders, uuid)
-        )
+        FillLootCallback.schedule(server, seconds, FillLootCallback(pos, type, orders, uuid))
+        CleanCallback.schedule(server, seconds + Config.CONFIG.crate.cleanUpTime, CleanCallback(pos, uuid))
 
-        server.worldData.overworldData().scheduledEvents.schedule(
-            "${DivideMod.ID}:crate_cleanup",
-            time + 20 * Config.CONFIG.crate.cleanUpTime,
-            CleanCallback(pos, uuid)
-        )
+        return time
+    }
+
+    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot) {
+        val time = prepare(server, seconds, pos, type)
 
         val teams = Teams.ranked(server).reversed()
         teams.forEachIndexed { index, team ->
@@ -241,11 +212,12 @@ object CrateScheduler {
         }
     }
 
-    private fun scheduleMessage(server: MinecraftServer, seconds: Int, pos: BlockPos, time: Long, team: Team) {
-        server.worldData.overworldData().scheduledEvents.schedule(
-            "${DivideMod.ID}:crate_message_${team.color.name.lowercase()}",
-            server.overworld().gameTime + seconds * 20,
-            MessageCallback(team.name, pos, time)
+    fun scheduleMessage(server: MinecraftServer, seconds: Int, pos: BlockPos, time: Long, team: Team) {
+        MessageCallback.schedule(
+            server,
+            seconds,
+            MessageCallback(team.name, pos, time),
+            suffix = team.color.name.lowercase()
         )
     }
 

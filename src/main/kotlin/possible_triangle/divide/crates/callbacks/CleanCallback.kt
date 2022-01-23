@@ -4,27 +4,37 @@ import kotlinx.serialization.Serializable
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtUtils
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.logging.EventLogger
 import java.util.*
 
 class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<MinecraftServer> {
 
-    companion object {
+    companion object : CallbackHandler<CleanCallback>("crate_cleanup", CleanCallback::class.java) {
         @Serializable
         private data class Event(val pos: EventPos)
 
         private val LOGGER = EventLogger("loot_crate_cleaned") { Event.serializer() }
+
+        override fun serialize(nbt: CompoundTag, callback: CleanCallback) {
+            nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
+            nbt.putUUID("uuid", callback.uuid)
+        }
+
+        override fun deserialize(nbt: CompoundTag): CleanCallback {
+            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
+            val uuid = nbt.getUUID("uuid")
+            return CleanCallback(pos, uuid)
+        }
 
         fun cleanMarker(server: MinecraftServer, pos: BlockPos) {
             CrateScheduler.markersAt(server, pos).forEach {
@@ -50,24 +60,6 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
             )
         }
 
-    }
-
-    object Serializer :
-        TimerCallback.Serializer<MinecraftServer, CleanCallback>(
-            ResourceLocation(DivideMod.ID, "crate_cleanup"),
-            CleanCallback::class.java
-        ) {
-
-        override fun serialize(nbt: CompoundTag, callback: CleanCallback) {
-            nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
-            nbt.putUUID("uuid", callback.uuid)
-        }
-
-        override fun deserialize(nbt: CompoundTag): CleanCallback {
-            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
-            val uuid = nbt.getUUID("uuid")
-            return CleanCallback(pos, uuid)
-        }
     }
 
 }

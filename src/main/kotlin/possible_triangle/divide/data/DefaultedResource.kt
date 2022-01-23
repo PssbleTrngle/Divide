@@ -18,14 +18,21 @@ abstract class DefaultedResource<Entry>(
         val lower = id.lowercase()
         if (defaults.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
         defaults[lower] = supplier
-        registry[lower] = supplier()
+        with(supplier()) {
+            populate(this, null, id)
+            registry[lower] = this
+            save(id, this, false)
+        }
+
         return Delegate(lower, supplier)
     }
 
-    private fun save(id: String, entry: Entry) {
+    private fun save(id: String, entry: Entry, overwrite: Boolean = true) {
         val encoded = Yaml(configuration = config()).encodeToString(serializer(), entry)
         val file = File(folder, "$id.yml")
+        folder.mkdirs()
         if (!file.exists()) file.createNewFile()
+        else if (!overwrite) return
         val writer = file.writer()
         writer.write(encoded)
         writer.close()

@@ -15,7 +15,7 @@ public class PlayerMixin {
         var self = (Player) (Object) this;
         var server = self.getServer();
         if (server != null) {
-            var isPeace = Eras.Data.Companion.get(server);
+            var isPeace = Eras.INSTANCE.isPeace(server);
             if (isPeace) callback.setReturnValue(false);
         }
     }

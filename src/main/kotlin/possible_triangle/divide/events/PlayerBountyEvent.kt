@@ -7,7 +7,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.EventPlayer
-import possible_triangle.divide.data.PlayerData
+import possible_triangle.divide.data.Util
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.*
 
@@ -55,7 +55,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
     }
 
     private fun setBounty(player: ServerPlayer, bounty: PlayerBounty?) {
-        val data = PlayerData.persistentData(player)
+        val data = Util.persistentData(player)
         if (bounty != null) data.put("bounty", bounty.serialize())
         else data.remove("bounty")
     }
@@ -99,7 +99,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
     }
 
     fun getBounty(player: ServerPlayer): PlayerBounty? {
-        val nbt = PlayerData.persistentData(player)
+        val nbt = Util.persistentData(player)
         return if (nbt.contains("bounty", 10)) {
             val bounty = PlayerBounty.deserialize(nbt.getCompound("bounty"))
             if (bounty != null && bounty.until > player.level.gameTime) bounty

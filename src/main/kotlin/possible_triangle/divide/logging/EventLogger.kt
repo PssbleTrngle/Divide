@@ -10,8 +10,6 @@ import java.io.File
 @Serializable
 data class LoggedEvent<T>(val gameTime: Long, val realTime: Long, val type: String, val event: T)
 
-data class LinePair<T>(val event: LoggedEvent<T>, val serializer: KSerializer<T>)
-
 class EventLogger<T>(private val name: String, private val serializer: () -> KSerializer<T>) {
 
     companion object {

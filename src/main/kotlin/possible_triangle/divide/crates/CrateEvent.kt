@@ -19,7 +19,7 @@ object CrateEvent : CycleEvent("loot_crates") {
         val border = server.overworld().worldBorder
 
         if (index >= Config.CONFIG.crate.startAt) try {
-            val y = 70
+            val y = Config.CONFIG.crate.levels.random()
             val x = Random.nextInt(border.minX.toInt() + 15, border.maxX.toInt() - 15)
             val z = Random.nextInt(border.minZ.toInt() + 15, border.maxZ.toInt() - 15)
 

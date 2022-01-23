@@ -9,6 +9,8 @@ scoreboard objectives add jumps custom:jump "Jumps"
 
 scoreboard objectives add crafting_tables_crafted minecraft.crafted:minecraft.crafting_table "Crafting Tables Crafted"
 scoreboard objectives add crafting_tables_placed minecraft.used:minecraft.crafting_table "Crafting Tables Placed"
+scoreboard objectives add divide_per_player_info dummy "INFO"
+scoreboard objectives setdisplay sidebar divide_per_player_info
 
 gamerule doDaylightCycle false
 time set noon

@@ -1,6 +1,7 @@
 package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -11,6 +12,10 @@ import possible_triangle.divide.logic.makeWeightedDecision
 
 @Serializable
 data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
+
+    @Transient
+    lateinit var id: String
+        private set
 
     companion object : DefaultedResource<CrateLoot>("crate_loot", { CrateLoot.serializer() }) {
 
@@ -220,8 +225,9 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             return makeWeightedDecision(values.associateWith { it.weight })
         }
 
-        override fun populate(entry: CrateLoot, server: MinecraftServer, id: String) {
-            entry.pools.forEach { it.populate(server) }
+        override fun populate(entry: CrateLoot, server: MinecraftServer?, id: String) {
+            entry.id = id
+            if (server != null) entry.pools.forEach { it.populate(server) }
         }
 
     }

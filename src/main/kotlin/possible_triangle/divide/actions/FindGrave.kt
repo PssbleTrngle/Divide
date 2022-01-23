@@ -8,11 +8,12 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.phys.AABB
+import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
 import possible_triangle.divide.reward.RewardContext
 
-object FindGrave : GlowingAction() {
+object FindGrave : DataAction(GLOWING, targets = null) {
 
     private val NOT_DIED = SimpleCommandExceptionType(TextComponent("You have not died yet"))
 
@@ -37,7 +38,7 @@ object FindGrave : GlowingAction() {
         }.flatten()
     }
 
-    override fun visibleTo(ctx: RewardContext): List<ServerPlayer> {
+    override fun visibleTo(ctx: RewardContext, target: Entity): List<ServerPlayer> {
         return listOf(ctx.player)
     }
 

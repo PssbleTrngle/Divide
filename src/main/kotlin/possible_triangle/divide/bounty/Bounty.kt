@@ -22,6 +22,7 @@ data class Bounty(val description: String, val amount: Amount) {
 
     @Transient
     lateinit var id: String
+        private set
 
     @Serializable
     private data class Event(
@@ -42,7 +43,7 @@ data class Bounty(val description: String, val amount: Amount) {
             BOUNTY_COUNTS[server][team] = 0
         }
 
-        override fun populate(entry: Bounty, server: MinecraftServer, id: String) {
+        override fun populate(entry: Bounty, server: MinecraftServer?, id: String) {
             entry.id = id
         }
 
@@ -98,7 +99,7 @@ data class Bounty(val description: String, val amount: Amount) {
                     LOGGER.log(
                         player.server,
                         Event(
-                            idOf(this),
+                            id,
                             cashGained,
                             pointsNow,
                             BOUNTY_COUNTS[player.server][team],

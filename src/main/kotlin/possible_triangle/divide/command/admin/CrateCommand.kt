@@ -16,8 +16,8 @@ import possible_triangle.divide.crates.loot.CrateLoot
 
 object CrateCommand {
 
-    private val NO_CRATE_POS = DynamicCommandExceptionType { TextComponent("Could no find a valid pos around $it") }
-    private val NO_LOOT_DEFINED = SimpleCommandExceptionType(TextComponent("No crate loot defined"))
+    val NO_CRATE_POS = DynamicCommandExceptionType { TextComponent("Could no find a valid pos around $it") }
+    val NO_LOOT_DEFINED = SimpleCommandExceptionType(TextComponent("No crate loot defined"))
 
     fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack>? {
         return base.then(

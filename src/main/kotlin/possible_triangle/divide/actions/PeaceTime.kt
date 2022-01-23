@@ -3,7 +3,7 @@ package possible_triangle.divide.actions
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
-object PeaceTime : Action {
+object PeaceTime : Action() {
 
     override fun start(ctx: RewardContext) {
     }

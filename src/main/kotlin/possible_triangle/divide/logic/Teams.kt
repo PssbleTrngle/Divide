@@ -1,8 +1,7 @@
 package possible_triangle.divide.logic
 
-import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.minecraft.commands.CommandSourceStack
+import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -15,6 +14,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.data.Util
 import java.util.*
 import kotlin.math.max
 
@@ -22,8 +22,8 @@ import kotlin.math.max
 object Teams {
 
     private val NOT_PLAYING = SimpleCommandExceptionType(TextComponent("You are not playing"))
-
-    val ADMIN_TAG = "${DivideMod.ID}_admin"
+    const val TEAM_PREFIX = "${DivideMod.ID}_team_"
+    private const val ADMIN_TAG = "${DivideMod.ID}_admin"
 
     fun score(server: MinecraftServer, team: Team): Int {
         val total = Points.getTotal(server, team)
@@ -37,6 +37,14 @@ object Teams {
         return max(0, total - deaths * 10 + kills * 50)
     }
 
+    fun isPlayingTeam(team: String): Boolean {
+        return team.startsWith(TEAM_PREFIX)
+    }
+
+    fun isPlayingTeam(team: Team): Boolean {
+        return team.color != ChatFormatting.RESET && isPlayingTeam(team.name)
+    }
+
     fun teamOf(player: Player): PlayerTeam? {
         if (!isPlayer(player)) return null
         val team = player.team
@@ -44,8 +52,8 @@ object Teams {
         else null
     }
 
-    fun teamOf(ctx: CommandContext<CommandSourceStack>): PlayerTeam {
-        return teamOf(ctx.source.playerOrException) ?: throw NOT_PLAYING.create()
+    fun requiredTeam(player: Player): PlayerTeam {
+        return teamOf(player) ?: throw NOT_PLAYING.create()
     }
 
     fun teammates(player: ServerPlayer, includeSelf: Boolean = true): List<ServerPlayer> {
@@ -56,20 +64,15 @@ object Teams {
     }
 
     fun isAdmin(player: ServerPlayer): Boolean {
-        return Config.CONFIG.admins.any { UUID.fromString(it) == player.uuid }
-                || Config.CONFIG.admins.contains(player.scoreboardName)
+        return Config.CONFIG.admins.any {
+            try {
+                UUID.fromString(it) == player.uuid
+            } catch (e: IllegalArgumentException) {
+                false
+            }
+        } || Config.CONFIG.admins.contains(player.scoreboardName)
                 || player.tags.contains(ADMIN_TAG)
                 || player.hasPermissions(2)
-    }
-
-    fun isAdmin(source: CommandSourceStack): Boolean {
-        val entity = source.entity
-        if (source.hasPermission(2)) return true
-        return if (entity is ServerPlayer) {
-            isAdmin(entity)
-        } else {
-            false
-        }
     }
 
     fun isSpectator(player: Player): Boolean {
@@ -94,8 +97,7 @@ object Teams {
 
     fun teams(server: MinecraftServer): List<PlayerTeam> {
         return server.scoreboard.playerTeams.toList()
-        //val players = players(server)
-        //return players.mapNotNull { it.team }.distinctBy { it.name }.filterIsInstance(PlayerTeam::class.java)
+            .filter { isPlayingTeam(it) }
     }
 
     fun ranked(server: MinecraftServer): List<PlayerTeam> {
@@ -104,6 +106,8 @@ object Teams {
 
     @SubscribeEvent
     fun tick(event: TickEvent.WorldTickEvent) {
+        if (Util.shouldSkip(event, { it.world })) return
+
         val server = event.world.server ?: return
         spectators(server).forEach {
             if (it.team != null) server.overworld().scoreboard.removePlayerFromTeam(it.scoreboardName)
