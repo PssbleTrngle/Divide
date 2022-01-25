@@ -7,44 +7,42 @@ import net.minecraft.world.entity.Entity
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.reward.Action
-import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.RewardContext
 
-abstract class DataAction<Raw,Target>(
+abstract class DataAction(
     private val type: DataHacker.Type,
-    targets: ActionTarget<Raw,Target>,
     private val clearOnDeath: Boolean = true,
     private val clearInBase: Boolean = true,
 ) :
-    Action<Raw,Target>(targets) {
+    Action() {
 
     companion object {
         private val ALREADY_TARGETED =
             Dynamic2CommandExceptionType { a, b -> TextComponent("$a is already targeted by $b") }
     }
 
-    abstract fun targets(ctx: RewardContext<Raw, Target>): List<Entity>
-    abstract fun visibleTo(ctx: RewardContext<Raw, Target>, target: Entity): List<ServerPlayer>
+    abstract fun <T> targets(ctx: RewardContext<T>): List<Entity>
+    abstract fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayer>
 
-    open fun onStart(ctx: RewardContext<Raw, Target>) {}
-    open fun onStop(ctx: RewardContext<Raw, Target>) {}
-    open fun onPrepare(ctx: RewardContext<Raw, Target>) {}
+    open fun <T> onStart(ctx: RewardContext<T>) {}
+    open fun <T> onStop(ctx: RewardContext<T>) {}
+    open fun <T> onPrepare(ctx: RewardContext<T>) {}
 
-    final override fun prepare(ctx: RewardContext<Raw, Target>) {
-        if (isRunning(ctx.server, this) { it.target == ctx.target }) {
+    final override fun <T> prepare(ctx: RewardContext<T>) {
+        if (isRunning(ctx.server, ctx.reward) { it.target == ctx.target }) {
             ALREADY_TARGETED.create(ctx.targetEvent()?.name, ctx.reward.display)
         }
         onPrepare(ctx)
     }
 
-    final override fun start(ctx: RewardContext<Raw, Target>) {
+    final override fun <T> start(ctx: RewardContext<T>) {
         onStart(ctx)
         targets(ctx).forEach {
             DataHacker.addReason(type, it, visibleTo(ctx, it), ctx.reward.duration ?: 0, clearOnDeath, clearInBase)
         }
     }
 
-    final override fun stop(ctx: RewardContext<Raw, Target>) {
+    final override fun <T> stop(ctx: RewardContext<T>) {
         onStop(ctx)
         targets(ctx).forEach {
             PacketIntercepting.updateData(it, ctx.server)

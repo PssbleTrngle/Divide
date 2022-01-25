@@ -1,10 +1,13 @@
 import { Settings } from 'luxon'
-import React from 'react'
+import React, { FC } from 'react'
 import ReactDOM from 'react-dom'
-import { QueryClient, QueryClientProvider, setLogger } from 'react-query'
+import { QueryClient, QueryClientProvider, setLogger, useQuery } from 'react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { createGlobalStyle, ThemeProvider } from 'styled-components'
 import App from './App'
+import Banner from './components/Banner'
+import { request } from './hooks/useApi'
+import { DialogProvider } from './hooks/useDialog'
 import { SessionProvider } from './hooks/useSession'
 import reportWebVitals from './reportWebVitals'
 import './styles/fonts.css'
@@ -36,15 +39,29 @@ const client = new QueryClient({
    },
 })
 
+const StatusChecker: FC = ({ children }) => {
+   const { isSuccess } = useQuery('api-status', () => request('api', { method: 'HEAD' }))
+   return (
+      <>
+         {isSuccess || <Banner>Offline</Banner>}
+         {children}
+      </>
+   )
+}
+
 ReactDOM.render(
    <React.StrictMode>
       <BrowserRouter>
          <ThemeProvider theme={dark}>
             <Global />
             <QueryClientProvider client={client}>
-               <SessionProvider>
-                  <App />
-               </SessionProvider>
+               <StatusChecker>
+                  <SessionProvider>
+                     <DialogProvider>
+                        <App />
+                     </DialogProvider>
+                  </SessionProvider>
+               </StatusChecker>
             </QueryClientProvider>
          </ThemeProvider>
       </BrowserRouter>

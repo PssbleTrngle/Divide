@@ -18,7 +18,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
 
     private val callbackId = "${DivideMod.ID}:event_$id"
 
-    private val logger = EventLogger("cycle_event") { Event.serializer() }
+    private val logger = EventLogger("cycle_event", { Event.serializer() }) { isAdmin() }
 
     companion object : CallbackHandler<Callback>("event", Callback::class.java) {
         private val REGISTRY = hashMapOf<String, CycleEvent>()
@@ -37,7 +37,6 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
     }
 
     private fun cancel(server: MinecraftServer): Boolean {
-        onCancel(server)
         return cancel(server, suffix = id)
     }
 
@@ -45,17 +44,18 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         return isRunning(server, suffix = id)
     }
 
-    open fun onCancel(server: MinecraftServer) {}
+    protected open fun onStop(server: MinecraftServer) {}
 
     fun register() {
         REGISTRY[id] = this
     }
 
     fun stop(server: MinecraftServer): Boolean {
+        onStop(server)
         bar(server).value = 0
         data[server] = null
 
-        logger.log(server, Event(id, "stop"))
+        logger.log(server, Event(id, "stopped"))
 
         return cancel(server)
     }
@@ -66,7 +66,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         data[server] = at
         schedule(server, next, at + 1)
 
-        logger.log(server, Event(id, if (alreadyRun) "restart" else "start"))
+        logger.log(server, Event(id, if (alreadyRun) "restarted" else "started"))
 
         return alreadyRun
     }
@@ -76,7 +76,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val event = queue.events.row(callbackId).values.toList()
         cancel(server)
 
-        logger.log(server, Event(id, "skip"))
+        logger.log(server, Event(id, "skipped"))
 
         event.forEach {
             it.callback.handle(server, queue, server.overworld().gameTime)

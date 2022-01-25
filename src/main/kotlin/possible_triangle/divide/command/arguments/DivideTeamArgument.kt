@@ -20,10 +20,11 @@ object DivideTeamArgument {
     private val SAME_TEAM = SimpleCommandExceptionType(TextComponent("That's you own team"))
 
     fun getTeam(ctx: CommandContext<CommandSourceStack>, name: String, otherTeam: Boolean = false): PlayerTeam {
-        val argument = Teams.TEAM_PREFIX + ctx.getArgument(name, String::class.java)
+        val baseName = ctx.getArgument(name, String::class.java)
         val scoreboard: Scoreboard = ctx.source.server.scoreboard
         val team =
-            scoreboard.getPlayerTeam(argument)?.takeIf { Teams.isPlayingTeam(it) } ?: throw NOT_FOUND.create(argument)
+            scoreboard.getPlayerTeam(Teams.TEAM_PREFIX + baseName)?.takeIf { Teams.isPlayingTeam(it) }
+                ?: throw NOT_FOUND.create(baseName)
         if (otherTeam && Requirements.optionalTeam(ctx.source)?.name == team.name) throw SAME_TEAM.create()
         return team
     }

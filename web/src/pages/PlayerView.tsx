@@ -6,16 +6,14 @@ import Rewards from '../components/Rewards'
 import Status from '../components/Status'
 import Team from '../components/Team'
 
-const Home: VFC = () => {
-   return (
-      <Style>
-         <Status />
-         <Team />
-         <Ranks />
-         <Rewards />
-      </Style>
-   )
-}
+const PlayerView: VFC = () => (
+   <Style>
+      <Status />
+      <Ranks />
+      <Team />
+      <Rewards />
+   </Style>
+)
 
 const Style = styled(Page)`
    gap: 1rem;
@@ -27,4 +25,4 @@ const Style = styled(Page)`
       'rewards .';
 `
 
-export default Home
+export default PlayerView

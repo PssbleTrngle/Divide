@@ -33,7 +33,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
         @Serializable
         private data class Event(val pos: EventPos, val table: String, val orders: Int = 0)
 
-        private val LOGGER = EventLogger("loot_crate_filled") { Event.serializer() }
+        private val LOGGER = EventLogger("loot_crate_filled", { Event.serializer() }) { always() }
 
         override fun serialize(nbt: CompoundTag, callback: FillLootCallback) {
             with(callback) {

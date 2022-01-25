@@ -5,7 +5,7 @@ import possible_triangle.divide.reward.RewardContext
 
 object PlayerBuff : BaseBuff() {
 
-    override fun buffs(ctx: RewardContext<Unit, Unit>): List<ServerPlayer> {
+   override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer> {
         return listOfNotNull(ctx.player)
     }
 

@@ -12,6 +12,7 @@ import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
@@ -23,7 +24,7 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
 
     companion object : CallbackHandler<MessageCallback>("crate_message", MessageCallback::class.java) {
         @Serializable
-        private data class Event(val pos: EventPos, val team: String)
+        private data class Event(val pos: EventPos, val team: EventTarget)
 
         override fun serialize(nbt: CompoundTag, callback: MessageCallback) {
             nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
@@ -38,17 +39,23 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
             return MessageCallback(teamName, pos, time)
         }
 
-        private val LOGGER = EventLogger("loot_crate_notify") { Event.serializer() }
+        private val LOGGER = EventLogger("loot_crate_notify", { Event.serializer() }) { inTeam { it.team } }
     }
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, now: Long) {
-        val players = Teams.players(server).filter { it.team?.name == teamName }
+        val team = server.scoreboard.getPlayerTeam(teamName) ?: return
+        val players = Teams.players(server, team)
 
-        LOGGER.log(server, Event(EventPos.of(pos), teamName))
+        LOGGER.log(server, Event(EventPos.of(pos), EventTarget.of(team)))
 
         val marker = CrateScheduler.markersAt(server, pos).firstOrNull()
         val inSeconds = (time - now) / 20
-        if (marker != null) DataHacker.addReason(GLOWING,  marker, players, inSeconds.toInt() + Config.CONFIG.crate.cleanUpTime)
+        if (marker != null) DataHacker.addReason(
+            GLOWING,
+            marker,
+            players,
+            inSeconds.toInt() + Config.CONFIG.crate.cleanUpTime
+        )
 
         players.forEach {
             CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)

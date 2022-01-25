@@ -24,8 +24,8 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.actions.BaseBuff
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
-import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.EventPos
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logging.EventLogger
@@ -37,8 +37,8 @@ import kotlin.random.Random
 
 @Serializable
 private data class Event(
-    val player: EventPlayer,
-    val killer: EventPlayer? = null,
+    val player: EventTarget,
+    val killer: EventTarget? = null,
     val pos: EventPos,
     val source: String
 )
@@ -46,7 +46,7 @@ private data class Event(
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object DeathEvents {
 
-    private val LOGGER = EventLogger("death") { Event.serializer() }
+    private val LOGGER = EventLogger("death", { Event.serializer() }) { always() }
 
     private val STORED = hashMapOf<UUID, List<ItemStack>>()
     private const val DEATH_POS_TAG = "${DivideMod.ID}_death_pos"
@@ -202,8 +202,8 @@ object DeathEvents {
         LOGGER.log(
             player.server,
             Event(
-                EventPlayer.of(player),
-                EventPlayer.optional(killer),
+                EventTarget.of(player),
+                EventTarget.optional(killer),
                 EventPos.of(player.blockPosition()),
                 event.source.msgId
             )

@@ -1,0 +1,13 @@
+services:
+   nginx:
+      image: nginx:stable-alpine
+      volumes:
+         - ./build:/usr/share/nginx/html
+         - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      ports:
+         - 10080:80
+
+   cors:
+      image: redocly/cors-anywhere
+      ports:
+         - 8001:8080

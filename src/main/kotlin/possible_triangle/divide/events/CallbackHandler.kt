@@ -25,10 +25,7 @@ abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val i
         return server.worldData.overworldData().scheduledEvents.eventsIds.contains(callbackId(suffix))
     }
 
-    open fun onCancel(server: MinecraftServer) {}
-
     fun cancel(server: MinecraftServer, suffix: String = ""): Boolean {
-        onCancel(server)
         val cleared = isRunning(server)
         server.worldData.overworldData().scheduledEvents.remove(callbackId(suffix))
         return cleared

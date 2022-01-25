@@ -5,6 +5,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.scores.PlayerTeam
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.server.ServerAboutToStartEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -111,6 +112,10 @@ abstract class ReloadedResource<Entry>(
 
     val entries
         get() = registry.toMap()
+
+    open fun isVisible(entry: Entry, team: PlayerTeam?, server: MinecraftServer): Boolean {
+        return true
+    }
 
     open fun afterLoad(server: MinecraftServer) {}
 

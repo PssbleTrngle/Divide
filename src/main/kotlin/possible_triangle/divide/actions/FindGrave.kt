@@ -10,20 +10,19 @@ import net.minecraft.world.phys.AABB
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
-import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.RewardContext
 
-object FindGrave : DataAction<Unit, Unit>(GLOWING, ActionTarget.NONE) {
+object FindGrave : DataAction(GLOWING) {
 
     private val NOT_DIED = SimpleCommandExceptionType(TextComponent("You have not died yet"))
 
-    override fun onPrepare(ctx: RewardContext<Unit, Unit>) {
+    override fun <T> onPrepare(ctx: RewardContext<T>) {
         DeathEvents.getDeathPos(ctx.player ?: return) ?: throw NOT_DIED.create()
     }
 
-    override fun onStart(ctx: RewardContext<Unit, Unit>) {
-        ctx.ifComplete { player, _ ->
-            val pos = DeathEvents.getDeathPos(player) ?: return@ifComplete null
+    override fun <T> onStart(ctx: RewardContext<T>) {
+        ctx.player?.let { player ->
+            val pos = DeathEvents.getDeathPos(player) ?: return@let
             val timeDead = DeathEvents.timeSinceDeath(player)
             val minutes = timeDead / 20 / 60
             Chat.message(
@@ -34,16 +33,14 @@ object FindGrave : DataAction<Unit, Unit>(GLOWING, ActionTarget.NONE) {
         }
     }
 
-    override fun targets(ctx: RewardContext<Unit, Unit>): List<Entity> {
-        return ctx.ifComplete { player, _ ->
-            val pos = DeathEvents.getDeathPos(player) ?: return@ifComplete null
-            ctx.server.allLevels.map {
-                it.getEntitiesOfClass(ItemEntity::class.java, AABB(pos).inflate(5.0))
-            }.flatten()
-        } ?: listOf()
+    override fun <T> targets(ctx: RewardContext<T>): List<Entity> {
+        val pos = DeathEvents.getDeathPos(ctx.player ?: return emptyList()) ?: return emptyList()
+        return ctx.server.allLevels.map {
+            it.getEntitiesOfClass(ItemEntity::class.java, AABB(pos).inflate(5.0))
+        }.flatten()
     }
 
-    override fun visibleTo(ctx: RewardContext<Unit, Unit>, target: Entity): List<ServerPlayer> {
+    override fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayer> {
         return listOfNotNull(ctx.player)
     }
 

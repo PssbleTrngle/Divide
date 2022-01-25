@@ -23,19 +23,20 @@ import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.reward.SecretRewards
 
 data class GameData(val paused: Boolean, val started: Boolean) {
 
     @Serializable
-    private data class Event(val type: String)
+    private data class Event(val action: String)
 
     @Mod.EventBusSubscriber
     companion object {
 
-        private val LOGGER = EventLogger("game") { Event.serializer() }
+        private val LOGGER = EventLogger("game", { Event.serializer() }) { always() }
 
         fun setPaused(server: MinecraftServer, boolean: Boolean) {
-            LOGGER.log(server, Event(if (boolean) "pause" else "resume"))
+            LOGGER.log(server, Event(if (boolean) "paused" else "resumed"))
 
             PauseCommand.showDisplay(server)
 
@@ -45,7 +46,7 @@ data class GameData(val paused: Boolean, val started: Boolean) {
         }
 
         fun setStarted(server: MinecraftServer, boolean: Boolean) {
-            LOGGER.log(server, Event(if (boolean) "start" else "stop"))
+            LOGGER.log(server, Event(if (boolean) "started" else "stopped"))
 
             val current = DATA[server]
             DATA[server] = current.copy(started = boolean)
@@ -54,15 +55,22 @@ data class GameData(val paused: Boolean, val started: Boolean) {
             server.gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(!boolean, server)
 
             if (boolean) {
+
+                SecretRewards.choose(server)
+
                 Teams.players(server).forEach { player ->
                     player.setGameMode(GameType.SURVIVAL)
                     DeathEvents.startedGear(player).forEach { player.addItem(it) }
                     Chat.subtitle(player, "Started")
                 }
+
                 EVENTS.forEach { it.startCycle(server) }
+
             } else {
+
                 EVENTS.forEach { it.stop(server) }
                 Border.lobby(server)
+
             }
         }
 

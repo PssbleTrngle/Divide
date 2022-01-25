@@ -1,12 +1,12 @@
 import { useMemo, VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
+import { biColorGradient } from '../styles/mixins'
 import EventBanner from './EventBanner'
 import MissionInfo, { Mission } from './Mission'
 
 export interface GameStatus {
    peaceUntil?: number
-   points: number
    mission?: Mission
    paused: boolean
    started: boolean
@@ -26,7 +26,7 @@ const Status: VFC = () => {
 }
 
 const Peace = styled(EventBanner)`
-   background: ${p => p.theme.ok};
+   ${p => biColorGradient(p.theme.ok, p.theme.warning)};
 `
 
 const Style = styled.section`

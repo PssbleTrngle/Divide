@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
+import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
 
@@ -38,6 +39,7 @@ object ResetCommand {
                         .then(literal("hearts").executes(resetTeamPlayers(::resetHearts)))
                         .then(literal("bounties").executes(resetTeams(::resetBounties)))
                         .then(literal("points").executes(resetTeams(::resetPoints)))
+                        .then(literal("base").executes(resetTeams(::resetBase)))
                         .then(literal("*").executes(resetTeams(::resetEverything)))
                 )
             ).then(
@@ -48,6 +50,7 @@ object ResetCommand {
                     .then(literal("hearts").executes(resetPlayers(::resetHearts)))
                     .then(literal("bounties").executes(resetTeams(::resetBounties)))
                     .then(literal("points").executes(resetTeams(::resetPoints)))
+                    .then(literal("base").executes(resetTeams(::resetBase)))
                     .then(literal("*").executes(resetTeams(::resetEverything)))
             )
         )
@@ -97,6 +100,7 @@ object ResetCommand {
         players.forEach(::resetEverything)
         resetBounties(team, server)
         resetPoints(team, server)
+        resetBase(team, server)
     }
 
     private fun resetEverything(player: ServerPlayer) {
@@ -137,6 +141,10 @@ object ResetCommand {
 
     private fun resetBounties(team: Team, server: MinecraftServer) {
         Bounty.reset(server, team)
+    }
+
+    private fun resetBase(team: Team, server: MinecraftServer) {
+        Bases.removeBase(team, server)
     }
 
 }

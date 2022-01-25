@@ -13,7 +13,7 @@ export async function request<T>(url: string, { token, ...config }: Partial<Requ
       ...config,
       headers: {
          ...config?.headers,
-         Authorization: `Bearer ${token}`,
+         Authorization: token ? `Bearer ${token}` : '',
          'Content-Type': 'application/json',
       },
    })

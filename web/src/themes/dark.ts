@@ -1,4 +1,3 @@
-import { lighten } from 'polished'
 import { DefaultTheme } from 'styled-components'
 
 const theme: DefaultTheme = {
@@ -6,9 +5,9 @@ const theme: DefaultTheme = {
    text: '#EEE',
    error: '#cf2351',
    warning: '#dbb921',
-   ok: '#65db21',
-   primary: '#3fad37',
-   secondary: lighten(0.2, '#3e4247'),
+   ok: '#3fad37',
+   primary: '#ccc',
+   accent: '#3fad37',
 }
 
 export default theme

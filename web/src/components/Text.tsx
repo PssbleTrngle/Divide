@@ -2,7 +2,7 @@ import { darken } from 'polished'
 import styled from 'styled-components'
 
 export const Colored = styled.b`
-   color: ${p => p.theme.primary};
+   color: ${p => p.theme.accent};
 `
 
 export const Subtitle = styled.h3`

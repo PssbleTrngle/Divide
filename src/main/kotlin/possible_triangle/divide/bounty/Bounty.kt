@@ -10,7 +10,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
-import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.PerTeamIntData
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
@@ -30,12 +30,12 @@ data class Bounty(val description: String, val amount: Amount) {
         val pointsEarned: Int,
         val pointsNow: Int,
         val doneAlready: Int,
-        val fulfilledBy: EventPlayer
+        val fulfilledBy: EventTarget
     )
 
     companion object : DefaultedResource<Bounty>("bounty", { Bounty.serializer() }) {
 
-        private val LOGGER = EventLogger("bounty") { Event.serializer() }
+        private val LOGGER = EventLogger("bounty", { Event.serializer() }) { inTeam { it.fulfilledBy.team } }
 
         private val BOUNTY_COUNTS = PerTeamIntData("bounties")
 
@@ -103,7 +103,7 @@ data class Bounty(val description: String, val amount: Amount) {
                             cashGained,
                             pointsNow,
                             BOUNTY_COUNTS[player.server][team],
-                            EventPlayer.of(player),
+                            EventTarget.of(player),
                         )
                     )
                 }

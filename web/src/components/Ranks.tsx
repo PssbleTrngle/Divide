@@ -3,16 +3,18 @@ import { VFC } from 'react'
 import styled, { css } from 'styled-components'
 import useApi from '../hooks/useApi'
 import Box from './Box'
+import ErrorField from './ErrorField'
 import { Subtitle } from './Text'
 
 type Ranks = Record<string, number>
 
 const Ranks: VFC = () => {
-   const { data } = useApi<Ranks>('ranks')
+   const { data, error } = useApi<Ranks>('ranks')
 
    return (
       <Style>
          <Subtitle>Ranks</Subtitle>
+         <ErrorField error={error} />
          {data &&
             Object.entries(data).map(([team, rank]) => (
                <Line key={rank}>

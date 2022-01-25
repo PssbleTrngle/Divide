@@ -9,12 +9,16 @@ import possible_triangle.divide.reward.RewardContext
 
 object TeamBuff : BaseBuff() {
 
-    override fun buffs(ctx: RewardContext<Unit, Unit>): List<ServerPlayer> {
-        return Teams.teammates(ctx.player ?: return emptyList())
+    override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer> {
+        return Teams.players(ctx.server, ctx.team)
     }
 
     fun isBuffed(server: MinecraftServer, team: Team, reward: Reward): Boolean {
-        return reward.action is TeamBuff && Teams.players(server, team).any { isBuffed(it, reward) }
+        return return isRunning(server, reward) { ctx ->
+            val action = reward.action
+            if (action !is TeamBuff) false
+            else ctx.team == team
+        }
     }
 
 }

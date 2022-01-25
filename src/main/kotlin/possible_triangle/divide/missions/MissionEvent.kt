@@ -42,7 +42,8 @@ object MissionEvent : CycleEvent("missions") {
         }
     }
 
-    override fun onCancel(server: MinecraftServer) {
+    override fun onStop(server: MinecraftServer) {
+        MissionCallback.cancel(server)
     }
 
     fun fulfill(server: MinecraftServer, team: Team, mission: Mission) {

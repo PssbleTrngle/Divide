@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useRoutes } from 'react-router-dom'
 import ReactTooltip from 'react-tooltip'
-import routes from './router'
+import useRouter from './router'
 
 function App() {
-   const element = useRoutes(routes)
+   const element = useRouter()
    const [rendered, setRendered] = useState(false)
 
    useEffect(() => {
       setRendered(true)
-   }, [])
+   })
 
    return (
       <section>

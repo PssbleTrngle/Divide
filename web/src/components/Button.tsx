@@ -1,42 +1,26 @@
-import { lighten, transparentize } from 'polished'
+import { invert } from 'polished'
 import styled from 'styled-components'
+import { InputStyles } from './Input'
 
-const Button = styled.button`
-   outline: none;
-   border: none;
+interface ButtonProps {
+   red?: boolean
+   size?: number
+}
 
-   background: ${p => p.theme.primary};
-   padding: 1em;
-   width: fit-content;
+const Button = styled.button<ButtonProps>`
+   color: ${p => invert(p.theme.text)};
+
+   ${p => InputStyles(p.theme.primary)};
+   ${p => p.red && InputStyles(p.theme.error)};
+
+   padding: ${p => p.size ?? 1}em;
 
    display: grid;
    align-items: center;
    justify-content: center;
-
    border-radius: 99999px;
+
    cursor: pointer;
-
-   transition: all 0.1s ease;
-
-   &:hover {
-      background: ${p => lighten(0.1, p.theme.primary)};
-   }
-
-   &:hover,
-   &:focus-visible {
-      outline: 2px solid ${p => lighten(0.1, p.theme.primary)};
-   }
-
-   &:hover {
-      box-shadow: 0 0 0 5px ${p => transparentize(0.5, p.theme.primary)};
-   }
-
-   &:disabled {
-      box-shadow: none;
-      outline: none;
-      background: ${p => lighten(0.4, p.theme.bg)};
-      cursor: initial;
-   }
 `
 
 export default Button

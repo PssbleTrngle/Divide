@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer'
-import { useMemo, VFC } from 'react'
+import { HTMLAttributes, useMemo, VFC } from 'react'
 import { useQuery } from 'react-query'
 import styled, { css } from 'styled-components'
 import { request } from '../hooks/useApi'
@@ -31,9 +31,16 @@ async function fetchData(uuid: string) {
    return request<PlayerData>(url)
 }
 
-const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name }) => {
+const PlayerHead: VFC<
+   Pick<Player, 'uuid'> &
+      Partial<Player> &
+      HTMLAttributes<HTMLDivElement> & {
+         size?: number
+         highlight?: boolean
+      }
+> = ({ uuid, name, size = 1, highlight, ...props }) => {
    const { player } = useSession()
-   const yourself = useMemo(() => player.uuid == uuid, [uuid, player])
+   const yourself = useMemo(() => player?.uuid == uuid, [uuid, player])
 
    const { data } = useQuery(['skin', uuid], () => fetchData(uuid), { refetchInterval: false })
    const texture = useMemo(() => {
@@ -43,28 +50,39 @@ const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name })
    }, [data])
 
    const title = useMemo(() => {
-      if(yourself) return `${name} (you)`
+      if (yourself) return `${name} (you)`
       else return name
    }, [name, yourself])
 
-   return <Head data-tip={title} yourself={yourself} size='100px' src={texture?.textures?.SKIN?.url} />
+   return (
+      <Head
+         {...props}
+         data-tip={title}
+         highlight={highlight ?? yourself}
+         size={`${100 * size}px`}
+         src={texture?.textures?.SKIN?.url}
+      />
+   )
 }
 
-const Head = styled.div<{ src?: string; size: string; yourself?: boolean }>`
+const borderSize = '2px'
+const Head = styled.div<{ src?: string; size: string; highlight?: boolean }>`
    background: #0001;
    background-image: url('${p => p.src}');
    height: ${p => p.size};
    width: ${p => p.size};
    background-size: calc(${p => p.size} * 8);
-   background-position: calc(${p => p.size} * -1) calc(${p => p.size} * -1);
+   background-position: calc(${p => p.size} * -1 - ${borderSize}) calc(${p => p.size} * -1 - ${borderSize});
    background-repeat: no-repeat;
    image-rendering: pixelated;
 
-   border: 2px solid;
+   border: ${borderSize} solid transparent;
 
-   ${p => p.yourself && css`
-      border-color: ${p.theme.primary};
-   `}
+   ${p =>
+      p.highlight &&
+      css`
+         border-color: ${p.theme.primary};
+      `}
 `
 
 export default PlayerHead

@@ -1,5 +1,6 @@
 import { VFC } from 'react'
 import styled from 'styled-components'
+import { biColorGradient } from '../styles/mixins'
 import EventBanner from './EventBanner'
 
 export interface Mission {
@@ -9,7 +10,7 @@ export interface Mission {
 const MissionInfo: VFC<Mission> = ({ description }) => <Style>Mission: {description}</Style>
 
 const Style = styled(EventBanner)`
-   background: ${p => p.theme.warning};
+   ${p => biColorGradient(p.theme.warning, p.theme.error)};
 `
 
 export default MissionInfo

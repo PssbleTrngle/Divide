@@ -1,15 +1,17 @@
 package possible_triangle.divide.reward
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.actions.*
 import possible_triangle.divide.actions.secret.BlindTeam
 import possible_triangle.divide.actions.secret.MiningFatigue
 import possible_triangle.divide.data.DefaultedResource
-import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
@@ -22,6 +24,9 @@ data class Reward(
     val duration: Int? = null,
     val charge: Int? = null,
     val secret: Boolean = false,
+    @Serializable(with = ActionTarget.Serializer::class)
+    @SerialName("target")
+    private val targetType: String = ActionTarget.NONE.id,
 ) {
 
     @Transient
@@ -31,20 +36,27 @@ data class Reward(
     @Serializable
     data class Event(
         val reward: String,
-        val boughtBy: EventPlayer? = null,
-        val target: EventPlayer? = null,
-        val pointsPaid: Int? = null,
-        val pointsNow: Int? = null,
+        val boughtBy: EventTarget,
+        val target: EventTarget? = null,
+        val pointsPaid: Int,
+        val pointsNow: Int,
     )
+
+    val target
+        get() = ActionTarget[targetType] ?: throw IllegalArgumentException("Unknown ActionTarget $targetType")
 
     companion object :
         DefaultedResource<Reward>("rewards", { Reward.serializer() }) {
 
-        private val LOGGER = EventLogger("reward") { Event.serializer() }
+        private val LOGGER = EventLogger("reward", { Event.serializer() }) { inTeam { it.boughtBy.team } }
 
-        private val ACTIONS = hashMapOf<String, Action<*, *>>()
+        private val ACTIONS = hashMapOf<String, Action>()
 
-        private fun <R, T> register(id: String, action: Action<R, T>, reward: () -> Reward): Delegate {
+        override fun isVisible(entry: Reward, team: PlayerTeam?, server: MinecraftServer): Boolean {
+            return !entry.secret || SecretRewards.isVisible(server, team ?: return false, entry)
+        }
+
+        private fun register(id: String, action: Action, reward: () -> Reward): Delegate {
             ACTIONS[id.lowercase()] = action
             return defaulted(id, reward)
         }
@@ -53,12 +65,20 @@ data class Reward(
             entry.id = id
         }
 
-        val TRACK_PLAYER by register("track_player", TrackPlayer) { Reward("Track Player", 1000, duration = 60 * 5) }
+        val TRACK_PLAYER by register("track_player", TrackPlayer) {
+            Reward(
+                "Track Player",
+                1000,
+                duration = 60 * 5,
+                targetType = ActionTarget.PLAYER.id,
+            )
+        }
         val TRACK_PLAYER_WEAK by register("track_player_weak", TrackPlayerWeak) {
             Reward(
                 "Track Players",
                 500,
-                duration = 60 * 5
+                duration = 60 * 5,
+                targetType = ActionTarget.PLAYER.id,
             )
         }
 
@@ -77,7 +97,8 @@ data class Reward(
                 "Order a loot crate",
                 800,
                 duration = 60 * 5,
-                secret = true
+                secret = true,
+                targetType = ActionTarget.TEAM.id,
             )
         }
 
@@ -86,13 +107,14 @@ data class Reward(
                 "Give a team mining fatigue",
                 800,
                 duration = 60 * 5,
-                secret = true
+                secret = true,
+                targetType = ActionTarget.TEAM.id,
             )
         }
 
 
-        fun <R, T> buy(ctx: RewardContext<R, T>): Boolean {
-            return ctx.ifComplete { player, _ ->
+        fun <T> buy(ctx: RewardContext<T>): Boolean {
+            return ctx.player?.let { player ->
                 with(ctx.reward) {
                     Points.modify(ctx.server, ctx.team, -price) { pointsNow ->
 
@@ -100,7 +122,7 @@ data class Reward(
                             ctx.server,
                             Event(
                                 id,
-                                EventPlayer.optional(ctx.player),
+                                EventTarget.of(player),
                                 ctx.targetEvent(),
                                 price,
                                 pointsNow,
@@ -127,7 +149,7 @@ data class Reward(
     }
 
     @Suppress("UNCHECKED_CAST")
-    val action: Action<*, *>
+    val action: Action
         get() = (ACTIONS[id] ?: throw NullPointerException("Action for $id missing"))
 
 }

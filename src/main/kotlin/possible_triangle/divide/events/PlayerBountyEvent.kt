@@ -6,7 +6,7 @@ import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
-import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.*
@@ -14,9 +14,9 @@ import possible_triangle.divide.logic.*
 object PlayerBountyEvent : CycleEvent("player_bounty") {
 
     @Serializable
-    private data class Event(val target: EventPlayer, val killer: EventPlayer? = null, val bounty: Int)
+    private data class Event(val target: EventTarget, val killer: EventTarget? = null, val bounty: Int)
 
-    private val LOGGER = EventLogger(id) { Event.serializer() }
+    private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
 
     override fun isEnabled(server: MinecraftServer): Boolean {
         return Config.CONFIG.bounties.enabled
@@ -79,7 +79,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
                 )
             }
 
-            LOGGER.log(target.server, Event(EventPlayer.of(target), EventPlayer.optional(killer), bounty.price))
+            LOGGER.log(target.server, Event(EventTarget.of(target), EventTarget.optional(killer), bounty.price))
 
             val killerTeam = killer?.team
             if (killerTeam != null) {

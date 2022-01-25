@@ -15,7 +15,7 @@ import net.minecraft.world.level.ItemLike
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.scores.Team
 import possible_triangle.divide.data.DefaultedResource
-import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 
@@ -36,10 +36,10 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
             val order: String,
             val amount: Int,
             val cost: Int,
-            val pointsNow: Int, val orderedBy: EventPlayer,
+            val pointsNow: Int, val orderedBy: EventTarget,
         )
 
-        private val LOGGER = EventLogger("order") { Event.serializer() }
+        private val LOGGER = EventLogger("order", { Event.serializer() }) { inTeam { it.orderedBy.team } }
 
         override fun populate(entry: Order, server: MinecraftServer?, id: String) {
             entry.id = id
@@ -77,7 +77,7 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
         return Points.modify(player.server, team, -price) { pointsNow ->
             CrateScheduler.order(player.server, team, ItemStack(item, amount), this)
-            LOGGER.log(player.server, Event(itemId, amount, price, pointsNow, EventPlayer.of(player)))
+            LOGGER.log(player.server, Event(itemId, amount, price, pointsNow, EventTarget.of(player)))
         }
 
     }

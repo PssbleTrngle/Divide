@@ -33,7 +33,7 @@ import java.util.*
 object Bases {
 
     const val COMPASS_TAG = "${DivideMod.ID}:base_compass"
-    const val IN_BASE_TAG = "${DivideMod.ID}:in_base"
+    private const val IN_BASE_TAG = "${DivideMod.ID}:in_base"
     private val TICK_RANDOM = Random()
 
     @SubscribeEvent
@@ -47,8 +47,6 @@ object Bases {
         val lastState = data.getBoolean(IN_BASE_TAG)
         val currentState = isInBase(player)
         if (lastState != currentState) {
-            if (currentState) enterBase(player)
-            else leaveBase(player)
             data.putBoolean(IN_BASE_TAG, currentState)
         }
     }
@@ -74,12 +72,10 @@ object Bases {
             }
     }
 
-    private fun leaveBase(player: ServerPlayer) {
-        //Chat.message(player, "left your base")
-    }
-
-    private fun enterBase(player: ServerPlayer) {
-        //Chat.message(player, "entered your base")
+    fun removeBase(team: Team, server: MinecraftServer) {
+        Data.modify(server) {
+            remove(team)
+        }
     }
 
     fun setBase(player: ServerPlayer) {

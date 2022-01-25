@@ -13,7 +13,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.actions.TeamBuff
-import possible_triangle.divide.actions.TrackPlayer
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Chat.apply
@@ -21,6 +20,7 @@ import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.missions.MissionEvent
 import possible_triangle.divide.reward.Action
+import possible_triangle.divide.reward.Reward
 import java.util.*
 
 @Mod.EventBusSubscriber
@@ -114,7 +114,7 @@ object Scores {
             lines.add(
                 listOfNotNull(
                     Bases.isInBase(player, useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
-                    Action.isRunning(player.server, TrackPlayer) { it.target == player }.takeIf { it }
+                    Action.isRunning(player.server, Reward.TRACK_PLAYER) { it.target == player }.takeIf { it }
                         ?.let { "You are being tracked" },
                     MissionEvent.ACTIVE[player.server]?.mission?.let {
                         apply(

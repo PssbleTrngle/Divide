@@ -7,24 +7,30 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.scores.PlayerTeam
+import possible_triangle.divide.logic.Teams
 
 @Serializable
-data class EventPlayer(val name: String, val uuid: String? = null, val team: String? = null) {
+data class EventTarget(
+    val name: String,
+    val uuid: String? = null,
+    val team: EventTarget? = null,
+    val id: String? = null
+) {
     companion object {
-        fun of(player: Player): EventPlayer {
-            return EventPlayer(
-                player.scoreboardName,
-                player.stringUUID,
-                player.team?.name
+        fun of(player: Player): EventTarget {
+            return EventTarget(
+                name = player.scoreboardName,
+                uuid = player.stringUUID,
+                team = Teams.teamOf(player)?.let { of(it) }
             )
         }
 
-        fun of(team: PlayerTeam): EventPlayer {
+        fun of(team: PlayerTeam): EventTarget {
             val name = team.displayName
-            return EventPlayer(if (name is TextComponent) name.text else team.name)
+            return EventTarget(if (name is TextComponent) name.text else team.name, id = team.name)
         }
 
-        fun optional(player: Player?): EventPlayer? {
+        fun optional(player: Player?): EventTarget? {
             return if (player == null) null else of(player)
         }
     }

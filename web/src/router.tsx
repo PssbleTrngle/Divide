@@ -1,11 +1,22 @@
-import { RouteObject } from "react-router-dom";
-import Events from "./pages/Events";
-import Home from "./pages/Home";
+import { useMemo } from 'react'
+import { RouteObject, useRoutes } from 'react-router-dom'
+import useSession from './hooks/useSession'
+import Events from './pages/Events'
+import NotFound from './pages/NotFound'
+import PlayerView from './pages/PlayerView'
+import SpectatorView from './pages/SpectatorView'
 
-const routes: RouteObject[] = [
-   { path: '/', element: <Home /> },
+const commonRoutes: RouteObject[] = [
+   { path: '*', element: <NotFound /> },
    { path: '/events', element: <Events /> },
-   { path: '*', element: <p>404 - Not Found</p> },
 ]
 
-export default routes
+const playerRoutes: RouteObject[] = [{ path: '/', element: <PlayerView /> }, ...commonRoutes]
+
+const spectatorRoutes: RouteObject[] = [{ path: '/', element: <SpectatorView /> }, ...commonRoutes]
+
+export default function useRouter() {
+   const { loggedIn } = useSession()
+   const routes = useMemo(() => (loggedIn ? playerRoutes : spectatorRoutes), [loggedIn])
+   return useRoutes(routes)
+}

@@ -10,29 +10,25 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.GameData
-import possible_triangle.divide.data.EventPlayer
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.data.Util
-import possible_triangle.divide.logging.EventLogger
 
-abstract class Action<Raw, Target>(val target: ActionTarget<Raw, Target>) {
+abstract class Action {
 
-    open fun start(ctx: RewardContext<Raw, Target>) {}
+    open fun <T> start(ctx: RewardContext<T>) {}
 
-    open fun prepare(ctx: RewardContext<Raw, Target>) {}
+    open fun <T> prepare(ctx: RewardContext<T>) {}
 
-    open fun stop(ctx: RewardContext<Raw, Target>) {}
+    open fun <T> stop(ctx: RewardContext<T>) {}
 
-    open fun tick(ctx: RewardContext<Raw, Target>) {}
+    open fun <T> tick(ctx: RewardContext<T>) {}
 
     @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     companion object {
 
         val NOT_ONLINE = SimpleCommandExceptionType(TextComponent("Target is not online"))
 
-        private val LOGGER = EventLogger("reward_stop") { Reward.Event.serializer() }
-
-        fun <R, T> run(ctx: RewardContext<R, T>, duration: Int?) {
+        fun <T> run(ctx: RewardContext<T>, duration: Int?) {
             ctx.prepare()
             if (ctx.reward.charge == null) ctx.start()
 
@@ -47,23 +43,15 @@ abstract class Action<Raw, Target>(val target: ActionTarget<Raw, Target>) {
             }
         }
 
-        fun <R,T> isRunning(
-            server: MinecraftServer,
-            action: Action<R,T>,
-            predicate: (ctx: RewardContext<R,T>) -> Boolean = { true }
-        ): Boolean {
-            return DATA[server].any { (ctx) -> ctx.action == action && predicate(ctx as RewardContext<R,T>) }
-        }
-
-        fun <R,T> isRunning(
+        fun isRunning(
             server: MinecraftServer,
             reward: Reward,
-            predicate: (ctx: RewardContext<R,T>) -> Boolean = { true }
+            predicate: (ctx: RewardContext<*>) -> Boolean = { true }
         ): Boolean {
-            return DATA[server].any { (ctx) -> ctx.reward == reward && predicate(ctx as RewardContext<R,T>) }
+            return DATA[server].any { (ctx) -> ctx.reward == reward && predicate(ctx) }
         }
 
-        fun running(server: MinecraftServer): List<ActionContext<*,*>> {
+        fun running(server: MinecraftServer): List<ActionContext<*>> {
             return DATA[server].toList()
         }
 
@@ -91,12 +79,6 @@ abstract class Action<Raw, Target>(val target: ActionTarget<Raw, Target>) {
 
             if (due.isNotEmpty()) {
                 due.forEach { (ctx) ->
-                    LOGGER.log(
-                        server, Reward.Event(
-                            ctx.reward.id, EventPlayer.optional(ctx.player),
-                            ctx.targetEvent(),
-                        )
-                    )
                     ctx.stop()
                 }
 
@@ -106,10 +88,10 @@ abstract class Action<Raw, Target>(val target: ActionTarget<Raw, Target>) {
             }
         }
 
-        data class ActionContext<R, T>(val ctx: RewardContext<R, T>, val until: Long, val chargedAt: Long?)
+        data class ActionContext<T>(val ctx: RewardContext<T>, val until: Long, val chargedAt: Long?)
 
-        private val DATA = object : ModSavedData<MutableList<ActionContext<*, *>>>("actions") {
-            override fun save(nbt: CompoundTag, value: MutableList<ActionContext<*, *>>) {
+        private val DATA = object : ModSavedData<MutableList<ActionContext<*>>>("actions") {
+            override fun save(nbt: CompoundTag, value: MutableList<ActionContext<*>>) {
                 nbt.put("values", value.mapTo(ListTag()) { (ctx, time, chargedAt) ->
                     CompoundTag().apply {
                         putLong("time", time)
@@ -122,28 +104,38 @@ abstract class Action<Raw, Target>(val target: ActionTarget<Raw, Target>) {
                 })
             }
 
-            private fun <R, T> load(
+            private fun load(
                 nbt: CompoundTag,
                 server: MinecraftServer,
-                action: Action<R, T>,
                 reward: Reward
-            ): ActionContext<R, T>? {
+            ): ActionContext<*>? {
                 val team = server.scoreboard.getPlayerTeam(nbt.getString("team")) ?: return null
-                val target = ActionTarget.deserialize(action, nbt) ?: return null
-                val ctx = RewardContext<R, T>(team, server, nbt.getUUID("player"), target, reward)
+
+                val ctx = nbt.getCompound("target").let { tag ->
+                    val type = ActionTarget[tag.getString("type")] ?: return null
+
+                    fun <T> createContext(type: ActionTarget<T>): RewardContext<T>? {
+                        val target = type.deserialize(tag) ?: return null
+                        return RewardContext(team, server, nbt.getUUID("player"), target, reward, type)
+                    }
+
+                    createContext(type)
+                } ?: return null
+
                 val chargedAt = if (nbt.contains("chargedAt")) nbt.getLong("chargedAt") else null
+
                 return ActionContext(ctx, nbt.getLong("time"), chargedAt)
             }
 
-            override fun load(nbt: CompoundTag, server: MinecraftServer): MutableList<ActionContext<*, *>> {
+            override fun load(nbt: CompoundTag, server: MinecraftServer): MutableList<ActionContext<*>> {
                 val list = nbt.getList("values", 10)
                 return list.filterIsInstance<CompoundTag>().mapNotNull {
                     val reward = Reward.getOrThrow(it.getString("reward"))
-                    load(it, server, reward.action, reward)
+                    load(it, server, reward)
                 }.toMutableList()
             }
 
-            override fun default(): MutableList<ActionContext<*, *>> {
+            override fun default(): MutableList<ActionContext<*>> {
                 return mutableListOf()
             }
         }

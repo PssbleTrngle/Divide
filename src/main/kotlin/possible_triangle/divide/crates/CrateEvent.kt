@@ -4,14 +4,26 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.crates.callbacks.CleanCallback
+import possible_triangle.divide.crates.callbacks.FillLootCallback
+import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.events.CycleEvent
+import possible_triangle.divide.logic.Teams
 import kotlin.random.Random
 
 object CrateEvent : CycleEvent("loot_crates") {
 
     override fun isEnabled(server: MinecraftServer): Boolean {
         return Config.CONFIG.crate.enabled
+    }
+
+    override fun onStop(server: MinecraftServer) {
+        CleanCallback.cancel(server)
+        FillLootCallback.cancel(server)
+        Teams.teams(server).forEach {
+            MessageCallback.cancel(server, suffix = it.color.name.lowercase())
+        }
     }
 
     override fun handle(server: MinecraftServer, index: Int): Int {

@@ -1,53 +1,91 @@
 package possible_triangle.divide.reward
 
+import kotlinx.serialization.Serializable
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
-import possible_triangle.divide.data.EventPlayer
+import possible_triangle.divide.data.EventTarget
+import possible_triangle.divide.logging.EventLogger
 import java.util.*
 
-data class RewardContext<Raw, Target>(
+data class RewardContext<Target>(
     val team: PlayerTeam,
     val server: MinecraftServer,
     internal val rawPlayer: UUID,
-    internal val rawTarget: Raw,
-    val reward: Reward
+    internal val target: Target,
+    val reward: Reward,
+    val targetType: ActionTarget<Target>,
 ) {
 
-    val target
-        get() = action.target.fetch(rawTarget, server)
+    companion object {
+        @Serializable
+        private data class Event(
+            val action: String,
+            val reward: String,
+            val boughtBy: EventTarget?,
+            val target: EventTarget? = null,
+        )
+
+        private val LOGGER = EventLogger("action", { Event.serializer() }) { inTeam { it.boughtBy?.team } }
+    }
 
     val player
         get() = server.playerList.getPlayer(rawPlayer)
 
-    fun <Out> ifComplete(consumer: RewardContext<Raw, Target>.(ServerPlayer, Target) -> Out): Out? {
-        val target = target
-        val player = player
-        return if(target != null && player != null)  consumer(player, target)
-        else null
+    fun targetEvent(): EventTarget? {
+        return target?.let { targetType.toEvent(it, server) }
     }
 
-    fun targetEvent(): EventPlayer? {
-        return target?.let { action.target.toEvent(it) }
+    fun targetPlayers(): List<ServerPlayer> {
+        return targetType.players(server, target)
+    }
+
+    fun targetTeam(): PlayerTeam? {
+        return targetType.team(server, target)
+    }
+
+    fun targetPlayer(): ServerPlayer? {
+        return targetPlayers().randomOrNull()
     }
 
     fun tick() {
-        action.tick(this)
+        reward.action.tick(this)
     }
 
     fun start() {
-        action.start(this)
+        LOGGER.log(
+            server, Event(
+                "started",
+                reward.id,
+                EventTarget.optional(player),
+                targetEvent()
+            )
+        )
+        reward.action.start(this)
     }
 
     fun prepare() {
-        action.prepare(this)
+        if (reward.charge != null) LOGGER.log(
+            server, Event(
+                "preparing",
+                reward.id,
+                EventTarget.optional(player),
+                targetEvent()
+            )
+        )
+        reward.action.prepare(this)
     }
 
     fun stop() {
-        action.stop(this)
+        LOGGER.log(
+            server, Event(
+                "ended",
+                reward.id,
+                EventTarget.optional(player),
+                targetEvent()
+            )
+        )
+        reward.action.stop(this)
     }
-
-    val action
-        get() = reward.action as Action<Raw, Target>
 
 }

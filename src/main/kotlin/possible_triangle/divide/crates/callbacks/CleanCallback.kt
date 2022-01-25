@@ -23,7 +23,7 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
         @Serializable
         private data class Event(val pos: EventPos)
 
-        private val LOGGER = EventLogger("loot_crate_cleaned") { Event.serializer() }
+        private val LOGGER = EventLogger("loot_crate_cleaned", { Event.serializer() }) { isAdmin() }
 
         override fun serialize(nbt: CompoundTag, callback: CleanCallback) {
             nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
