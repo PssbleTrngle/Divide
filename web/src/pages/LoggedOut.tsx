@@ -1,12 +1,15 @@
 import { VFC } from 'react'
 import Page from '../components/Page'
+import { Code, Title } from '../components/Text'
 
 const LoggedOut: VFC = () => (
-   <Page>
-      <h1>You are logged out</h1>
-      <p>
-         Use <code>/web</code> in-game to retrieve login link
-      </p>
+   <Page center>
+      <section>
+         <Title>You are logged out</Title>
+         <p>
+            Use <Code>/web</Code> in-game to retrieve login link
+         </p>
+      </section>
    </Page>
 )
 

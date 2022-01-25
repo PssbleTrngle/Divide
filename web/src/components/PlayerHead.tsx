@@ -1,9 +1,9 @@
 import { Buffer } from 'buffer'
 import { useMemo, VFC } from 'react'
 import { useQuery } from 'react-query'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { request } from '../hooks/useApi'
-import { Player } from '../hooks/useSession'
+import useSession, { Player } from '../hooks/useSession'
 
 interface PlayerData {
    name: string
@@ -32,6 +32,9 @@ async function fetchData(uuid: string) {
 }
 
 const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name }) => {
+   const { player } = useSession()
+   const yourself = useMemo(() => player.uuid == uuid, [uuid, player])
+
    const { data } = useQuery(['skin', uuid], () => fetchData(uuid), { refetchInterval: false })
    const texture = useMemo(() => {
       const base = data?.properties.find(p => p.name === 'textures')?.value
@@ -39,10 +42,15 @@ const PlayerHead: VFC<Pick<Player, 'uuid'> & Partial<Player>> = ({ uuid, name })
       return JSON.parse(Buffer.from(base, 'base64').toString()) as TextureData
    }, [data])
 
-   return <Head size='100px' src={texture?.textures?.SKIN?.url} />
+   const title = useMemo(() => {
+      if(yourself) return `${name} (you)`
+      else return name
+   }, [name, yourself])
+
+   return <Head data-tip={title} yourself={yourself} size='100px' src={texture?.textures?.SKIN?.url} />
 }
 
-const Head = styled.div<{ src?: string; size: string }>`
+const Head = styled.div<{ src?: string; size: string; yourself?: boolean }>`
    background: #0001;
    background-image: url('${p => p.src}');
    height: ${p => p.size};
@@ -51,6 +59,12 @@ const Head = styled.div<{ src?: string; size: string }>`
    background-position: calc(${p => p.size} * -1) calc(${p => p.size} * -1);
    background-repeat: no-repeat;
    image-rendering: pixelated;
+
+   border: 2px solid;
+
+   ${p => p.yourself && css`
+      border-color: ${p.theme.primary};
+   `}
 `
 
 export default PlayerHead

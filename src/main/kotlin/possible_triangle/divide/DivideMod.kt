@@ -1,6 +1,6 @@
 package possible_triangle.divide
 
-import io.ktor.util.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import net.minecraftforge.event.server.ServerStartedEvent
 import net.minecraftforge.event.server.ServerStoppedEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -39,16 +39,16 @@ object DivideMod {
             it.register()
         }
 
-        PlatformUtils
-
     }
 
+    @ExperimentalSerializationApi
     @SubscribeEvent
     fun onServerStart(event: ServerStartedEvent) {
         if (GameData.DATA[event.server].paused) PauseCommand.showDisplay(event.server)
         if (Config.CONFIG.api.enabled) ServerApi.start(event.server)
     }
 
+    @ExperimentalSerializationApi
     @SubscribeEvent
     fun onServerStop(event: ServerStoppedEvent) {
         if (Config.CONFIG.api.enabled) ServerApi.stop()

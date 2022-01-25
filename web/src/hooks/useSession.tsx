@@ -1,6 +1,8 @@
 import { createContext, FC, useContext, useEffect, useReducer } from 'react'
 import { useQuery } from 'react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
+import Banner from '../components/Banner'
+import LoadingPage from '../pages/LoadingPage'
 import LoggedOut from '../pages/LoggedOut'
 import { request } from './useApi'
 
@@ -33,7 +35,7 @@ export const SessionProvider: FC = ({ children }) => {
       return v
    }, localStorage.getItem('token') ?? undefined)
 
-   const { data: player } = useQuery('me', () => request<Player>('/api/auth', { token }), { enabled: !!token })
+   const { data: player, error } = useQuery('me', () => request<Player>('/api/auth', { token }), { enabled: !!token })
 
    useEffect(() => {
       const queryToken = new URLSearchParams(search).get('token')
@@ -44,6 +46,11 @@ export const SessionProvider: FC = ({ children }) => {
    }, [search, token])
 
    if (!token) return <LoggedOut />
-   if (!player) return <p>Loading...</p>
-   return <CTX.Provider value={{ token, player }}>{children}</CTX.Provider>
+   if (!player) return <LoadingPage />
+   return (
+      <CTX.Provider value={{ token, player }}>
+         {error && <Banner>Offline</Banner>}
+         {children}
+      </CTX.Provider>
+   )
 }

@@ -76,7 +76,7 @@ data class GameData(val paused: Boolean, val started: Boolean) {
             override fun load(nbt: CompoundTag, server: MinecraftServer): GameData {
                 val paused = nbt.getBoolean("paused")
                 val started = nbt.getBoolean("started")
-                return GameData(paused || started, started)
+                return GameData(paused || (started && Config.CONFIG.autoPause), started)
             }
 
             override fun default(): GameData {

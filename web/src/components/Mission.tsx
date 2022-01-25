@@ -1,5 +1,6 @@
 import { VFC } from 'react'
 import styled from 'styled-components'
+import EventBanner from './EventBanner'
 
 export interface Mission {
    description: string
@@ -7,9 +8,8 @@ export interface Mission {
 
 const MissionInfo: VFC<Mission> = ({ description }) => <Style>Mission: {description}</Style>
 
-const Style = styled.p`
+const Style = styled(EventBanner)`
    background: ${p => p.theme.warning};
-   padding: 0.1em;
 `
 
 export default MissionInfo

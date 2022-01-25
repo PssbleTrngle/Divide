@@ -36,7 +36,7 @@ abstract class ReloadedResource<Entry>(
 
         @SubscribeEvent
         fun onTick(event: TickEvent.WorldTickEvent) {
-            if (Util.shouldSkip(event, { it.world }, ticks = 10))return
+            if (Util.shouldSkip(event, { it.world }, ticks = 10)) return
             val server = event.world.server ?: return
 
             WATCHERS.removeIf { (resource, watcher) ->
@@ -62,6 +62,10 @@ abstract class ReloadedResource<Entry>(
             DivideMod.LOGGER.info("registered resource ${resource.dir}")
             resource.preLoad()
         }
+    }
+
+    fun idOf(entry: Entry): String {
+        return registry.entries.find { it.value == entry }?.key ?: throw NullPointerException("Key missing for $dir")
     }
 
     operator fun get(id: String): Entry? {

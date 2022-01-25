@@ -2,14 +2,18 @@ import { VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import { Player } from '../hooks/useSession'
+import Box from './Box'
+import ErrorField from './ErrorField'
 import PlayerHead from './PlayerHead'
+import { Subtitle } from './Text'
 
 const Team: VFC = () => {
-   const { data } = useApi<Player[]>('team')
+   const { data, error } = useApi<Player[]>('team')
 
    return (
       <Style>
-         <h3>Your Team</h3>
+         <Subtitle>Your Team</Subtitle>
+         <ErrorField error={error} />
          <Heads>
             {data?.map(p => (
                <PlayerHead key={p.uuid} {...p} />
@@ -25,7 +29,7 @@ const Heads = styled.section`
    gap: 5px;
 `
 
-const Style = styled.section`
+const Style = styled(Box)`
    grid-area: team;
 `
 

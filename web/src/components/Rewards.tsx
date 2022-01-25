@@ -1,11 +1,12 @@
-import { darken } from 'polished'
-import { VFC } from 'react'
+import { useEffect, VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import useResource from '../hooks/useResource'
 import useSubmit from '../hooks/useSubmit'
+import Box from './Box'
 import Button from './Button'
 import { GameStatus } from './Status'
+import { Colored } from './Text'
 
 interface Reward {
    display: string
@@ -17,33 +18,51 @@ interface Reward {
 
 const Rewards: VFC = () => {
    const { data: status } = useApi<GameStatus>('status')
-   const { data: rewards } = useResource<Reward>('reward')
+   const { data: rewards, error } = useResource<{ reward: Reward; target: string }>('reward')
+
+   console.log(error)
 
    return (
       <Style>
-         {rewards?.map(({ value: reward, id }) => (
-            <RewardPanel key={id} {...reward} id={id} canBuy={reward.price <= (status?.points ?? 0)} />
-         ))}
+         <Points>
+            Your team has <Colored>{status?.points}</Colored> points
+         </Points>
+         <Panels>
+            {rewards?.map(({ value: { reward, target }, id }) => (
+               <RewardPanel key={id} {...reward} id={id} canBuy={reward.price <= (status?.points ?? 0)} />
+            ))}
+         </Panels>
       </Style>
    )
 }
 
+const Points = styled.p``
+
 const RewardPanel: VFC<Reward & { canBuy: boolean; id: string }> = ({ id, display: name, price, canBuy }) => {
-   const buy = useSubmit(`buy/${id}`, { method: 'POST' })
+   const buy = useSubmit(`buy/${id}`, { method: 'POST', data: { target: '' } })
+
+   useEffect(() => {
+      if (buy.error) console.error(buy.error)
+   }, [buy.error])
 
    return (
       <Panel key={name}>
          <Name>{name}</Name>
          <small>{price} points</small>
-         <Button onClick={buy} disabled={!canBuy}>
+         <Button onClick={buy.send} disabled={!canBuy}>
             Buy
          </Button>
       </Panel>
    )
 }
 
+const Panels = styled.section`
+   display: grid;
+   gap: 1rem;
+   grid-template-columns: repeat(2, 1fr);
+`
+
 const Style = styled.section`
-   min-width: 300px;
    grid-area: rewards;
    display: grid;
    gap: 1rem;
@@ -54,15 +73,9 @@ const Name = styled.h3`
    text-align: left;
 `
 
-const Panel = styled.div`
-   border-radius: 1em;
-   background: ${p => darken(0.05, p.theme.bg)};
-   padding: 0.5em 1em;
-   gap: 1em;
-
-   display: grid;
-   align-items: center;
+const Panel = styled(Box)`
    justify-content: end;
+   min-width: 200px;
 
    grid-template:
       'name price buy'

@@ -1,6 +1,7 @@
 import { useMemo, VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
+import EventBanner from './EventBanner'
 import MissionInfo, { Mission } from './Mission'
 
 export interface GameStatus {
@@ -19,23 +20,20 @@ const Status: VFC = () => {
    return (
       <Style>
          {isPeace && <Peace>Peace {data?.peaceUntil}s</Peace>}
-         <p>{data?.points} points</p>
          {data?.mission && <MissionInfo {...data.mission} />}
       </Style>
    )
 }
 
-const Peace = styled.section`
+const Peace = styled(EventBanner)`
    background: ${p => p.theme.ok};
-   color: black;
-   padding: 0.5em;
-   border-radius: 1em;
 `
 
 const Style = styled.section`
    grid-area: status;
    display: grid;
    gap: 1rem;
+   margin-bottom: 2rem;
 `
 
 export default Status

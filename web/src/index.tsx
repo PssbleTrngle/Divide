@@ -1,22 +1,29 @@
 import { Settings } from 'luxon'
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { QueryClient, QueryClientProvider } from 'react-query'
+import { QueryClient, QueryClientProvider, setLogger } from 'react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { createGlobalStyle, ThemeProvider } from 'styled-components'
 import App from './App'
 import { SessionProvider } from './hooks/useSession'
 import reportWebVitals from './reportWebVitals'
+import './styles/fonts.css'
 import './styles/reset.css'
 import dark from './themes/dark'
 
 Settings.defaultLocale = 'de'
 
+setLogger({
+   log: () => {},
+   error: () => {},
+   warn: () => {},
+})
+
 const Global = createGlobalStyle`
   body, html {
     background: ${p => p.theme.bg};
     color: ${p => p.theme.text};
-    font-family: sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 `
 

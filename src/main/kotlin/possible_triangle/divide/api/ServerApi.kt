@@ -9,6 +9,7 @@ import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Forbidden
+import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
 import io.ktor.http.HttpStatusCode.Companion.PaymentRequired
@@ -16,20 +17,17 @@ import io.ktor.http.HttpStatusCode.Companion.Unauthorized
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.serialization.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.util.pipeline.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
 import org.slf4j.event.Level
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.GameData
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.crates.Order
@@ -48,18 +46,16 @@ import possible_triangle.divide.reward.RewardContext
 import java.util.*
 
 @Serializable
-data class Resource<T>(val id: String, val value: T)
+private data class ApiError(val message: String?, val stack: List<String>?)
 
+private class ApiException(message: String? = null, val status: HttpStatusCode = InternalServerError) :
+    Exception(message)
+
+@Serializable
+private data class Resource<T>(val id: String, val value: T)
+
+@ExperimentalSerializationApi
 object ServerApi {
-
-    @Serializable
-    data class GameStatus(
-        val peaceUntil: Int?,
-        val points: Int,
-        val mission: Mission?,
-        val paused: Boolean,
-        val started: Boolean
-    )
 
     private val ISSUER = "${Config.CONFIG.api.host}:${Config.CONFIG.api.port}"
     private val AUDIENCE = "$ISSUER/api"
@@ -80,46 +76,44 @@ object ServerApi {
 
         stop()
 
-        fun <T> Route.resource(path: String, resource: ReloadedResource<T>, getId: (T) -> String) {
-            val serializer = resource.serializer()
+        fun <T, R> Route.resource(path: String, resource: ReloadedResource<T>, transform: (T) -> R) {
             route(path) {
                 get {
-                    val encoded = Json.encodeToString(
-                        ListSerializer(Resource.serializer(serializer)),
-                        resource.values.map { Resource(getId(it), it) })
-                    call.respond(encoded)
+                    call.respond(resource.values.map { Resource(resource.idOf(it), transform(it)) })
                 }
             }
         }
 
-        suspend fun PipelineContext<Unit, ApplicationCall>.auth(
-            runnable: suspend PipelineContext<Unit, ApplicationCall>.(ServerPlayer, PlayerTeam) -> Unit
-        ) {
-            val data = call.principal<JWTPrincipal>() ?: return call.respond(Unauthorized)
+        fun <T> Route.resource(path: String, resource: ReloadedResource<T>) {
+            resource(path, resource) { it }
+        }
+
+        fun PipelineContext<Unit, ApplicationCall>.getPlayer(): ServerPlayer {
+            val data = call.principal<JWTPrincipal>() ?: throw ApiException("not logged in", Unauthorized)
             val uuid = UUID.fromString(data.payload.getClaim("uuid").asString())
+            val player = server.playerList.getPlayer(uuid) ?: throw ApiException("player not found", Unauthorized)
+            if (!Teams.isPlayer(player)) throw ApiException("not playing", Forbidden)
+            return player
+        }
 
-            val player = server.playerList.getPlayer(uuid)
-            val team = player?.team
-
-            if (player == null) call.respond(Unauthorized, "Unauthorized")
-            else if (!Teams.isPlayer(player) || team !is PlayerTeam) call.respond(Forbidden)
-            else runnable(player, team)
+        fun PipelineContext<Unit, ApplicationCall>.getTeam(): PlayerTeam {
+            val player = getPlayer()
+            return Teams.teamOf(player) ?: throw ApiException("not playing", Forbidden)
         }
 
         webServer = embeddedServer(Netty, port = Config.CONFIG.api.port) {
 
-            environment.monitor.subscribe(ApplicationStarted) {
-                DivideMod.LOGGER.info("Webserver started")
-                log.info("Webserver started")
-            }
+            install(CallLogging) { level = Level.INFO }
+            install(ContentNegotiation) { json() }
 
-            environment.monitor.subscribe(ApplicationStopped) {
-                DivideMod.LOGGER.info("Webserver stopped")
-                log.info("Webserver stopped")
-            }
-
-            install(CallLogging) {
-                level = Level.INFO
+            install(StatusPages) {
+                exception<Throwable> { error ->
+                    val status = if (error is ApiException) error.status else InternalServerError
+                    call.respond(
+                        status,
+                        ApiError(error.message, error.stackTrace.map { it.toString() })
+                    )
+                }
             }
 
             install(Authentication) {
@@ -154,115 +148,122 @@ object ServerApi {
 
                     authenticate("auth-jwt", optional = true) {
                         route("/status") {
-                            get {
-                                auth { _, team ->
-                                    call.respond(
-                                        Json.encodeToString(
-                                            GameStatus.serializer(),
-                                            GameStatus(
-                                                peaceUntil = if (Eras.isPeace(server)) Eras.remaining(server) else null,
-                                                points = Points.get(server, team),
-                                                mission = MissionEvent.ACTIVE[server]?.mission,
-                                                paused = GameData.DATA[server].paused,
-                                                started = GameData.DATA[server].started,
-                                            )
-                                        )
-                                    )
-                                }
-                            }
-                        }
 
-                        route("/team") {
-                            get {
-                                auth { _, team ->
-                                    val players = Teams.players(server, team).map { EventPlayer.of(it) }
-                                    call.respond(Json.encodeToString(ListSerializer(EventPlayer.serializer()), players))
-                                }
-                            }
-                        }
+                            @Serializable
+                            data class GameStatus(
+                                val peaceUntil: Int?,
+                                val points: Int,
+                                val mission: Mission?,
+                                val paused: Boolean,
+                                val started: Boolean
+                            )
 
-                        route("/ranks") {
                             get {
-                                val ranks = Scores.getRanks(server).mapKeys { it.key.name }
                                 call.respond(
-                                    Json.encodeToString(
-                                        MapSerializer(String.serializer(), Int.serializer()),
-                                        ranks
+                                    GameStatus(
+                                        peaceUntil = if (Eras.isPeace(server)) Eras.remaining(server) else null,
+                                        points = Points.get(server, getTeam()),
+                                        mission = MissionEvent.ACTIVE[server]?.mission,
+                                        paused = GameData.DATA[server].paused,
+                                        started = GameData.DATA[server].started,
                                     )
                                 )
                             }
                         }
 
+                        route("/team") {
+                            get {
+                                val players = Teams.players(server, getTeam()).map { EventPlayer.of(it) }
+                                call.respond(players)
+                            }
+                        }
+
+                        route("/ranks") {
+                            get {
+                                val ranks = Scores.getRanks(server).mapKeys { EventPlayer.of(it.key).name }
+                                call.respond(ranks)
+                            }
+                        }
+
                         route("/opponents") {
                             get {
-                                auth { _, team ->
-                                    val players = Teams.players(server)
-                                        .filter { team.name != it.team?.name }
-                                        .map { EventPlayer.of(it) }
-                                    call.respond(Json.encodeToString(ListSerializer(EventPlayer.serializer()), players))
-                                }
+                                val players = Teams.players(server)
+                                    .filter { getTeam().name != it.team?.name }
+                                    .map { EventPlayer.of(it) }
+                                call.respond(players)
                             }
                         }
 
                         route("/auth") {
                             get {
-                                auth { player, _ ->
-                                    call.respond(Json.encodeToString(EventPlayer.serializer(), EventPlayer.of(player)))
-                                }
+                                call.respond(EventPlayer.of(getPlayer()))
                             }
                         }
 
                         route("/buy/{id}") {
+
+                            @Serializable
+                            data class Params(val target: String?)
+
                             post {
-                                auth { player, team ->
-                                    val reward = Reward[call.parameters["id"] ?: return@auth call.respond(BadRequest)]
-                                        ?: return@auth call.respond(NotFound)
+                                val reward = Reward[call.parameters["id"] ?: throw ApiException(status = BadRequest)]
+                                    ?: throw ApiException(status = NotFound)
 
-                                    suspend fun <R, T> parseFor(action: Action<R, T>): HttpStatusCode {
-                                        val target = action.target.fromString(
-                                            call.receiveParameters()["target"] ?: return BadRequest
-                                        )
+                                val params = call.receive<Params>()
 
-                                        val ctx = RewardContext<R, T>(team, server, player.uuid, target, reward)
-                                        return ctx.ifComplete { _, _ ->
-                                            if (Reward.buy(ctx)) OK else PaymentRequired
-                                        } ?: BadRequest
-                                    }
+                                fun <R, T> parseFor(action: Action<R, T>): HttpStatusCode {
+                                    val target = action.target.fromString(params.target ?: "")
 
-                                    call.respond(parseFor(reward.action))
-
+                                    val ctx = RewardContext<R, T>(getTeam(), server, getPlayer().uuid, target, reward)
+                                    return ctx.ifComplete { _, _ ->
+                                        if (Reward.buy(ctx)) OK else PaymentRequired
+                                    } ?: BadRequest
                                 }
+
+                                call.respond(parseFor(reward.action))
                             }
+
                         }
 
                         route("/order/{id}") {
+
+                            @Serializable
+                            data class Params(val amount: Int = 1)
+
                             post {
-                                auth { player, team ->
-                                    val order = Order[call.parameters["id"] ?: return@auth call.respond(BadRequest)]
-                                        ?: return@auth call.respond(NotFound)
-                                    val amount = call.receiveParameters()["amount"]?.toInt() ?: 1
-                                    call.respond(if (order.order(player, team, amount)) OK else PaymentRequired)
-                                }
+                                val order = Order[call.parameters["id"] ?: throw ApiException(status = BadRequest)]
+                                    ?: throw ApiException(status = NotFound)
+
+                                val params = call.receive<Params>()
+                                call.respond(
+                                    if (order.order(
+                                            getPlayer(),
+                                            getTeam(),
+                                            params.amount
+                                        )
+                                    ) OK else PaymentRequired
+                                )
                             }
                         }
 
                         route("/events") {
                             get {
-                                auth { player, _ ->
-                                    if (Teams.isAdmin(player)) call.respond(
-                                        EventLogger.lines(server).joinToString(
-                                            prefix = "[",
-                                            postfix = "]"
-                                        )
+                                if (Teams.isAdmin(getPlayer())) call.respond(
+                                    EventLogger.lines(server).joinToString(
+                                        prefix = "[",
+                                        postfix = "]"
                                     )
-                                    else call.respond(Unauthorized)
-                                }
+                                )
+                                else call.respond(Unauthorized)
                             }
                         }
 
-                        resource("reward", Reward) { it.id }
-                        resource("bounty", Bounty) { it.id }
-                        resource("order", Order) { it.id }
+                        @Serializable
+                        data class ExtendedReward(val reward: Reward, val target: String)
+
+                        resource("reward", Reward) { ExtendedReward(it, it.action.target.id) }
+                        resource("bounty", Bounty)
+                        resource("order", Order)
 
                     }
                 }

@@ -9,9 +9,5 @@ declare module 'styled-components' {
       error: string
       warning: string
       ok: string
-      link: {
-         default: string
-         visited: string
-      }
    }
 }

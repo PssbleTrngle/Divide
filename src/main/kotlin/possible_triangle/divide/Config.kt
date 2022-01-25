@@ -31,6 +31,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val minHearts: Int = 4,
         val starterCash: Int = 0,
         val loginShield: Int = 5,
+        val autoPause: Boolean = true,
         val deaths: DeathValues = DeathValues(),
         val border: BorderValues = BorderValues(),
         val crate: CrateValues = CrateValues(),

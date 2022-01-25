@@ -60,7 +60,7 @@ class ActionTarget<Raw, Target> private constructor(
             deserialize = { it.getString("team") },
             serialize = { nbt, name -> nbt.putString("team", name) },
             fetch = { name, server -> server.scoreboard.getPlayerTeam(name) },
-            toEvent = { EventPlayer(it.name) },
+            toEvent = { EventPlayer.of(it) },
             fromString = { it }
         )
 

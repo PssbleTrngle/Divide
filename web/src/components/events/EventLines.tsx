@@ -26,7 +26,7 @@ const EventLine = memo(function <T extends EventType>({ type, realTime, event }:
    return (
       <Style>
          <Type>{type}</Type>
-         <span title={time.toLocaleString(DateTime.DATETIME_SHORT)}>{since.length ? since : 'moments'} ago</span>
+         <span data-tip={time.toLocaleString(DateTime.DATETIME_SHORT)}>{since.length ? since : 'moments'} ago</span>
          {info ? createElement(info, event) : <span>No Info</span>}
       </Style>
    )
