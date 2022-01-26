@@ -20,7 +20,8 @@ import java.nio.file.attribute.BasicFileAttributes
 
 abstract class ReloadedResource<Entry>(
     val dir: String,
-    val serializer: () -> KSerializer<Entry>
+    val serializer: () -> KSerializer<Entry>,
+    val resourceID: String = dir,
 ) {
 
     open fun config(): YamlConfiguration {
@@ -58,15 +59,25 @@ abstract class ReloadedResource<Entry>(
             }
         }
 
+        private val RESOURCES = hashMapOf<String, ReloadedResource<*>>()
+
+        operator fun get(id: String): ReloadedResource<*>? {
+            return RESOURCES[id]
+        }
+
+        val values
+            get() = RESOURCES.values.toList()
+
         fun register(resource: ReloadedResource<*>) {
             FORGE_BUS.addListener(resource::setup)
-            DivideMod.LOGGER.info("registered resource ${resource.dir}")
+            RESOURCES[resource.resourceID] = resource
             resource.preLoad()
         }
     }
 
     fun idOf(entry: Entry): String {
-        return registry.entries.find { it.value == entry }?.key ?: throw NullPointerException("Key missing for $dir")
+        return registry.entries.find { it.value == entry }?.key
+            ?: throw NullPointerException("Key missing for $resourceID")
     }
 
     operator fun get(id: String): Entry? {
@@ -74,7 +85,7 @@ abstract class ReloadedResource<Entry>(
     }
 
     fun getOrThrow(id: String): Entry {
-        return registry[id] ?: throw  NullPointerException("$dir with id $id missing")
+        return registry[id] ?: throw  NullPointerException("$resourceID with id $resourceID missing")
     }
 
     protected val folder
@@ -147,7 +158,7 @@ abstract class ReloadedResource<Entry>(
             val parsed = try {
                 Yaml(configuration = CONFIG).decodeFromStream(serializer, stream)
             } catch (e: SerializationException) {
-                DivideMod.LOGGER.warn("an error occurred loading $dir '$id'")
+                DivideMod.LOGGER.warn("an error occurred loading $resourceID '$id'")
                 null
             }
 
@@ -167,7 +178,7 @@ abstract class ReloadedResource<Entry>(
 
         afterLoad(server)
 
-        DivideMod.LOGGER.info("Reloaded $dir with ${registry.size} values")
+        DivideMod.LOGGER.info("Reloaded $resourceID with ${registry.size} values")
 
         IS_LOADING = false
     }

@@ -4,6 +4,7 @@ import useApi from '../hooks/useApi'
 import { Player, Team } from '../hooks/useSession'
 import Box from './Box'
 import PlayerHead from './PlayerHead'
+import TeamName from './TeamName'
 import { Subtitle } from './Text'
 
 const Teams: VFC = () => {
@@ -14,9 +15,11 @@ const Teams: VFC = () => {
       <Style>
          <Subtitle>Teams</Subtitle>
          <List>
-            {teams?.map(({ name, id }) => (
+            {teams?.map(({ name, id, color }) => (
                <section key={id}>
-                  <Name>{name}</Name>
+                  <Name>
+                     <TeamName color={color}>{name}</TeamName>
+                  </Name>
                   <Row>
                      {players
                         ?.filter(p => p.team?.id === id)
@@ -31,8 +34,8 @@ const Teams: VFC = () => {
    )
 }
 
-const Name = styled.h4`
-   margin-bottom: 0.5em;
+const Name = styled.p`
+   margin-bottom: 1em;
 `
 
 const List = styled.section`

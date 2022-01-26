@@ -119,6 +119,7 @@ dependencies {
     library "io.ktor:ktor-auth:$ktor_version"
     library "io.ktor:ktor-auth-jwt:$ktor_version"
     library "ch.qos.logback:logback-classic:${project.logback_version}"
+    library "io.ktor:ktor-websockets:${project.ktor_version}"
     //library "io.ktor:ktor-utils-jvm:${project.ktor_version}"
 
     // Use the latest version of Minecraft Forge

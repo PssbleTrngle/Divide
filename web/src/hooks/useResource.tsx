@@ -1,10 +1,13 @@
+import { useMemo } from 'react'
 import useApi from './useApi'
 
-export interface Resource<T> {
+interface Resource<T> {
    id: string
    value: T
 }
 
 export default function useResource<T>(uri: string) {
-   return useApi<Resource<T>[]>(uri)
+   const { data, ...rest } = useApi<Resource<T>[]>(uri)
+   const transformed = useMemo(() => data?.map(({ value, id }) => ({ ...value, id })), [data])
+   return { ...rest, data: transformed }
 }

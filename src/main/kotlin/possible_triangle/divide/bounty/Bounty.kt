@@ -26,7 +26,7 @@ data class Bounty(val description: String, val amount: Amount) {
 
     @Serializable
     private data class Event(
-        val bounty: String,
+        val bounty: Bounty,
         val pointsEarned: Int,
         val pointsNow: Int,
         val doneAlready: Int,
@@ -99,7 +99,7 @@ data class Bounty(val description: String, val amount: Amount) {
                     LOGGER.log(
                         player.server,
                         Event(
-                            id,
+                            this,
                             cashGained,
                             pointsNow,
                             BOUNTY_COUNTS[player.server][team],

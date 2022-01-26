@@ -33,10 +33,11 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
         @Serializable
         private data class Event(
-            val order: String,
+            val order: Order,
             val amount: Int,
             val cost: Int,
-            val pointsNow: Int, val orderedBy: EventTarget,
+            val pointsNow: Int,
+            val orderedBy: EventTarget,
         )
 
         private val LOGGER = EventLogger("order", { Event.serializer() }) { inTeam { it.orderedBy.team } }
@@ -77,7 +78,7 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
         return Points.modify(player.server, team, -price) { pointsNow ->
             CrateScheduler.order(player.server, team, ItemStack(item, amount), this)
-            LOGGER.log(player.server, Event(itemId, amount, price, pointsNow, EventTarget.of(player)))
+            LOGGER.log(player.server, Event(this, amount, price, pointsNow, EventTarget.of(player)))
         }
 
     }

@@ -2,11 +2,16 @@ import { darken, lighten } from 'polished'
 import { VFC } from 'react'
 import styled, { css } from 'styled-components'
 import useApi from '../hooks/useApi'
+import { Team } from '../hooks/useSession'
 import Box from './Box'
 import ErrorField from './ErrorField'
+import TeamName from './TeamName'
 import { Subtitle } from './Text'
 
-type Ranks = Record<string, number>
+type Ranks = Array<{
+   rank: number
+   team: Team
+}>
 
 const Ranks: VFC = () => {
    const { data, error } = useApi<Ranks>('ranks')
@@ -15,13 +20,12 @@ const Ranks: VFC = () => {
       <Style>
          <Subtitle>Ranks</Subtitle>
          <ErrorField error={error} />
-         {data &&
-            Object.entries(data).map(([team, rank]) => (
-               <Line key={rank}>
-                  <Rank rank={rank}>#{rank}</Rank>
-                  <span>{team}</span>
-               </Line>
-            ))}
+         {data?.map(({ rank, team }) => (
+            <Line key={rank}>
+               <Rank rank={rank}>#{rank}</Rank>
+               <TeamName color={team.color}>{team.name}</TeamName>
+            </Line>
+         ))}
       </Style>
    )
 }

@@ -14,14 +14,21 @@ import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
 import io.ktor.http.HttpStatusCode.Companion.PaymentRequired
 import io.ktor.http.HttpStatusCode.Companion.Unauthorized
+import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.util.pipeline.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -38,20 +45,19 @@ import possible_triangle.divide.data.ReloadedResource
 import possible_triangle.divide.events.Eras
 import possible_triangle.divide.info.Scores
 import possible_triangle.divide.logging.EventLogger
+import possible_triangle.divide.logging.LoggedEvent
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
-import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.missions.MissionEvent
+import possible_triangle.divide.missions.MissionEvent.MissionStatus
 import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 import java.util.*
+import java.util.concurrent.Executors
 
 @Serializable
 private data class ApiError(val message: String?, val stack: List<String>?)
-
-private class ApiException(message: String? = null, val status: HttpStatusCode = InternalServerError) :
-    Exception(message)
 
 @Serializable
 private data class Resource<T>(val id: String, val value: T)
@@ -64,6 +70,9 @@ object ServerApi {
     private const val REALM = "Access to 'api'"
 
     private var webServer: NettyApplicationEngine? = null
+    private var server: MinecraftServer? = null
+
+    private val socketSessions = Collections.synchronizedSet<DefaultWebSocketServerSession>(LinkedHashSet())
 
     fun createToken(player: ServerPlayer): String {
         return JWT.create()
@@ -74,19 +83,50 @@ object ServerApi {
             .sign(Algorithm.HMAC256(Config.CONFIG.api.secret))
     }
 
+    private fun authenticatedPlayer(call: ApplicationCall, server: MinecraftServer): ServerPlayer {
+        val data = call.principal<JWTPrincipal>() ?: throw ApiException("not logged in", Unauthorized)
+        val uuid = UUID.fromString(data.payload.getClaim("uuid").asString())
+        val player = server.playerList.getPlayer(uuid) ?: throw ApiException("player not found", Unauthorized)
+        if (!Teams.isPlayer(player)) throw ApiException("not playing", Forbidden)
+        return player
+    }
+
+    private val socketDispatcher = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
+
+    fun <T> notify(
+        event: LoggedEvent<T>,
+        serializer: KSerializer<T>,
+        predicate: (ServerPlayer?) -> Boolean
+    ) {
+        val server = server ?: return
+        if (!Config.CONFIG.api.enabled) return
+
+        val serialized = Json.encodeToString(LoggedEvent.serializer(serializer), event)
+        socketSessions.filter {
+            val player = try {
+                authenticatedPlayer(it.call, server)
+            } catch (e: ApiException) {
+                null
+            }
+            predicate(player)
+        }.forEach {
+            socketDispatcher.launch(Dispatchers.IO) {
+                it.send(serialized)
+            }
+        }
+    }
+
     fun start(server: MinecraftServer) {
 
         stop()
 
-        fun PipelineContext<Unit, ApplicationCall>.player(): ServerPlayer {
-            val data = call.principal<JWTPrincipal>() ?: throw ApiException("not logged in", Unauthorized)
-            val uuid = UUID.fromString(data.payload.getClaim("uuid").asString())
-            val player = server.playerList.getPlayer(uuid) ?: throw ApiException("player not found", Unauthorized)
-            if (!Teams.isPlayer(player)) throw ApiException("not playing", Forbidden)
-            return player
+        this.server = server
+
+        fun ApplicationCall.player(): ServerPlayer {
+            return authenticatedPlayer(this, server)
         }
 
-        fun PipelineContext<Unit, ApplicationCall>.optionalPlayer(): ServerPlayer? {
+        fun ApplicationCall.optionalPlayer(): ServerPlayer? {
             return try {
                 player()
             } catch (e: ApiException) {
@@ -94,12 +134,12 @@ object ServerApi {
             }
         }
 
-        fun PipelineContext<Unit, ApplicationCall>.optionalTeam(): PlayerTeam? {
+        fun ApplicationCall.optionalTeam(): PlayerTeam? {
             val player = optionalPlayer() ?: return null
             return Teams.teamOf(player)
         }
 
-        fun PipelineContext<Unit, ApplicationCall>.team(): PlayerTeam {
+        fun ApplicationCall.team(): PlayerTeam {
             return optionalTeam() ?: throw ApiException("not playing", Forbidden)
         }
 
@@ -108,7 +148,7 @@ object ServerApi {
                 route("/{id}") {
                     get {
                         val entry = resource[call.parameters["id"] ?: throw ApiException(status = BadRequest)]
-                            ?.takeIf { resource.isVisible(it, optionalTeam(), server) }
+                            ?.takeIf { resource.isVisible(it, call.optionalTeam(), server) }
                             ?.let { Resource<T>(resource.idOf(it), it) }
                             ?: throw ApiException(status = NotFound)
                         call.respond(Json.encodeToString(Resource.serializer(resource.serializer()), entry))
@@ -116,7 +156,7 @@ object ServerApi {
                 }
 
                 get {
-                    val team = optionalTeam()
+                    val team = call.optionalTeam()
                     val list = resource.values
                         .filter { resource.isVisible(it, team, server) }
                         .map { Resource(resource.idOf(it), it) }
@@ -161,6 +201,8 @@ object ServerApi {
                 }
             }
 
+            install(WebSockets)
+
             routing {
 
                 route("/api") {
@@ -169,6 +211,29 @@ object ServerApi {
                     }
 
                     authenticate("auth-jwt", optional = true) {
+
+                        @Serializable
+                        data class SocketEvent(val message: String?)
+
+                        webSocket {
+
+                            suspend fun sendEvent(event: SocketEvent) {
+                                val serialized = Json.encodeToString(SocketEvent.serializer(), event)
+                                send(serialized)
+                            }
+
+                            try {
+                                socketSessions.add(this)
+                                sendEvent(SocketEvent("connect"))
+
+                                for (frame in incoming) {
+                                    sendEvent(SocketEvent("pong"))
+                                }
+
+                            } catch (e: ClosedReceiveChannelException) {
+                                socketSessions.remove(this)
+                            }
+                        }
 
                         resource("reward", Reward)
                         resource("bounty", Bounty)
@@ -179,7 +244,7 @@ object ServerApi {
                             @Serializable
                             data class GameStatus(
                                 val peaceUntil: Int?,
-                                val mission: Mission?,
+                                val mission: MissionStatus?,
                                 val paused: Boolean,
                                 val started: Boolean
                             )
@@ -188,7 +253,7 @@ object ServerApi {
                                 call.respond(
                                     GameStatus(
                                         peaceUntil = if (Eras.isPeace(server)) Eras.remaining(server) else null,
-                                        mission = MissionEvent.ACTIVE[server]?.mission,
+                                        mission = MissionEvent.status(server, call.optionalPlayer()),
                                         paused = GameData.DATA[server].paused,
                                         started = GameData.DATA[server].started,
                                     )
@@ -198,13 +263,13 @@ object ServerApi {
 
                         route("/points") {
                             get {
-                                call.respond(Points.get(server, team()))
+                                call.respond(Points.get(server, call.team()))
                             }
                         }
 
                         route("/player") {
                             get {
-                                val team = optionalTeam()
+                                val team = call.optionalTeam()
                                 val params = call.request.queryParameters
                                 val players = Teams.players(server)
                                     .filter { params["opponent"] != "true" || it.team != team }
@@ -217,7 +282,7 @@ object ServerApi {
 
                         route("/team") {
                             get {
-                                val team = optionalTeam()
+                                val team = call.optionalTeam()
                                 val params = call.request.queryParameters
                                 val teams = Teams.teams(server)
                                     .filter { params["opponent"] != "true" || it != team }
@@ -225,16 +290,21 @@ object ServerApi {
                             }
                         }
 
+                        @Serializable
+                        data class RankPosition(val rank: Int, val team: EventTarget)
+
                         route("/ranks") {
                             get {
-                                val ranks = Scores.getRanks(server).mapKeys { EventTarget.of(it.key).name }
+                                val ranks = Scores.getRanks(server).map {
+                                    RankPosition(it.value, EventTarget.of(it.key))
+                                }
                                 call.respond(ranks)
                             }
                         }
 
                         route("/auth") {
                             get {
-                                call.respond(EventTarget.of(player()))
+                                call.respond(EventTarget.of(call.player()))
                             }
                         }
 
@@ -245,7 +315,7 @@ object ServerApi {
 
                             post {
                                 val reward = Reward[call.parameters["id"] ?: throw ApiException(status = BadRequest)]
-                                    ?.takeIf { Reward.isVisible(it, team(), server) }
+                                    ?.takeIf { Reward.isVisible(it, call.team(), server) }
                                     ?: throw ApiException(status = NotFound)
 
                                 val params = call.receive<Params>()
@@ -255,9 +325,9 @@ object ServerApi {
 
                                     val ctx =
                                         RewardContext(
-                                            team(),
+                                            call.team(),
                                             server,
-                                            player().uuid,
+                                            call.player().uuid,
                                             target,
                                             reward,
                                             targetType
@@ -285,8 +355,8 @@ object ServerApi {
                                 val params = call.receive<Params>()
                                 call.respond(
                                     if (order.order(
-                                            player(),
-                                            team(),
+                                            call.player(),
+                                            call.team(),
                                             params.amount
                                         )
                                     ) OK else PaymentRequired
@@ -297,10 +367,11 @@ object ServerApi {
                         route("/events") {
                             get {
                                 call.respond(
-                                    EventLogger.lines(optionalPlayer()).joinToString(
-                                        prefix = "[",
-                                        postfix = "]"
-                                    )
+                                    EventLogger.lines(call.optionalPlayer(), Config.CONFIG.api.ignoreEventPermission)
+                                        .joinToString(
+                                            prefix = "[",
+                                            postfix = "]"
+                                        )
                                 )
                             }
                         }
@@ -314,6 +385,7 @@ object ServerApi {
 
     fun stop() {
         webServer?.stop(1000L, 4000L)
+        server = null
     }
 
 }

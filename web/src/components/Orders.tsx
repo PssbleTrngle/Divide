@@ -2,43 +2,38 @@ import { VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import useResource from '../hooks/useResource'
+import OrderPanel from './OrderPanel'
 import Panels from './Panels'
-import RewardPanel from './RewardPanel'
 import { Colored } from './Text'
 
-export interface Reward {
+export interface Order {
    id: string
-   display: string
-   price: number
-   description?: string
-   duration?: number
-   target?: 'player' | 'team'
-   secret?: boolean
+   item: string
+   cost: number
+   max?: number
 }
 
-const Rewards: VFC = () => {
+const Orders: VFC = () => {
    const { data: points } = useApi<number>('points')
-   const { data: rewards } = useResource<Reward>('reward')
+   const { data: orders } = useResource<Order>('order')
 
    return (
       <Style>
-         <Points>
+         <p>
             Your team has <Colored>{points}</Colored> points
-         </Points>
+         </p>
          <Panels>
-            {rewards?.map(reward => (
-               <RewardPanel key={reward.id} {...reward} />
+            {orders?.map(order => (
+               <OrderPanel key={order.id} {...order} />
             ))}
          </Panels>
       </Style>
    )
 }
 
-const Points = styled.p``
-
 const Style = styled.section`
    display: grid;
    gap: 1rem;
 `
 
-export default Rewards
+export default Orders

@@ -9,6 +9,7 @@ import { request } from './useApi'
 export interface Team {
    name: string
    id: string
+   color?: number
 }
 
 export interface Player {

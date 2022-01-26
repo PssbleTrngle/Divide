@@ -6,7 +6,7 @@ import possible_triangle.divide.data.DefaultedResource
 import kotlin.random.Random
 
 
-object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
+object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, id = "config") {
 
     val CONFIG by defaulted("config") { Values() }
 
@@ -118,6 +118,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }) {
         val port: Int = 8080,
         val enabled: Boolean = true,
         val host: String = "http://localhost",
+        val ignoreEventPermission: Boolean = false,
     )
 
 }

@@ -14,7 +14,8 @@ data class EventTarget(
     val name: String,
     val uuid: String? = null,
     val team: EventTarget? = null,
-    val id: String? = null
+    val id: String? = null,
+    val color: Int? = null,
 ) {
     companion object {
         fun of(player: Player): EventTarget {
@@ -27,7 +28,8 @@ data class EventTarget(
 
         fun of(team: PlayerTeam): EventTarget {
             val name = team.displayName
-            return EventTarget(if (name is TextComponent) name.text else team.name, id = team.name)
+            val color = team.color.takeIf { it.isColor }?.color
+            return EventTarget(if (name is TextComponent) name.text else team.name, id = team.name, color = color)
         }
 
         fun optional(player: Player?): EventTarget? {

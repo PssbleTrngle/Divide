@@ -42,7 +42,7 @@ object SecretRewards {
 
         override fun load(nbt: CompoundTag, server: MinecraftServer): Map<PlayerTeam, List<String>> {
             return nbt.getList("values", 10).map { it as CompoundTag }.mapNotNull { tag ->
-                val team = server.scoreboard.getPlayerTeam(nbt.getString("team")) ?: return@mapNotNull null
+                val team = server.scoreboard.getPlayerTeam(tag.getString("team")) ?: return@mapNotNull null
                 team to tag.getList("rewards", 8).map { it.asString }
             }.associate { it }
         }

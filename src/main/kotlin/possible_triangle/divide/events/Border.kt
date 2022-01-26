@@ -1,5 +1,6 @@
 package possible_triangle.divide.events
 
+import kotlinx.serialization.Serializable
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -7,10 +8,16 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.GameRules
 import net.minecraft.world.level.GameType
 import possible_triangle.divide.Config
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams
 
 object Border : CycleEvent("border") {
+
+    @Serializable
+    private data class Event(val action: String)
+
+    private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
 
     override fun isEnabled(server: MinecraftServer): Boolean {
         return Config.CONFIG.border.enabled
@@ -22,10 +29,12 @@ object Border : CycleEvent("border") {
         worldborder.lerpSizeBetween(worldborder.size, size.toDouble(), 1000L * seconds)
         val verb = if (worldborder.size < size.toDouble()) "grow" else "shrink"
         val color = if (worldborder.size < size.toDouble()) ChatFormatting.GREEN else ChatFormatting.RED
-        if (message)
+        if (message) {
+            LOGGER.log(server, Event(verb))
             server.playerList.players.forEach {
-                Chat.subtitle(it, Chat.apply("border started to $verb", color))
+                Chat.subtitle(it, Chat.apply("border started $verb", color))
             }
+        }
     }
 
     fun lobby(server: MinecraftServer) {

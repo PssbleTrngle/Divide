@@ -1,13 +1,20 @@
 package possible_triangle.divide.events
 
+import kotlinx.serialization.Serializable
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.BossEvent
 import possible_triangle.divide.Config
 import possible_triangle.divide.GameData
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 
 object Eras : CycleEvent("eras") {
+
+    @Serializable
+    private data class Event(val era: String)
+
+    private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
 
     private fun isPeace(index: Int): Boolean {
         return index % 2 == 0
@@ -25,6 +32,8 @@ object Eras : CycleEvent("eras") {
     }
 
     private fun peace(server: MinecraftServer) {
+        LOGGER.log(server, Event("peace"))
+
         server.playerList.players.forEach {
             Chat.subtitle(it, "Peace has begun", false)
             Chat.title(it, "❤")
@@ -37,6 +46,8 @@ object Eras : CycleEvent("eras") {
     }
 
     private fun war(server: MinecraftServer) {
+        LOGGER.log(server, Event("war"))
+
         server.playerList.players.forEach {
             Chat.subtitle(it, "War has started", false)
             Chat.title(it, "⚔")

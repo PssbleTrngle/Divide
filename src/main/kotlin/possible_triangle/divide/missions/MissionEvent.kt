@@ -1,28 +1,61 @@
 package possible_triangle.divide.missions
 
+import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.StringTag
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.BossEvent
 import net.minecraft.world.scores.PlayerTeam
-import net.minecraft.world.scores.Team
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.events.Countdown
 import possible_triangle.divide.events.CycleEvent
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams
 
 object MissionEvent : CycleEvent("missions") {
 
+    @Serializable
+    private data class Event(val mission: Mission, val action: String, val team: EventTarget? = null)
+
+    @Serializable
+    data class MissionStatus(val mission: Mission, val secondsLeft: Int, val done: Boolean = false)
+
     internal data class ActiveMission(val mission: Mission, val teams: MutableList<PlayerTeam>)
 
-    internal val COUNTDOWN = Countdown("mission", "Mission")
+    private val COUNTDOWN = Countdown("mission", "Mission")
 
-    internal val ACTIVE = object : ModSavedData<ActiveMission?>("active_mission") {
+    private val LOGGER = EventLogger("mission", { Event.serializer() }) { always() }
+
+    fun status(server: MinecraftServer, player: ServerPlayer? = null): MissionStatus? {
+        return ACTIVE[server]?.let { active ->
+            MissionStatus(
+                mission = active.mission,
+                secondsLeft = remaining(server),
+                done = player != null && active.teams.none { it.name == player.team?.name }
+            )
+        }
+    }
+
+    internal fun active(server: MinecraftServer): ActiveMission? {
+        return ACTIVE[server]
+    }
+
+    fun clear(server: MinecraftServer) {
+        active(server)?.apply {
+            LOGGER.log(server, Event(mission, "ended"))
+        }
+        ACTIVE[server] = null
+        COUNTDOWN.bar(server).isVisible = false
+    }
+
+    private val ACTIVE = object : ModSavedData<ActiveMission?>("active_mission") {
         override fun save(nbt: CompoundTag, value: ActiveMission?) {
             if (value == null) return
             nbt.putString("mission", value.mission.id)
@@ -46,10 +79,12 @@ object MissionEvent : CycleEvent("missions") {
         MissionCallback.cancel(server)
     }
 
-    fun fulfill(server: MinecraftServer, team: Team, mission: Mission) {
+    fun fulfill(server: MinecraftServer, team: PlayerTeam, mission: Mission) {
         val active = ACTIVE[server]
         if (active == null || active.mission.id != mission.id) return
         if (!active.teams.any { team.name == it.name }) return
+
+        LOGGER.log(server, Event(mission, "fulfilled", team = EventTarget.of(team)))
 
         ACTIVE.modify(server) {
             this?.teams?.removeIf { it.name == team.name }
@@ -72,6 +107,7 @@ object MissionEvent : CycleEvent("missions") {
                 val teamPlayers = teams.map { Teams.players(server, it) }.flatten()
 
                 ACTIVE[server] = ActiveMission(mission, teams)
+                LOGGER.log(server, Event(mission, "started"))
 
                 teamPlayers.forEach {
                     Chat.title(it, "New Mission")

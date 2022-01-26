@@ -1,7 +1,5 @@
 package possible_triangle.divide.command
 
-import com.mojang.brigadier.context.CommandContext
-import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
 import net.minecraft.server.MinecraftServer
 import net.minecraftforge.event.RegisterCommandsEvent
@@ -22,8 +20,7 @@ object AdminCommand {
         EventsCommand.register(base)
         ResetCommand.register(base)
         PauseCommand.register(base)
-
-        base.then(literal("reload").executes(::reload))
+        ResourceCommand.register(base)
 
         event.dispatcher.register(base)
     }
@@ -34,11 +31,6 @@ object AdminCommand {
         server.playerList.players.forEach {
             server.playerList.sendPlayerPermissionLevel(it)
         }
-    }
-
-    private fun reload(ctx: CommandContext<CommandSourceStack>): Int {
-        reload(ctx.source.server)
-        return 1
     }
 
 }

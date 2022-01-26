@@ -9,6 +9,7 @@ import Banner from './components/Banner'
 import { request } from './hooks/useApi'
 import { DialogProvider } from './hooks/useDialog'
 import { SessionProvider } from './hooks/useSession'
+import { SocketProvider } from './hooks/useSocket'
 import reportWebVitals from './reportWebVitals'
 import './styles/fonts.css'
 import './styles/reset.css'
@@ -28,12 +29,16 @@ const Global = createGlobalStyle`
     color: ${p => p.theme.text};
     font-family: 'Open Sans', sans-serif;
   }
+
+  li, ul, ol {
+     list-style: none;
+  }
 `
 
 const client = new QueryClient({
    defaultOptions: {
       queries: {
-         refetchInterval: 1000,
+         refetchInterval: 2000,
          retry: false,
       },
    },
@@ -43,7 +48,7 @@ const StatusChecker: FC = ({ children }) => {
    const { isSuccess } = useQuery('api-status', () => request('api', { method: 'HEAD' }))
    return (
       <>
-         {isSuccess || <Banner>Offline</Banner>}
+         {isSuccess || <Banner>Server Offline</Banner>}
          {children}
       </>
    )
@@ -57,9 +62,11 @@ ReactDOM.render(
             <QueryClientProvider client={client}>
                <StatusChecker>
                   <SessionProvider>
-                     <DialogProvider>
-                        <App />
-                     </DialogProvider>
+                     <SocketProvider>
+                        <DialogProvider>
+                           <App />
+                        </DialogProvider>
+                     </SocketProvider>
                   </SessionProvider>
                </StatusChecker>
             </QueryClientProvider>

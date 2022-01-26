@@ -27,8 +27,8 @@ object PointsCommand {
                     .then(argument("amount", IntegerArgumentType.integer(1)).executes(::addPoints)))
                 .then(literal("remove").requires { it.hasPermission(2) }
                     .then(argument("amount", IntegerArgumentType.integer(1)).executes(::removePoints)))
-                .then(literal("set").requires { it.hasPermission(2) }
-                    .then(argument("amount", IntegerArgumentType.integer(0)).executes(::setPoints)))
+            //.then(literal("set").requires { it.hasPermission(2) }
+            //    .then(argument("amount", IntegerArgumentType.integer(0)).executes(::setPoints)))
         )
     }
 

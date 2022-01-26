@@ -1,5 +1,5 @@
 import { VFC } from 'react'
-import { LootFillEvent } from './types'
+import { LootFillEvent } from '../types'
 
 const LootFillInfo: VFC<LootFillEvent> = ({ pos, table }) => (
    <span>

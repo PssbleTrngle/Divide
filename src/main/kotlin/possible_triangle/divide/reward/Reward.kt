@@ -70,31 +70,33 @@ data class Reward(
                 "Track Player",
                 1000,
                 duration = 60 * 5,
+                charge = 30,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
         val TRACK_PLAYER_WEAK by register("track_player_weak", TrackPlayerWeak) {
             Reward(
-                "Track Players",
+                "Track Player Weak",
                 500,
                 duration = 60 * 5,
+                charge = 30,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
 
         val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 60 * 10) }
 
-        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 50, duration = 10) }
+        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 50, duration = 20) }
 
         val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 60 * 1) }
 
-        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop Growth", 100, duration = 60 * 5) }
+        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop-Growth", 200, duration = 60 * 10) }
 
-        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a loot crate", 800, charge = 60 * 5) }
+        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a Loot-Crate", 800, charge = 60 * 5) }
 
         val BLIND_TEAM by register("blind_team", BlindTeam) {
             Reward(
-                "Order a loot crate",
+                "Blind a Team",
                 800,
                 duration = 60 * 5,
                 secret = true,
@@ -104,7 +106,7 @@ data class Reward(
 
         val MINING_FATIGUE by register("slow_minespeed", MiningFatigue) {
             Reward(
-                "Give a team mining fatigue",
+                "Give a Team Mining-Fatigue",
                 800,
                 duration = 60 * 5,
                 secret = true,

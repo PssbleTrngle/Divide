@@ -1,10 +1,16 @@
+import { groupBy, orderBy } from 'lodash'
+import { darken } from 'polished'
 import { useMemo, useState, VFC } from 'react'
+import { useQueryClient } from 'react-query'
+import { useLocation } from 'react-router-dom'
 import styled from 'styled-components'
-import EventLine from '../components/events/EventLines'
+import EventLine from '../components/events/EventLine'
+import Timestamp from '../components/events/Timestamp'
 import { Event } from '../components/events/types'
 import Input from '../components/Input'
 import Page from '../components/Page'
 import useApi from '../hooks/useApi'
+import { useEvents } from '../hooks/useSocket'
 
 function searchRecursive<T>(value: T, term: string): boolean {
    return Object.values(value).some(v => {
@@ -16,9 +22,19 @@ function searchRecursive<T>(value: T, term: string): boolean {
 }
 
 const Events: VFC = () => {
-   const { data } = useApi<Event[]>('events')
+   const client = useQueryClient()
+   const { data } = useApi<Event[]>('events', { refetchInterval: false })
 
-   const sorted = useMemo(() => data?.map((e, id) => ({ ...e, id }))?.sort((a, b) => b.realTime - a.realTime), [data])
+   const location = useLocation()
+   const max = useMemo(() => {
+      const query = new URLSearchParams(location.search)
+      const parsed = Number.parseInt(query.get('max') ?? '20')
+      return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
+   }, [location])
+
+   useEvents(event => {
+      client.setQueryData<Event[]>('events', a => [...(a ?? []), event])
+   })
 
    const [search, setSearch] = useState('')
    const filtered = useMemo(() => {
@@ -26,21 +42,45 @@ const Events: VFC = () => {
          .split(' ')
          .map(s => s.trim().toLowerCase())
          .filter(s => s.length > 0)
-      if (terms.length === 0) return sorted
-      return sorted?.filter(e => terms.every(term => e.type.includes(term) || searchRecursive(e.event, term)))
-   }, [sorted, search])
+      if (terms.length === 0) return data
+      return data?.filter(e => terms.every(term => e.type.includes(term) || searchRecursive(e.event, term)))
+   }, [data, search])
+
+   const grouped = useMemo(() => {
+      const grouped = Object.entries(groupBy(filtered, e => e.gameTime))
+      const sorted = grouped.map(([k, events]) => [k, orderBy(events, e => e.realTime)] as [typeof k, typeof events])
+      return orderBy(sorted, e => -e[0]).slice(0, max)
+   }, [filtered])
 
    return (
       <Page mini>
          <Input placeholder='Search...' value={search} onChange={e => setSearch(e.target.value)} />
          <List>
-            {filtered?.map(e => (
-               <EventLine key={e.id} {...e} />
+            {grouped.map(([key, events], i) => (
+               <Group key={key}>
+                  <Timestamp refresh={i <= 10 ? 10 : 60} time={events[0].realTime} />
+                  <ul>
+                     {events.map(e => (
+                        <EventLine key={e.id} {...e} />
+                     ))}
+                  </ul>
+               </Group>
             ))}
          </List>
       </Page>
    )
 }
+
+const Group = styled.ul`
+   padding: 0.5rem 0;
+   &:nth-of-type(odd) {
+      background: ${p => darken(0.05, p.theme.bg)};
+   }
+
+   display: grid;
+   align-items: center;
+   grid-template-columns: 1fr 4fr;
+`
 
 const List = styled.ul`
    margin-top: 1rem;

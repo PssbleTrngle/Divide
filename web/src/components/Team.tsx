@@ -2,6 +2,7 @@ import { VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import { Player } from '../hooks/useSession'
+import { colorOf } from '../util'
 import Box from './Box'
 import ErrorField from './ErrorField'
 import PlayerHead from './PlayerHead'
@@ -15,9 +16,9 @@ const Team: VFC = () => {
       <Style>
          <Subtitle>Your Team</Subtitle>
          <ErrorField error={error} />
-         <PlayerList  perRow={2}>
+         <PlayerList perRow={2}>
             {data?.map(p => (
-               <PlayerHead key={p.uuid} {...p} />
+               <PlayerHead highlight={colorOf(p.team?.color)} key={p.uuid} {...p} />
             ))}
          </PlayerList>
       </Style>

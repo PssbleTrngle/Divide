@@ -1,5 +1,6 @@
 import { darken, lighten } from 'polished'
 import styled, { keyframes } from 'styled-components'
+import { pseudo } from '../styles/mixins'
 
 const spin = keyframes`
    from { transform: translateY(-0.5em) scale(0.9, 1) }
@@ -17,13 +18,7 @@ const Spinner = styled.div`
 
    &::after,
    &::before {
-      top: 0;
-      left: 0;
-      z-index: 1;
-      position: absolute;
-      content: '';
-      height: 100%;
-      width: 100%;
+      ${pseudo};
    }
 
    &::before {

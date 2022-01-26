@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
-import { RouteObject, useRoutes } from 'react-router-dom'
+import { Navigate, RouteObject, useRoutes } from 'react-router-dom'
+import Orders from './components/Orders'
+import Rewards from './components/Rewards'
 import useSession from './hooks/useSession'
 import Events from './pages/Events'
 import NotFound from './pages/NotFound'
@@ -11,7 +13,18 @@ const commonRoutes: RouteObject[] = [
    { path: '/events', element: <Events /> },
 ]
 
-const playerRoutes: RouteObject[] = [{ path: '/', element: <PlayerView /> }, ...commonRoutes]
+const playerRoutes: RouteObject[] = [
+   {
+      path: '/',
+      element: <PlayerView />,
+      children: [
+         { path: 'rewards', element: <Rewards /> },
+         { path: 'orders', element: <Orders /> },
+         { path: '', element: <Navigate to='rewards' /> },
+      ],
+   },
+   ...commonRoutes,
+]
 
 const spectatorRoutes: RouteObject[] = [{ path: '/', element: <SpectatorView /> }, ...commonRoutes]
 

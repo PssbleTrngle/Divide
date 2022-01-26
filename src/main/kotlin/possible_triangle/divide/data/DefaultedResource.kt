@@ -8,16 +8,20 @@ import kotlin.reflect.KProperty
 
 abstract class DefaultedResource<Entry>(
     dir: String,
-    serializer: () -> KSerializer<Entry>
+    serializer: () -> KSerializer<Entry>,
+    id: String = dir,
 ) :
-    ReloadedResource<Entry>(dir, serializer) {
+    ReloadedResource<Entry>(dir, serializer, id) {
 
-    private val defaults = hashMapOf<String, () -> Entry>()
+    private val defaultsMap = hashMapOf<String, () -> Entry>()
+
+    val defaults
+        get() = defaultsMap.toMap()
 
     fun defaulted(id: String, supplier: () -> Entry): Delegate {
         val lower = id.lowercase()
-        if (defaults.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
-        defaults[lower] = supplier
+        if (defaultsMap.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
+        defaultsMap[lower] = supplier
         with(supplier()) {
             populate(this, null, id)
             registry[lower] = this
@@ -27,7 +31,7 @@ abstract class DefaultedResource<Entry>(
         return Delegate(lower, supplier)
     }
 
-    private fun save(id: String, entry: Entry, overwrite: Boolean = true) {
+    fun save(id: String, entry: Entry, overwrite: Boolean = true) {
         val encoded = Yaml(configuration = config()).encodeToString(serializer(), entry)
         val file = File(folder, "$id.yml")
         folder.mkdirs()
@@ -39,13 +43,13 @@ abstract class DefaultedResource<Entry>(
     }
 
     final override fun onError(id: String): Entry? {
-        val default = defaults[id] ?: return null
+        val default = defaultsMap[id] ?: return null
         save(id, default())
         return default()
     }
 
     final override fun afterLoad(server: MinecraftServer) {
-        defaults
+        defaultsMap
             .filterNot { registry.containsKey(it.key) }
             .forEach { (id, entry) -> save(id, entry()) }
     }

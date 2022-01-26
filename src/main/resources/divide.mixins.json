@@ -9,7 +9,8 @@
     "ItemStackMixin",
     "PlayerMixin",
     "ServerGamePacketListenerImplMixin",
-    "ServerLevelMixin"
+    "ServerLevelMixin",
+    "ServerScoreboardMixin"
   ],
   "injectors": {
     "defaultRequire": 1

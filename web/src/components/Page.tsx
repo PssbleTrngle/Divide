@@ -7,7 +7,7 @@ const Page = styled.section<{ center?: boolean; mini?: boolean }>`
    min-height: ${p => (p.center ? 100 : p.mini ? 0 : 40)}vh;
    text-align: center;
 
-   padding-top: 1rem;
+   padding-top: 4rem;
 `
 
 export default Page

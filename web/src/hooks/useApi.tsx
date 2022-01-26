@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from 'react-query'
+import { useMemo, useState } from 'react'
+import { useQuery, UseQueryOptions } from 'react-query'
 import useSession from './useSession'
 
 export class RequestError extends Error {
@@ -25,12 +25,16 @@ export async function request<T>(url: string, { token, ...config }: Partial<Requ
    return json as T
 }
 
-export default function useApi<T>(uri: string) {
+export default function useApi<T>(
+   uri: string,
+   config?: Omit<UseQueryOptions<T, RequestError, T, string>, 'queryKey' | 'queryFn'>
+) {
    const { token } = useSession()
    const [error, setError] = useState<RequestError>()
    const query = useQuery<T, RequestError, T, string>(uri, () => request<T>(`/api/${uri}`, { token }), {
+      ...config,
       onError: setError,
       onSuccess: () => setError(undefined),
    })
-   return { ...query, error }
+   return useMemo(() => ({ ...query, error }), [query, error])
 }

@@ -2,7 +2,7 @@ import { VFC } from 'react'
 import styled from 'styled-components'
 import Page from '../components/Page'
 import Ranks from '../components/Ranks'
-import Rewards from '../components/Rewards'
+import SelectionBar from '../components/SelectionBar'
 import Status from '../components/Status'
 import Team from '../components/Team'
 
@@ -11,18 +11,23 @@ const PlayerView: VFC = () => (
       <Status />
       <Ranks />
       <Team />
-      <Rewards />
+      <Panel values={['rewards', 'orders']} />
    </Style>
 )
+
+const Panel = styled(SelectionBar)`
+   grid-area: panel;
+   width: 800px;
+`
 
 const Style = styled(Page)`
    gap: 1rem;
    align-items: flex-start;
    grid-template:
       'status status'
-      'rewards ranks'
-      'rewards team'
-      'rewards .';
+      'panel ranks'
+      'panel team'
+      'panel .';
 `
 
 export default PlayerView

@@ -1,9 +1,12 @@
 import { Buffer } from 'buffer'
+import { lighten } from 'polished'
 import { HTMLAttributes, useMemo, VFC } from 'react'
 import { useQuery } from 'react-query'
 import styled, { css } from 'styled-components'
 import { request } from '../hooks/useApi'
 import useSession, { Player } from '../hooks/useSession'
+import useTooltip from '../hooks/useTooltip'
+import { loading, pseudo } from '../styles/mixins'
 
 interface PlayerData {
    name: string
@@ -35,8 +38,8 @@ const PlayerHead: VFC<
    Pick<Player, 'uuid'> &
       Partial<Player> &
       HTMLAttributes<HTMLDivElement> & {
-         size?: number
-         highlight?: boolean
+         size?: string | number
+         highlight?: boolean | string
       }
 > = ({ uuid, name, size = 1, highlight, ...props }) => {
    const { player } = useSession()
@@ -54,34 +57,45 @@ const PlayerHead: VFC<
       else return name
    }, [name, yourself])
 
+   useTooltip()
+
    return (
       <Head
          {...props}
          data-tip={title}
          highlight={highlight ?? yourself}
-         size={`${100 * size}px`}
+         size={typeof size === 'number' ? `${100 * size}px` : size}
          src={texture?.textures?.SKIN?.url}
       />
    )
 }
 
-const borderSize = '2px'
-const Head = styled.div<{ src?: string; size: string; highlight?: boolean }>`
-   background: #0001;
-   background-image: url('${p => p.src}');
+const Head = styled.div<{ src?: string; size: string; highlight?: string | boolean }>`
+   ${loading};
+
    height: ${p => p.size};
    width: ${p => p.size};
-   background-size: calc(${p => p.size} * 8);
-   background-position: calc(${p => p.size} * -1 - ${borderSize}) calc(${p => p.size} * -1 - ${borderSize});
-   background-repeat: no-repeat;
-   image-rendering: pixelated;
 
-   border: ${borderSize} solid transparent;
+   outline: max(calc(${p => p.size} / 20), 2px) solid transparent;
+   transition: outline-color 0.2s ease-out;
+
+   &::after {
+      ${pseudo};
+      background-image: url('${p => p.src}');
+      background-size: calc(${p => p.size} * 8);
+      background-position: calc(${p => p.size} * -1) calc(${p => p.size} * -1);
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+   }
 
    ${p =>
       p.highlight &&
       css`
-         border-color: ${p.theme.primary};
+         outline-color: ${typeof p.highlight === 'string' ? p.highlight : p.theme.primary};
+
+         &:hover {
+            outline-color: ${lighten(0.05, typeof p.highlight === 'string' ? p.highlight : p.theme.primary)};
+         }
       `}
 `
 

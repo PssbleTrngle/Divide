@@ -11,7 +11,7 @@ function isEvent(e?: any): e is SyntheticEvent {
 
 export default function useSubmit(
    uri: string,
-   { data, keys, ...config }: Omit<RequestInit, 'body'> & { data?: Body; keys?: string[] } = {}
+   { data, keys, method = 'POST', ...config }: Omit<RequestInit, 'body'> & { data?: Body; keys?: string[] } = {}
 ) {
    const { token } = useSession()
    const [error, setError] = useState<RequestError>()
@@ -23,7 +23,7 @@ export default function useSubmit(
          const body = JSON.stringify(callbackData ?? data)
          setError(undefined)
          try {
-            await request(`/api/${uri}`, { ...config, token, body })
+            await request(`/api/${uri}`, { ...config, method, token, body })
             keys?.forEach(key => client.invalidateQueries(key))
          } catch (e) {
             setError(e as RequestError)

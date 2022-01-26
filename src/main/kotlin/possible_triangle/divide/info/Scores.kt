@@ -1,19 +1,24 @@
 package possible_triangle.divide.info
 
+import kotlinx.serialization.Serializable
 import net.minecraft.ChatFormatting.*
+import net.minecraft.network.chat.TextComponent
 import net.minecraft.network.protocol.game.ClientboundSetScorePacket
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.ServerScoreboard.Method.CHANGE
 import net.minecraft.server.ServerScoreboard.Method.REMOVE
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.world.scores.Score
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.actions.TeamBuff
+import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util
+import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Chat.apply
 import possible_triangle.divide.logic.Points
@@ -25,6 +30,11 @@ import java.util.*
 
 @Mod.EventBusSubscriber
 object Scores {
+
+    @Serializable
+    private data class Event(val player: EventTarget, val score: Int, val objective: String)
+
+    private val LOGGER = EventLogger("score", { Event.serializer() }) { isPlayer { it.player } }
 
     private const val SPOOFED = "${DivideMod.ID}_per_player_info"
 
@@ -44,6 +54,16 @@ object Scores {
         return Teams.ranked(server).mapIndexed { index, team ->
             team to (index + 1)
         }.associate { it }
+    }
+
+    fun scoreUpdate(score: Score, server: MinecraftServer) {
+        val player = server.playerList.getPlayerByName(score.owner) ?: return
+        val objective = score.objective ?: return
+        if (objective.criteria.isReadOnly) return
+        val name = objective.displayName.let {
+            if (it is TextComponent) it.text else objective.name
+        }
+        LOGGER.log(server, Event(EventTarget.of(player), score.score, name))
     }
 
     @SubscribeEvent
@@ -116,10 +136,10 @@ object Scores {
                     Bases.isInBase(player, useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
                     Action.isRunning(player.server, Reward.TRACK_PLAYER) { it.target == player }.takeIf { it }
                         ?.let { "You are being tracked" },
-                    MissionEvent.ACTIVE[player.server]?.mission?.let {
+                    MissionEvent.status(player.server, player)?.let {
                         apply(
-                            "Mission: ${it.description}",
-                            YELLOW
+                            "Mission: ${it.mission.description}",
+                            if (it.done) GREEN else YELLOW
                         )
                     },
                 )

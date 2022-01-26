@@ -1,10 +1,13 @@
 import { Player, Team } from '../../hooks/useSession'
+import { Mission } from '../Mission'
+import { Order } from '../Orders'
 
 export interface Event<Type extends EventType = EventType> {
    gameTime: number
    realTime: number
    type: Type
    event: EventTypes[Type]
+   id: string
 }
 
 export interface CycleEvent {
@@ -48,6 +51,43 @@ export interface ActionEvent {
    target?: Player | Team
 }
 
+export interface EraEvent {
+   era: string
+}
+
+export interface BorderEvent {
+   action: string
+}
+
+export interface MissionEvent {
+   mission: Mission
+   action: string
+   team?: Team
+}
+
+export interface BountyEvent {
+   pointsEarned: number
+   pointsNow: number
+   doneAlready: number
+   fulfilledBy: Player
+   bounty: {
+      description: string
+      amount: number
+   }
+}
+
+export interface GameEvent {
+   action: string
+}
+
+export interface OrderEvent {
+   order: Order
+   amount: number
+   cost: number
+   pointsNow: number
+   orderedBy: Player
+}
+
 export interface EventTypes {
    cycle_event: CycleEvent
    loot_crate_filled: LootFillEvent
@@ -55,10 +95,11 @@ export interface EventTypes {
    reward: RewardEvent
    action: ActionEvent
    game: GameEvent
-}
-
-export interface GameEvent {
-   action: string
+   eras: EraEvent
+   border: BorderEvent
+   mission: MissionEvent
+   bounty: BountyEvent
+   order: OrderEvent
 }
 
 export type EventType = keyof EventTypes
