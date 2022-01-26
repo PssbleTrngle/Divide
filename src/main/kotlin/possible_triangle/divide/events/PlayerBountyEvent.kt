@@ -81,7 +81,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
 
             LOGGER.log(target.server, Event(EventTarget.of(target), EventTarget.optional(killer), bounty.price))
 
-            val killerTeam = killer?.team
+            val killerTeam = killer?.let { Teams.teamOf(it) }
             if (killerTeam != null) {
                 Points.modify(killer.server, killerTeam, bounty.price)
                 Teams.players(target.server, killerTeam).forEach {

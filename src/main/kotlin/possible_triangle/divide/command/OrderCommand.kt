@@ -10,7 +10,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.crates.Order
-import possible_triangle.divide.logic.Teams
 
 @Mod.EventBusSubscriber
 object OrderCommand {
@@ -34,15 +33,13 @@ object OrderCommand {
     private fun orderItem(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {
         val order = supplier()
 
-        val team = Teams.requiredTeam(ctx.source.playerOrException)
-
         val amount = try {
             IntegerArgumentType.getInteger(ctx, "amount")
         } catch (e: IllegalArgumentException) {
             1
         }
 
-        if (!order.order(ctx.source.playerOrException, team, amount)) {
+        if (!order.order(ctx.source.playerOrException, amount)) {
             throw NOT_ENOUGH.create(amount * order.cost)
         }
 

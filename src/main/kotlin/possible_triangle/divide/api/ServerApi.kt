@@ -354,12 +354,7 @@ object ServerApi {
 
                                 val params = call.receive<Params>()
                                 call.respond(
-                                    if (order.order(
-                                            call.player(),
-                                            call.team(),
-                                            params.amount
-                                        )
-                                    ) OK else PaymentRequired
+                                    if (order.order(call.player(), params.amount)) OK else PaymentRequired
                                 )
                             }
                         }

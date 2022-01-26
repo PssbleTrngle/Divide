@@ -13,11 +13,11 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.ItemLike
 import net.minecraft.world.level.block.Blocks
-import net.minecraft.world.scores.Team
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
+import possible_triangle.divide.logic.Teams
 
 @Serializable
 data class Order(@SerialName("item") internal val itemId: String, val cost: Int, val max: Int?) {
@@ -71,10 +71,11 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
         cost, max,
     )
 
-    fun order(player: ServerPlayer, team: Team, amount: Int): Boolean {
+    fun order(player: ServerPlayer, amount: Int): Boolean {
         if (max != null && amount > max) throw TOO_MUCH.create(itemId, max)
 
         val price = amount * cost
+        val team = Teams.requiredTeam(player)
 
         return Points.modify(player.server, team, -price) { pointsNow ->
             CrateScheduler.order(player.server, team, ItemStack(item, amount), this)
