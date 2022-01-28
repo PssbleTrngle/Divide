@@ -14,19 +14,19 @@ export const pseudo = css`
    width: 100%;
 `
 
-export const shimmer = keyframes`
+export const shimmer = (size?: string) => keyframes`
    from { background-position: 0 0 }
-   to { background-position: 100px 0 }
+   to { background-position: ${size ?? '1em'} 0 }
 `
 
-export const loading = css`
+export const loading = css<{ size?: string }>`
    position: relative;
    overflow: hidden;
 
    &::before {
       ${pseudo};
       transform: rotate(30deg) scale(2);
-      animation: ${shimmer} 1s linear infinite;
+      animation: ${p => shimmer(p.size)} 1s linear infinite;
       background: linear-gradient(-90deg, #0001, #0005, #0001);
    }
 `

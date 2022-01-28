@@ -10,12 +10,18 @@ import net.minecraft.world.level.storage.LevelResource
 import net.minecraftforge.event.server.ServerAboutToStartEvent
 import net.minecraftforge.event.server.ServerStoppingEvent
 import possible_triangle.divide.Config
+import possible_triangle.divide.DivideMod
 import possible_triangle.divide.api.ServerApi
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logic.Teams
 import thedarkcolour.kotlinforforge.forge.FORGE_BUS
 import java.io.File
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @Serializable
 data class LoggedEvent<T>(
@@ -77,19 +83,52 @@ class EventLogger<T>(
             encodeDefaults = false
         }
 
-        private fun logFile(server: MinecraftServer, name: String): File {
+        private fun logFile(server: MinecraftServer, name: String, createIfMissing: Boolean = true): File {
             val logs = File(server.getWorldPath(LevelResource.ROOT).toFile(), "logs")
             logs.mkdirs()
             val logFile = File(logs, "$name.log")
-            if (!logFile.exists()) logFile.createNewFile()
+            if (createIfMissing && !logFile.exists()) logFile.createNewFile()
             return logFile
         }
 
-        fun lines(player: ServerPlayer?, ignorePermission: Boolean = false): List<String> {
-            return LOGGERS.map { it.lines(player, ignorePermission) }
+        fun archive(server: MinecraftServer): Int {
+            val names = LOGGERS.map { it.name } + "full"
+            val files = names.distinct()
+                .map { logFile(server, it, createIfMissing = false) }
+                .filter { it.exists() && it.length() > 0 }
+
+            if (files.isEmpty()) return 0
+
+            val timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSSSS")
+                .withZone(ZoneOffset.UTC).format(Instant.now())
+
+            val archive = File(files.first().parentFile, "$timestamp.zip")
+            ZipOutputStream(archive.outputStream().buffered()).use { output ->
+                files.forEach { file ->
+                    file.inputStream().buffered().use { origin ->
+                        val entry = ZipEntry(file.name)
+                        output.putNextEntry(entry)
+                        origin.copyTo(output, 1024)
+                    }
+                }
+            }
+
+            files.forEach  {
+                it.delete()
+            }
+
+            return files.size
+        }
+
+        fun lines(player: ServerPlayer?, ignorePermission: Boolean = false, type: String? = null): List<String> {
+            return LOGGERS
+                .asSequence()
+                .filter { type == null || it.name == type }
+                .map { it.lines(player, ignorePermission) }
                 .flatten()
                 .sortedBy { -it.first }
                 .map { it.second }
+                .toList()
         }
     }
 
@@ -116,6 +155,7 @@ class EventLogger<T>(
 
     init {
         LOGGERS.add(this)
+        DivideMod.LOGGER.info("Registered event logger $name")
         FORGE_BUS.addListener(::read)
         FORGE_BUS.addListener(::clear)
     }

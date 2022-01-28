@@ -88,6 +88,19 @@ export interface OrderEvent {
    orderedBy: Player
 }
 
+export interface ScoreEvent {
+   player: Player
+   objective: string
+   score: number
+}
+
+export interface PointsEvent {
+   before: number
+   now: number
+   type: 'total' | 'current'
+   team: Team
+}
+
 export interface EventTypes {
    cycle_event: CycleEvent
    loot_crate_filled: LootFillEvent
@@ -100,6 +113,8 @@ export interface EventTypes {
    mission: MissionEvent
    bounty: BountyEvent
    order: OrderEvent
+   score: ScoreEvent
+   points: PointsEvent
 }
 
 export type EventType = keyof EventTypes

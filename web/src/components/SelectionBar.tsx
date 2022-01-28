@@ -1,27 +1,24 @@
 import { darken } from 'polished'
-import { useMemo, VFC } from 'react'
-import { Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom'
+import { Dispatch, VFC } from 'react'
+import { Outlet } from 'react-router-dom'
 import styled, { css } from 'styled-components'
 
-const SelectionBar: VFC<{ values: string[] }> = ({ values, ...props }) => {
-   const location = useLocation()
-   const match = useMatch(location.pathname)
-   const selected = useMemo(() => values.find(v => match?.pathname.startsWith(`/${v}`)), [values, match])
-   const navigate = useNavigate()
-
-   return (
-      <Style {...props}>
-         <Bar>
-            {values.map(k => (
-               <Button active={selected === k} key={k} onClick={() => navigate(k)}>
-                  {k}
-               </Button>
-            ))}
-         </Bar>
-         <Outlet />
-      </Style>
-   )
-}
+const SelectionBar: VFC<{
+   values: string[]
+   onChange: Dispatch<string>
+   value?: string
+}> = ({ values, onChange, value, ...props }) => (
+   <Style {...props}>
+      <Bar>
+         {values.map(k => (
+            <Button active={value === k} key={k} onClick={() => onChange(k)}>
+               {k}
+            </Button>
+         ))}
+      </Bar>
+      <Outlet />
+   </Style>
+)
 
 const Button = styled.button<{ active?: boolean }>`
    padding: 0.3em 1em;
@@ -39,7 +36,7 @@ const Button = styled.button<{ active?: boolean }>`
       `}
 `
 
-const Bar = styled.div`
+const Bar = styled.nav`
    display: grid;
    grid-auto-flow: column;
    align-items: center;

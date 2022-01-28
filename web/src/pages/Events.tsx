@@ -1,7 +1,6 @@
 import { groupBy, orderBy } from 'lodash'
 import { darken } from 'polished'
 import { useMemo, useState, VFC } from 'react'
-import { useQueryClient } from 'react-query'
 import { useLocation } from 'react-router-dom'
 import styled from 'styled-components'
 import EventLine from '../components/events/EventLine'
@@ -10,7 +9,7 @@ import { Event } from '../components/events/types'
 import Input from '../components/Input'
 import Page from '../components/Page'
 import useApi from '../hooks/useApi'
-import { useEvents } from '../hooks/useSocket'
+import { EXCLUDED_EVENTS } from '../hooks/useSocket'
 
 function searchRecursive<T>(value: T, term: string): boolean {
    return Object.values(value).some(v => {
@@ -22,7 +21,6 @@ function searchRecursive<T>(value: T, term: string): boolean {
 }
 
 const Events: VFC = () => {
-   const client = useQueryClient()
    const { data } = useApi<Event[]>('events', { refetchInterval: false })
 
    const location = useLocation()
@@ -32,18 +30,15 @@ const Events: VFC = () => {
       return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
    }, [location])
 
-   useEvents(event => {
-      client.setQueryData<Event[]>('events', a => [...(a ?? []), event])
-   })
-
    const [search, setSearch] = useState('')
    const filtered = useMemo(() => {
+      const withoutExluded = data?.filter(e => !EXCLUDED_EVENTS.includes(e.type))
       const terms = search
          .split(' ')
          .map(s => s.trim().toLowerCase())
          .filter(s => s.length > 0)
-      if (terms.length === 0) return data
-      return data?.filter(e => terms.every(term => e.type.includes(term) || searchRecursive(e.event, term)))
+      if (terms.length === 0) return withoutExluded
+      return withoutExluded?.filter(e => terms.every(term => e.type.includes(term) || searchRecursive(e.event, term)))
    }, [data, search])
 
    const grouped = useMemo(() => {

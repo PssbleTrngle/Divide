@@ -52,14 +52,14 @@ data class Bounty(val description: String, val amount: Amount) {
         val ADVANCEMENT by defaulted("ADVANCEMENT") {
             Bounty(
                 "Unlock an advancement",
-                Amount(INCREASING, listOf(10, 5))
+                Amount(INCREASING, listOf(10, 5, 150))
             )
         }
 
         val SOLD_HEART by defaulted("SOLD_HEART") { Bounty("Sold a heart", Amount(INCREASING, listOf(100, 20))) }
 
         val MINED_COAL by defaulted("MINED_COAL") { Bounty("Mine a coal ore", Amount(DECREASING, listOf(10, 1))) }
-        val MINED_IRON by defaulted("MINED_IRON") { Bounty("Mine a iron ore", Amount(DECREASING, listOf(20, 1))) }
+        val MINED_IRON by defaulted("MINED_IRON") { Bounty("Mine a iron ore", Amount(DECREASING, listOf(20, 2))) }
         val MINED_GOLD by defaulted("MINED_GOLD") { Bounty("Mine a gold ore", Amount(DECREASING, listOf(25, 1))) }
         val MINED_DIAMOND by defaulted("MINED_DIAMOND") {
             Bounty(

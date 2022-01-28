@@ -1,11 +1,14 @@
 package possible_triangle.divide.mixins;
 
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import possible_triangle.divide.events.Eras;
+import possible_triangle.divide.missions.Mission;
 
 @Mixin(Player.class)
 public class PlayerMixin {
@@ -18,6 +21,18 @@ public class PlayerMixin {
             var isPeace = Eras.INSTANCE.isPeace(server);
             if (isPeace) callback.setReturnValue(false);
         }
+    }
+
+    @Inject(at = @At("HEAD"), method = "jumpFromGround()V")
+    public void jumpFromGround(CallbackInfo callback) {
+        var self = (Player) (Object) this;
+        Mission.Companion.getJUMP().fulfill(self);
+    }
+
+    @Inject(at = @At("RETURN"), method = "updatePlayerPose()V")
+    public void updatePlayerPose(CallbackInfo callback) {
+        var self = (Player) (Object) this;
+        if (self.getPose() == Pose.CROUCHING) Mission.Companion.getSNEAK().fulfill(self);
     }
 
 }

@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components'
 import useApi from '../../hooks/useApi'
 import { Team } from '../../hooks/useSession'
 import { Submit } from '../../hooks/useSubmit'
+import TeamName from '../TeamName'
 import TargetDialog from './TargetDialog'
 
 const ChooseTeam: VFC<Submit> = props => {
@@ -13,8 +14,8 @@ const ChooseTeam: VFC<Submit> = props => {
       <TargetDialog selected={selected} {...props}>
          {!!data?.length && (
             <section>
-               {data?.map(({ name }) => (
-                  <TeamRow key={name} selected={selected === name} onClick={() => setSelected(name)}>
+               {data?.map(({ name, id, ...team }) => (
+                  <TeamRow key={id} selected={selected === id} {...team} onClick={() => setSelected(id)}>
                      {name}
                   </TeamRow>
                ))}
@@ -24,7 +25,7 @@ const ChooseTeam: VFC<Submit> = props => {
    )
 }
 
-const TeamRow = styled.p<{ selected?: boolean }>`
+const TeamRow = styled(TeamName)<{ selected?: boolean }>`
    ${p =>
       p.selected &&
       css`

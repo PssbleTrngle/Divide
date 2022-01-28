@@ -18,11 +18,13 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.actions.TeamBuff
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util
+import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Chat.apply
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.missions.MissionEvent
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.Reward
@@ -128,18 +130,23 @@ object Scores {
                 .map { it.display }
 
             if (buffs.isNotEmpty()) {
-                lines.add(listOf("Team Buffs") + buffs)
+                lines.add(listOf(apply("Team Buffs", LIGHT_PURPLE)) + buffs)
             }
 
             lines.add(
                 listOfNotNull(
                     Bases.isInBase(player, useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
-                    Action.isRunning(player.server, Reward.TRACK_PLAYER) { it.target == player }.takeIf { it }
-                        ?.let { "You are being tracked" },
+                    PlayerBountyEvent.getBounty(player)?.let { apply("Bounty on your Head", RED) },
+                    Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) { it.target == player }
+                        .takeIf { it }
+                        ?.let { apply("You are being tracked", YELLOW) },
                     MissionEvent.status(player.server, player)?.let {
                         apply(
                             "Mission: ${it.mission.description}",
-                            if (it.done) GREEN else YELLOW
+                            if (it.done) when (it.mission.type) {
+                                Mission.Type.SUCCEED -> GREEN
+                                Mission.Type.FAIL -> RED
+                            } else YELLOW
                         )
                     },
                 )

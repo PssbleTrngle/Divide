@@ -15,3 +15,7 @@ export function colorOf(value?: number) {
    const blue = (value >> 0) & 0xff
    return `rgb(${red}, ${green},  ${blue})`
 }
+
+export function exists<T>(value: T | null | undefined): value is T {
+   return (value ?? null) !== null
+}

@@ -11,7 +11,9 @@ import GameEventInfo from './extra/GameEventInfo'
 import LootFillInfo from './extra/LootFillInfo'
 import MissionEventInfo from './extra/MissionEventInfo'
 import OrderEventInfo from './extra/OrderEventInfo'
+import PointsEventInfo from './extra/PointsEventInfo'
 import RewardBoughtInfo from './extra/RewardBoughtInfo'
+import ScoreEventInfo from './extra/ScoreEventInfo'
 import { Event, EventType, EventTypes } from './types'
 
 const Info: {
@@ -28,6 +30,8 @@ const Info: {
    mission: MissionEventInfo,
    bounty: BountyEventInfo,
    order: OrderEventInfo,
+   points: PointsEventInfo,
+   score: ScoreEventInfo,
 }
 
 const EventLine = memo(function <T extends EventType>({ type, event, ...props }: Event<T>) {
@@ -42,10 +46,15 @@ const shine = (p: { theme: DefaultTheme }) => keyframes`
 
 const Style = styled.li`
    //animation: ${shine} 1s ease-out;
-   text-align: left;
    padding: 0.5em;
    margin: 0.1em 0;
    border-radius: 0.4em;
+
+   display: grid;
+   grid-auto-flow: column;
+   align-items: center;
+   justify-content: start;
+   gap: 0.3em;
 `
 
 const Type = styled.span`

@@ -3,8 +3,10 @@ package possible_triangle.divide.data
 import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.chat.*
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.LivingEntity
@@ -34,6 +36,17 @@ object Util {
         return BlockPos.betweenClosedStream(aabb)
             .map { BlockPos(it) }
             .collect(Collectors.toList())
+    }
+
+    fun encodePos(pos: BlockPos, player: ServerPlayer?): MutableComponent {
+        return ComponentUtils.wrapInSquareBrackets(
+            TranslatableComponent("chat.coordinates", pos.x, pos.y, pos.z)
+        ).withStyle(ChatFormatting.GOLD).withStyle {
+            if (player?.hasPermissions(2) == true)
+                it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent("teleport to position")))
+                    .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tp ${pos.x} ${pos.y} ${pos.z}"))
+            else it
+        }
     }
 
     fun withoutCollision(entity: Entity, server: MinecraftServer, team: Team? = null) {

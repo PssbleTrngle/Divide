@@ -30,7 +30,7 @@ object EventsCommand {
         fun forEvents(
             literal: String,
             withEvent: (CommandContext<CommandSourceStack>, CycleEvent) -> Int,
-            without: ((CommandContext<CommandSourceStack>) -> Int)? = null
+            without: ((CommandContext<CommandSourceStack>) -> Int)? = null,
         ): LiteralArgumentBuilder<CommandSourceStack>? {
             return EVENTS.fold(if (without == null) literal(literal) else literal(literal).executes { without(it) }) { node, event ->
                 node.then(literal(event.id).executes {
@@ -87,9 +87,10 @@ object EventsCommand {
 
     private fun get(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {
         val index = event.data[ctx.source.server]
-        if (index != null) ctx.source.sendSuccess(TextComponent("${event.id} is at index $index"), false)
-        else ctx.source.sendFailure(TextComponent("${event.id} is not running"))
-        return 1
+        val remaining = event.remaining(ctx.source.server)
+        ctx.source.sendSuccess(TextComponent("${event.id} will happen in ${remaining}s for the ${index?.plus(2) ?: "first"} time"),
+            false)
+        return remaining
     }
 
     private fun stop(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {

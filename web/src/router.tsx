@@ -7,10 +7,12 @@ import Events from './pages/Events'
 import NotFound from './pages/NotFound'
 import PlayerView from './pages/PlayerView'
 import SpectatorView from './pages/SpectatorView'
+import Stats from './pages/Stats'
 
 const commonRoutes: RouteObject[] = [
    { path: '*', element: <NotFound /> },
    { path: '/events', element: <Events /> },
+   { path: '/stats', element: <Stats /> },
 ]
 
 const playerRoutes: RouteObject[] = [

@@ -16,6 +16,7 @@ import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.m
 
 @Serializable
 data class Reward(
@@ -69,36 +70,36 @@ data class Reward(
             Reward(
                 "Track Player",
                 1000,
-                duration = 60 * 5,
-                charge = 30,
+                duration = 2.m,
+                charge = 1.m,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
         val TRACK_PLAYER_WEAK by register("track_player_weak", TrackPlayerWeak) {
             Reward(
-                "Track Player Weak",
+                "Track Player (Weak)",
                 500,
-                duration = 60 * 5,
+                duration = 5.m,
                 charge = 30,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
 
-        val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 60 * 10) }
+        val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 10.m) }
 
-        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 50, duration = 20) }
+        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 100, duration = 20) }
 
-        val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 60 * 1) }
+        val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 1.m) }
 
-        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop-Growth", 200, duration = 60 * 10) }
+        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop-Growth", 200, duration = 10.m) }
 
-        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a Loot-Crate", 800, charge = 60 * 5) }
+        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a Loot-Crate", 800, charge = 5.m) }
 
         val BLIND_TEAM by register("blind_team", BlindTeam) {
             Reward(
                 "Blind a Team",
-                800,
-                duration = 60 * 5,
+                200,
+                duration =  1.m,
                 secret = true,
                 targetType = ActionTarget.TEAM.id,
             )
@@ -107,8 +108,8 @@ data class Reward(
         val MINING_FATIGUE by register("slow_minespeed", MiningFatigue) {
             Reward(
                 "Give a Team Mining-Fatigue",
-                800,
-                duration = 60 * 5,
+                300,
+                duration = 4.m,
                 secret = true,
                 targetType = ActionTarget.TEAM.id,
             )

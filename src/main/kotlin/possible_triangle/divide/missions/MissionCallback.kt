@@ -1,34 +1,37 @@
 package possible_triangle.divide.missions
 
-import net.minecraft.ChatFormatting
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerQueue
+import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
-import kotlin.math.min
 
 class MissionCallback : TimerCallback<MinecraftServer> {
 
     override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
-        val mission = MissionEvent.active(server) ?: return
+        val (mission, teams) = MissionEvent.active(server) ?: return
 
-        mission.teams.forEach { team ->
-            Teams.players(server, team).forEach {
-                Chat.title(it, Chat.apply("Mission Failed", ChatFormatting.RED))
-                val subtract = min(mission.mission.fine, Points.get(server, team))
-                Points.modify(server, team, -subtract) { _ ->
-                    Chat.subtitle(
-                        it,
-                        Chat.apply("-${subtract} points", ChatFormatting.RED),
-                        setTitle = false
-                    )
+        val succeededTeams = Teams.teams(server).filter {
+            teams.contains(it) == (mission.type === Mission.Type.FAIL)
+        }
+
+        succeededTeams.firstOrNull()?.takeIf { succeededTeams.size == 1 && Config.CONFIG.missions.singleBonus }?.apply {
+            val points = mission.fine / 2
+            Points.modify(server, succeededTeams.first(), points) {
+                Teams.players(server, this).forEach {
+                    Chat.subtitle(it, Chat.apply("+${points} points"))
                 }
             }
+        }
+
+        teams.forEach { team ->
+            if (mission.type === Mission.Type.FAIL) MissionEvent.succeed(server, team, mission)
+            else MissionEvent.fail(server, team, mission)
         }
 
         MissionEvent.clear(server)

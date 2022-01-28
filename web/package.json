@@ -56,7 +56,10 @@
     "@types/luxon": "^2.0.9",
     "@types/react-is": "^17.0.3",
     "@types/styled-components": "^5.1.19",
-    "eslint": "^8.5.0",
+    "@typescript-eslint/eslint-plugin": "^5.10.1",
+    "@typescript-eslint/parser": "^5.10.1",
+    "eslint": "^8.7.0",
+    "eslint-plugin-react": "^7.28.0",
     "prettier": "^2.5.1"
   }
 }

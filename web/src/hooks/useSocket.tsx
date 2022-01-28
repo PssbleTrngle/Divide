@@ -35,11 +35,18 @@ export function useEvent<T extends EventType>(type: T, consumer: Dispatch<Event<
    useSubscribe(listener)
 }
 
-export function useEvents(consumer: <T extends EventType>(e: Event<T>) => void, ...types: EventType[]) {
+export const EXCLUDED_EVENTS: EventType[] = ['score', 'points']
+
+export function useEvents(
+   consumer: <T extends EventType>(e: Event<T>) => void,
+   types: EventType[] | ((t: EventType) => boolean) = t => !EXCLUDED_EVENTS.includes(t)
+) {
+   const predicate = useMemo(() => (Array.isArray(types) ? (t: EventType) => types.includes(t) : types), [types])
+
    const listener = useCallback(
       (event: MessageEvent) => {
          const json = JSON.parse(event.data)
-         if (isEvent(json) && (types.length === 0 || types.includes(json.type))) {
+         if (isEvent(json) && (types.length === 0 || predicate(json.type))) {
             consumer(json)
          }
       },

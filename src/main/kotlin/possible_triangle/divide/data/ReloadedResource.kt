@@ -24,6 +24,10 @@ abstract class ReloadedResource<Entry>(
     val resourceID: String = dir,
 ) {
 
+    protected fun key(id: String): String {
+        return id.lowercase().replace("\\s+".toRegex(), "_")
+    }
+
     open fun config(): YamlConfiguration {
         return CONFIG
     }

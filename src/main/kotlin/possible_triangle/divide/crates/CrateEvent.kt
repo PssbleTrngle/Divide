@@ -14,9 +14,11 @@ import kotlin.random.Random
 
 object CrateEvent : CycleEvent("loot_crates") {
 
-    override fun isEnabled(server: MinecraftServer): Boolean {
-        return Config.CONFIG.crate.enabled
-    }
+    override val enabled: Boolean
+        get() = Config.CONFIG.crate.enabled
+
+    override val startsAfter: Int
+        get() = Config.CONFIG.crate.startAfter
 
     override fun onStop(server: MinecraftServer) {
         CleanCallback.cancel(server)
@@ -30,7 +32,7 @@ object CrateEvent : CycleEvent("loot_crates") {
 
         val border = server.overworld().worldBorder
 
-        if (index >= Config.CONFIG.crate.startAt) try {
+        try {
             val y = Config.CONFIG.crate.levels.random()
             val x = Random.nextInt(border.minX.toInt() + 15, border.maxX.toInt() - 15)
             val z = Random.nextInt(border.minZ.toInt() + 15, border.maxZ.toInt() - 15)

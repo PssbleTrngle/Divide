@@ -14,14 +14,16 @@ import possible_triangle.divide.logic.Teams
 
 object Border : CycleEvent("border") {
 
+    override val enabled: Boolean
+        get() = Config.CONFIG.border.enabled
+
+    override val startsAfter: Int
+        get() = Config.CONFIG.border.startAfter
+
     @Serializable
     private data class Event(val action: String)
 
     private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
-
-    override fun isEnabled(server: MinecraftServer): Boolean {
-        return Config.CONFIG.border.enabled
-    }
 
     private fun resize(server: MinecraftServer, size: Int, seconds: Int = 0, message: Boolean = true) {
         val worldborder = server.overworld().worldBorder
@@ -69,13 +71,11 @@ object Border : CycleEvent("border") {
         val pause = if (grow) Config.CONFIG.border.stayBigFor else Config.CONFIG.border.staySmallFor
         val moveTime = if (index > 0) Config.CONFIG.border.moveTime else 60
 
-        if (index >= Config.CONFIG.border.startAt) {
-            server.overworld().worldBorder.damagePerBlock = Config.CONFIG.border.damagePerBlock
-            server.overworld().worldBorder.damageSafeZone = Config.CONFIG.border.damageSafeZone
+        server.overworld().worldBorder.damagePerBlock = Config.CONFIG.border.damagePerBlock
+        server.overworld().worldBorder.damageSafeZone = Config.CONFIG.border.damageSafeZone
 
-            resize(server, size, moveTime, index > 0)
-            bar(server).isVisible = Config.CONFIG.border.showBar
-        }
+        resize(server, size, moveTime, index > 0)
+        bar(server).isVisible = Config.CONFIG.border.showBar
 
         return pause.value
     }

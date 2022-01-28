@@ -46,9 +46,14 @@ abstract class Action {
         fun isRunning(
             server: MinecraftServer,
             reward: Reward,
-            predicate: (ctx: RewardContext<*>) -> Boolean = { true }
+            ifCharged: Boolean = false,
+            predicate: (ctx: RewardContext<*>) -> Boolean = { true },
         ): Boolean {
-            return DATA[server].any { (ctx) -> ctx.reward == reward && predicate(ctx) }
+            return DATA[server].any { (ctx, _, chargedAt) ->
+                ctx.reward == reward
+                        && predicate(ctx)
+                        && (!ifCharged || (chargedAt ?: 0) <= server.overworld().gameTime)
+            }
         }
 
         fun running(server: MinecraftServer): List<ActionContext<*>> {
@@ -107,7 +112,7 @@ abstract class Action {
             private fun load(
                 nbt: CompoundTag,
                 server: MinecraftServer,
-                reward: Reward
+                reward: Reward,
             ): ActionContext<*>? {
                 val team = server.scoreboard.getPlayerTeam(nbt.getString("team")) ?: return null
 

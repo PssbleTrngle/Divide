@@ -11,6 +11,12 @@ import possible_triangle.divide.logic.Chat
 
 object Eras : CycleEvent("eras") {
 
+    override val enabled: Boolean
+        get() = Config.CONFIG.eras.enabled
+
+    override val startsAfter: Int
+        get() = Config.CONFIG.eras.startAfter
+
     @Serializable
     private data class Event(val era: String)
 
@@ -25,10 +31,6 @@ object Eras : CycleEvent("eras") {
         if (data.paused || !data.started) return true
         val index = this.data[server]
         return index != null && isPeace(index)
-    }
-
-    override fun isEnabled(server: MinecraftServer): Boolean {
-        return Config.CONFIG.eras.enabled
     }
 
     private fun peace(server: MinecraftServer) {
@@ -63,10 +65,8 @@ object Eras : CycleEvent("eras") {
         val peace = isPeace(index)
         val pause = if (peace) Config.CONFIG.eras.peaceTime else Config.CONFIG.eras.warTime
 
-        if (index >= Config.CONFIG.eras.startAt) {
-            if (peace) peace(server)
-            else war(server)
-        }
+        if (peace) peace(server)
+        else war(server)
 
         return pause.value
     }

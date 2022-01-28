@@ -14,7 +14,9 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.GameRules
 import net.minecraft.world.level.ItemLike
 import net.minecraft.world.level.block.Blocks
+import net.minecraftforge.event.entity.living.LivingDeathEvent
 import net.minecraftforge.event.entity.living.LivingDropsEvent
+import net.minecraftforge.event.entity.living.LivingEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -158,7 +160,7 @@ object DeathEvents {
 
     private fun degrade(stack: ItemStack): ItemStack {
         val item = stack.item
-        if (Random.nextDouble() > Config.CONFIG.deaths.downgradeProbability) return stack
+        if (Random.nextDouble() >= Config.CONFIG.deaths.downgradeProbability) return stack
         val tier = TIERED.find { it.indexOf(item) > 0 }
         return if (tier != null) {
             val lower = tier.take(tier.indexOf(item)).last()
@@ -186,73 +188,90 @@ object DeathEvents {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    fun onPlayerDrops(event: LivingDropsEvent) {
+    private fun <T> playerOf(
+        event: LivingEvent,
+        source: DamageSource,
+        consumer: (ServerPlayer, ServerPlayer?) -> T
+    ): T? {
         val player = event.entity
-        if (player !is ServerPlayer) return
-        if (!Teams.isPlayer(player)) return
-        if (player.server.gameRules.getBoolean(GameRules.RULE_KEEPINVENTORY)) return
+        if (player !is ServerPlayer) return null
+        if (!Teams.isPlayer(player)) return null
+        if (player.server.gameRules.getBoolean(GameRules.RULE_KEEPINVENTORY)) return null
 
-        val killerEntity = event.source.entity
+
+        val killerEntity = source.entity
         val killer = if (killerEntity is ServerPlayer && killerEntity.team != player.team)
             killerEntity
         else
             null
 
-        LOGGER.log(
-            player.server,
-            Event(
-                EventTarget.of(player),
-                EventTarget.optional(killer),
-                EventPos.of(player.blockPosition()),
-                event.source.msgId
+        return consumer(player, killer)
+    }
+
+    @SubscribeEvent
+    fun onPlayerDeath(event: LivingDeathEvent) {
+        playerOf(event, event.source) { player, killer ->
+
+            LOGGER.log(
+                player.server,
+                Event(
+                    EventTarget.of(player),
+                    EventTarget.optional(killer),
+                    EventPos.of(player.blockPosition()),
+                    event.source.msgId
+                )
             )
-        )
 
-        if (event.source.isExplosion) Mission.EXPLODE.fulfill(player)
-        if (event.source == DamageSource.DROWN) Mission.DROWN.fulfill(player)
+            val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
+            if (killer != null && !wasBounty) {
+                val livedFor = timeSinceDeath(player)
+                val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
 
-        val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
-        if (killer != null && !wasBounty) {
-            val livedFor = timeSinceDeath(player)
-            val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
+                Mission.KILL_PLAYER.fulfill(killer)
 
-            Mission.KILL_PLAYER.fulfill(killer)
+                val bounty = if (event.source.isExplosion)
+                    Bounty.BLOWN_UP
+                else
+                    Bounty.PLAYER_KILL
 
-            val bounty = if (event.source.isExplosion)
-                Bounty.BLOWN_UP
-            else
-                Bounty.PLAYER_KILL
+                bounty.gain(killer, modifier)
+            }
 
-            bounty.gain(killer, modifier)
+            val pos = listOf(player.blockPosition().x, player.blockPosition().y, player.blockPosition().z)
+            Util.persistentData(player).putIntArray(DEATH_POS_TAG, pos)
+
         }
 
-        var keepPercent = Config.CONFIG.deaths.keepPercent.value
-        if (killer != null && BaseBuff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
+    }
 
-        event.drops.filter {
-            if (it.item.tag?.getBoolean("starter_gear") == true) true
-            else it.item.tag?.getBoolean(Bases.COMPASS_TAG) == true
-        }.forEach { it.setRemoved(Entity.RemovalReason.DISCARDED) }
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    fun onPlayerDrops(event: LivingDropsEvent) {
+        playerOf(event, event.source) { player, killer ->
 
-        val drops = event.drops.filterNot { it.isRemoved }
-        val keepAmount = (drops.size * keepPercent).toInt()
-        val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
+            var keepPercent = Config.CONFIG.deaths.keepPercent.value
+            if (killer != null && BaseBuff.isBuffed(killer, Reward.BUFF_LOOT)) keepPercent += 0.2
 
-        STORED[player.uuid] = respawnGear(player) + keep.map {
-            val taken = if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count + 1) else it.item.count
-            if (taken >= it.item.count) {
-                it.makeFakeItem()
-                it.setRemoved(Entity.RemovalReason.DISCARDED)
-                it.item
-            } else {
-                it.item.split(taken)
+            event.drops.filter {
+                if (it.item.tag?.getBoolean("starter_gear") == true) true
+                else it.item.tag?.getBoolean(Bases.COMPASS_TAG) == true
+            }.forEach { it.setRemoved(Entity.RemovalReason.DISCARDED) }
+
+            val drops = event.drops.filterNot { it.isRemoved }
+            val keepAmount = (drops.size * keepPercent).toInt()
+            val keep = drops.filterNot { it.isRemoved }.shuffled().take(keepAmount)
+
+            STORED[player.uuid] = respawnGear(player) + keep.map {
+                val taken =
+                    if (it.item.count > 1) Random.nextInt(it.item.count / 2, it.item.count + 1) else it.item.count
+                if (taken >= it.item.count) {
+                    it.makeFakeItem()
+                    it.setRemoved(Entity.RemovalReason.DISCARDED)
+                    it.item
+                } else {
+                    it.item.split(taken)
+                }
             }
         }
-
-        val pos = listOf(player.blockPosition().x, player.blockPosition().y, player.blockPosition().z)
-        Util.persistentData(player).putIntArray(DEATH_POS_TAG, pos)
-
     }
 
 }

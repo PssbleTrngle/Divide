@@ -21,6 +21,11 @@ import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.missions.MissionEvent
 import possible_triangle.divide.reward.Reward
 
+inline val Double.m get() = this * 60
+inline val Double.h get() = this.m * 60
+inline val Int.m get() = this * 60
+inline val Int.h get() = this.m * 60
+
 @Mod(DivideMod.ID)
 @Mod.EventBusSubscriber
 object DivideMod {

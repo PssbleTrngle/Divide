@@ -1,10 +1,14 @@
 import { transparentize } from 'polished'
-import { FC } from 'react'
+import { FC, HTMLAttributes } from 'react'
 import styled from 'styled-components'
 import { Team } from '../hooks/useSession'
 import { colorOf } from '../util'
 
-const TeamName: FC<Pick<Team, 'color'>> = ({ children, color, ...props }) => (
+const TeamName: FC<Pick<Team, 'color'> & Omit<HTMLAttributes<HTMLSpanElement>, 'color'>> = ({
+   children,
+   color,
+   ...props
+}) => (
    <Style {...props} color={colorOf(color)}>
       <b>{children}</b>
    </Style>

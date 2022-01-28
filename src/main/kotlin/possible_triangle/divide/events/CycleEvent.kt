@@ -13,6 +13,10 @@ import possible_triangle.divide.logic.Teams
 @Suppress("LeakingThis")
 abstract class CycleEvent(val id: String) : Countdown(id) {
 
+    abstract val enabled: Boolean
+
+    abstract val startsAfter: Int
+
     @Serializable
     private data class Event(val id: String, val action: String, val timesRun: Int? = null, val pause: Int? = null)
 
@@ -61,10 +65,12 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
     }
 
     fun startCycle(server: MinecraftServer, at: Int = 0): Boolean {
-        val next = handle(server, at)
+        val started = startsAfter <= 0
+        val pause = if (started) handle(server, at) else startsAfter
+
         val alreadyRun = cancel(server)
-        data[server] = at
-        schedule(server, next, at + 1)
+        if (started) data[server] = at
+        schedule(server, pause, if (started) at + 1 else at)
 
         logger.log(server, Event(id, if (alreadyRun) "restarted" else "started"))
 
@@ -75,6 +81,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val queue = server.worldData.overworldData().scheduledEvents
         val event = queue.events.row(callbackId).values.toList()
         cancel(server)
+        onStop(server)
 
         logger.log(server, Event(id, "skipped"))
 
@@ -97,13 +104,11 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
 
     abstract fun handle(server: MinecraftServer, index: Int): Int
 
-    abstract fun isEnabled(server: MinecraftServer): Boolean
-
     class Callback(val index: Int, val id: String) : TimerCallback<MinecraftServer> {
 
         override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
             val event = REGISTRY[id] ?: return
-            if (event.isEnabled(server)) {
+            if (event.enabled) {
                 val pause = event.handle(server, index)
                 event.logger.log(server, Event(id, "scheduled", index, pause))
                 event.schedule(server, pause, index + 1)

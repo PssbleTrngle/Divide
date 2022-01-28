@@ -19,7 +19,7 @@ abstract class DefaultedResource<Entry>(
         get() = defaultsMap.toMap()
 
     fun defaulted(id: String, supplier: () -> Entry): Delegate {
-        val lower = id.lowercase()
+        val lower = key(id)
         if (defaultsMap.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
         defaultsMap[lower] = supplier
         with(supplier()) {
@@ -55,7 +55,7 @@ abstract class DefaultedResource<Entry>(
     }
 
     inner class Delegate(private val id: String, private val supplier: () -> Entry) {
-        operator fun getValue(thisRef: Any?, property: KProperty<*>): Entry {
+        operator fun getValue(thisRef: Any?, property: KProperty<*>?): Entry {
             return registry[id] ?: supplier()
         }
     }

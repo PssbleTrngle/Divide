@@ -1,7 +1,6 @@
 package possible_triangle.divide.crates.callbacks
 
 import kotlinx.serialization.Serializable
-import net.minecraft.ChatFormatting
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtUtils
@@ -13,6 +12,7 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
+import possible_triangle.divide.data.Util
 import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
@@ -59,14 +59,13 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
 
         players.forEach {
             CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)
-            val posComponent = TextComponent("${pos.x}/${pos.y}/${pos.z}").withStyle(ChatFormatting.GOLD)
             Chat.message(
                 it, TextComponent(
                     if (inSeconds <= 0)
                         "Loot dropped at "
                     else
                         "Loot will drop in $inSeconds seconds at "
-                ).append(posComponent),
+                ).append(Util.encodePos(pos, it)),
                 log = true
             )
 

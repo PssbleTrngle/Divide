@@ -363,11 +363,21 @@ object ServerApi {
                             get {
                                 call.respond(
                                     EventLogger.lines(call.optionalPlayer(), Config.CONFIG.api.ignoreEventPermission)
-                                        .joinToString(
-                                            prefix = "[",
-                                            postfix = "]"
-                                        )
+                                        .joinToString(prefix = "[", postfix = "]")
                                 )
+                            }
+
+                            route("/{type}") {
+                                get {
+                                    val type = call.parameters["type"] ?: throw ApiException(status = BadRequest)
+                                    call.respond(
+                                        EventLogger.lines(
+                                            call.optionalPlayer(),
+                                            Config.CONFIG.api.ignoreEventPermission,
+                                            type,
+                                        ).joinToString(prefix = "[", postfix = "]")
+                                    )
+                                }
                             }
                         }
                     }

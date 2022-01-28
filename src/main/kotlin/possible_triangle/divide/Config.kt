@@ -30,8 +30,9 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     data class Values(
         val minHearts: Int = 4,
         val starterCash: Int = 0,
-        val loginShield: Int = 5,
+        val loginShield: Int = 4,
         val autoPause: Boolean = true,
+        val secretRewards: Boolean = true,
         val deaths: DeathValues = DeathValues(),
         val border: BorderValues = BorderValues(),
         val crate: CrateValues = CrateValues(),
@@ -46,20 +47,20 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class DeathValues(
         val keepPercent: DoubleRange = DoubleRange(0.2, 0.8),
-        val downgradeProbability: Double = 0.3,
-        val starterGearBreak: Int = 60 * 5,
+        val downgradeProbability: Double = 0.0,
+        val starterGearBreak: Int = 5.m,
     )
 
     @Serializable
     data class BorderValues(
         val enabled: Boolean = true,
-        val startAt: Int = 0,
+        val startAfter: Int = 0,
         val lobbySize: Int = 10,
         val bigBorder: Int = 400,
         val smallBorder: Int = 200,
-        val staySmallFor: IntRange = IntRange(60 * 15, 60 * 30),
-        val stayBigFor: IntRange = IntRange(3600, 3600 * 2),
-        val moveTime: Int = 60 * 5,
+        val staySmallFor: IntRange = IntRange(10.m, 15.m),
+        val stayBigFor: IntRange = IntRange(1.h, 2.h),
+        val moveTime: Int = 5.m,
         val showBar: Boolean = false,
         val damagePerBlock: Double = 1.0,
         val damageSafeZone: Double = 2.0,
@@ -68,10 +69,10 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class CrateValues(
         val enabled: Boolean = true,
-        val startAt: Int = 4,
-        val lockedFor: Int = 60 * 5,
-        val pause: IntRange = IntRange(3600 * 30, 3600 * 60),
-        val cleanUpTime: Int = 60 * 10,
+        val startAfter: Int = 30.m,
+        val lockedFor: Int = 5.m,
+        val pause: IntRange = IntRange(30.m, 1.h),
+        val cleanUpTime: Int = 10.m,
         val cleanNonEmpty: Boolean = true,
         val clearOnCleanup: Boolean = true,
         val itemSaveChance: Double = 0.125,
@@ -82,9 +83,9 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class EraValues(
         val enabled: Boolean = true,
-        val startAt: Int = 0,
-        val peaceTime: IntRange = IntRange(60 * 5, 60 * 5),
-        val warTime: IntRange = IntRange(60 * 60, 60 * 60),
+        val startAfter: Int = 0,
+        val peaceTime: IntRange = IntRange(10.m, 10.m),
+        val warTime: IntRange = IntRange(1.h, 2.h),
         val showPeaceBar: Boolean = true,
         val showWarBar: Boolean = false,
     )
@@ -92,24 +93,25 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class BountyValues(
         val enabled: Boolean = true,
-        val startAt: Int = 2,
+        val startAfter: Int = 2.h,
         val baseAmount: Int = 120,
         val bonusPerAliveMinute: Int = 10,
-        val pause: IntRange = IntRange(3600, 3600 * 2),
-        val bountyTime: Int = 60 * 20,
-        val clearOnDeath: Boolean = false
+        val pause: IntRange = IntRange(90.m, 150.m),
+        val bountyTime: Int = 20.m,
+        val clearOnDeath: Boolean = false,
     )
 
     @Serializable
     data class MissionValues(
         val enabled: Boolean = true,
-        val startAt: Int = 2,
-        val pause: IntRange = IntRange(3600, 3600 * 2),
+        val singleBonus: Boolean = true,
+        val startAfter: Int = 90.m,
+        val pause: IntRange = IntRange(30.m, 90.m),
     )
 
     @Serializable
     data class BaseValues(
-        val radius: Double = 8.0
+        val radius: Double = 6.0,
     )
 
     @Serializable
@@ -117,7 +119,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val secret: String = "banana",
         val port: Int = 8080,
         val enabled: Boolean = true,
-        val host: String = "http://localhost",
+        val host: String = "http://localhost:3000",
         val ignoreEventPermission: Boolean = false,
     )
 

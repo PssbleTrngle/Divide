@@ -9,6 +9,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.missions.Mission
 
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -31,7 +32,9 @@ object BountyEvents {
     }
 
     @SubscribeEvent
-    fun onAdvancement(event: BlockEvent.BreakEvent) {
+    fun onMined(event: BlockEvent.BreakEvent) {
+        val player = event.player
+        if (player !is ServerPlayer) return
 
         val match = listOf(
             BlockTags.COAL_ORES::contains to Bounty.MINED_COAL,
@@ -42,7 +45,12 @@ object BountyEvents {
             Blocks.ANCIENT_DEBRIS::equals to Bounty.MINED_NETHERITE,
         ).find { it.first(event.state.block) }
 
-        match?.second?.gain(event.player)
+        Mission.FIND.filterKeys { it(event.state) }
+            .map { it.value.getValue(null, null) }
+            .forEach { it.fulfill(player) }
+
+
+        match?.second?.gain(player)
 
     }
 

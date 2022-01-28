@@ -56,7 +56,7 @@ data class GameData(val paused: Boolean, val started: Boolean) {
 
             if (boolean) {
 
-                SecretRewards.choose(server)
+                if (Config.CONFIG.secretRewards) SecretRewards.choose(server)
 
                 Teams.players(server).forEach { player ->
                     player.setGameMode(GameType.SURVIVAL)

@@ -13,14 +13,16 @@ import possible_triangle.divide.logic.*
 
 object PlayerBountyEvent : CycleEvent("player_bounty") {
 
+    override val enabled: Boolean
+        get() = Config.CONFIG.bounties.enabled
+
+    override val startsAfter: Int
+        get() = Config.CONFIG.bounties.startAfter
+
     @Serializable
     private data class Event(val target: EventTarget, val killer: EventTarget? = null, val bounty: Int)
 
     private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
-
-    override fun isEnabled(server: MinecraftServer): Boolean {
-        return Config.CONFIG.bounties.enabled
-    }
 
     override fun handle(server: MinecraftServer, index: Int): Int {
 
@@ -29,7 +31,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
             .mapValues { it.value.toInt() }
         val target = makeWeightedDecision(minutesDead)
 
-        if (target != null && index >= Config.CONFIG.bounties.startAt) {
+        if (target != null) {
             val bonus = minutesDead.getOrDefault(target, 0) * Config.CONFIG.bounties.bonusPerAliveMinute
             val price = Config.CONFIG.bounties.baseAmount + bonus
             val opponents = Teams.players(server).filter { it.team?.isAlliedTo(target.team) != true }

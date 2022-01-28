@@ -16,8 +16,6 @@ const Messages: VFC = () => {
 
    useEvents(addMessage)
 
-   console.log('render')
-
    const transitions = useTransition(messages, {
       from: { opacity: 0, height: 0, life: '100%' },
       config: (_item, _i, phase) => key => phase === 'enter' && key === 'life' ? { duration: timeout } : config,

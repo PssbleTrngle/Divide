@@ -7,6 +7,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.command.admin.*
+import possible_triangle.divide.logging.EventLogger
 
 @Mod.EventBusSubscriber
 object AdminCommand {
@@ -21,6 +22,10 @@ object AdminCommand {
         ResetCommand.register(base)
         PauseCommand.register(base)
         ResourceCommand.register(base)
+
+        base.then(literal("reset").then(literal("events")
+            .executes { EventLogger.archive(it.source.server) }
+        ))
 
         event.dispatcher.register(base)
     }
