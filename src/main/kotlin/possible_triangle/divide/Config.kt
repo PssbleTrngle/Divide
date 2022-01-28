@@ -32,7 +32,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val starterCash: Int = 0,
         val loginShield: Int = 4,
         val autoPause: Boolean = true,
-        val secretRewards: Boolean = true,
+        val secretRewards: Boolean = false,
         val deaths: DeathValues = DeathValues(),
         val border: BorderValues = BorderValues(),
         val crate: CrateValues = CrateValues(),

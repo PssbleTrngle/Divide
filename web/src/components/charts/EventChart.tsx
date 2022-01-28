@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy, uniq } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
 import useApi from '../../hooks/useApi'
 import { Team } from '../../hooks/useSession'
@@ -21,6 +21,8 @@ function EventChart<T extends EventType>({
 }) {
    const { data } = useApi<Event<T>[]>(`events/${type}`)
    const { data: teams } = useApi<Team[]>('team')
+
+   console.log(uniq(data?.map(d => (d.event as any).team.name)))
 
    const grouped = useMemo(() => {
       const grouped = Object.entries(groupBy(data ?? [], e => group(e.event))).map(([label, events]) => ({

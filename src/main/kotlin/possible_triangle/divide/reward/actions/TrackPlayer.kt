@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType

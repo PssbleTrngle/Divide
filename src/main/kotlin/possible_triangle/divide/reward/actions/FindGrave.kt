@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import net.minecraft.network.chat.TextComponent
@@ -21,7 +21,7 @@ object FindGrave : DataAction(GLOWING) {
     }
 
     override fun <T> onStart(ctx: RewardContext<T>) {
-        ctx.player?.let { player ->
+        ctx.targetPlayer()?.let { player ->
             val pos = DeathEvents.getDeathPos(player) ?: return@let
             val timeDead = DeathEvents.timeSinceDeath(player)
             val minutes = timeDead / 20 / 60

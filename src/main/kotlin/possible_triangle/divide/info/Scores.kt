@@ -15,7 +15,6 @@ import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.actions.TeamBuff
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.events.PlayerBountyEvent
@@ -28,6 +27,7 @@ import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.missions.MissionEvent
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.Reward
+import possible_triangle.divide.reward.actions.TeamBuff
 import java.util.*
 
 @Mod.EventBusSubscriber
@@ -117,6 +117,7 @@ object Scores {
 
         val team = Teams.teamOf(player)
         val extra = EXTRAS[player.uuid]
+        val now = player.level.gameTime
 
         if (team != null) {
 
@@ -136,8 +137,9 @@ object Scores {
             lines.add(
                 listOfNotNull(
                     Bases.isInBase(player, useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
-                    PlayerBountyEvent.getBounty(player)?.let { apply("Bounty on your Head", RED) },
-                    Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) { it.target == player }
+                    PlayerBountyEvent.getBounty(player)?.takeIf { it.until >= now }
+                        ?.let { apply("Bounty on your Head until", RED) },
+                    Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) { it.targetPlayers().contains(player) }
                         .takeIf { it }
                         ?.let { apply("You are being tracked", YELLOW) },
                     MissionEvent.status(player.server, player)?.let {

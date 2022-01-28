@@ -40,7 +40,7 @@ object EventsCommand {
         }
 
         return base.then(literal("center").executes(::center))
-            .then(forEvents("get", ::get))
+            .then(forEvents("status", ::get))
             .then(forEvents("start", ::start, ::start))
             .then(forEvents("stop", ::stop, ::stop))
             .then(forEvents("skip", ::skip))

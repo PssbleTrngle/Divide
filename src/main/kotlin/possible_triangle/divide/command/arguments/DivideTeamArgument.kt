@@ -9,6 +9,7 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.network.chat.TranslatableComponent
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
 import net.minecraft.world.scores.Scoreboard
 import possible_triangle.divide.command.Requirements
@@ -19,14 +20,16 @@ object DivideTeamArgument {
     private val NOT_FOUND = DynamicCommandExceptionType { TranslatableComponent("team.notFound", it) }
     private val SAME_TEAM = SimpleCommandExceptionType(TextComponent("That's you own team"))
 
-    fun getTeam(ctx: CommandContext<CommandSourceStack>, name: String, otherTeam: Boolean = false): PlayerTeam {
+    fun validate(team: PlayerTeam?, user: ServerPlayer?, otherTeam: Boolean = false) {
+        if(team == null) throw NOT_FOUND.create("???")
+        if (otherTeam && user?.let { Teams.teamOf(user) }?.name == team.name) throw SAME_TEAM.create()
+    }
+
+    fun getTeam(ctx: CommandContext<CommandSourceStack>, name: String): PlayerTeam {
         val baseName = ctx.getArgument(name, String::class.java)
         val scoreboard: Scoreboard = ctx.source.server.scoreboard
-        val team =
-            scoreboard.getPlayerTeam(Teams.TEAM_PREFIX + baseName)?.takeIf { Teams.isPlayingTeam(it) }
-                ?: throw NOT_FOUND.create(baseName)
-        if (otherTeam && Requirements.optionalTeam(ctx.source)?.name == team.name) throw SAME_TEAM.create()
-        return team
+        return scoreboard.getPlayerTeam(Teams.TEAM_PREFIX + baseName)?.takeIf { Teams.isPlayingTeam(it) }
+            ?: throw NOT_FOUND.create(baseName)
     }
 
 

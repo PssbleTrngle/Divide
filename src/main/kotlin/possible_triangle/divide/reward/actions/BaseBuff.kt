@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import net.minecraft.network.chat.TextComponent
@@ -10,7 +10,7 @@ import possible_triangle.divide.reward.RewardContext
 abstract class BaseBuff : Action() {
 
     companion object {
-        private val ALREADY_BUFFED =
+        val ALREADY_BUFFED =
             DynamicCommandExceptionType { TextComponent("You already buffed $it") }
 
         fun isBuffed(player: ServerPlayer, reward: Reward): Boolean {
@@ -23,7 +23,9 @@ abstract class BaseBuff : Action() {
     }
 
     final override fun <T> prepare(ctx: RewardContext<T>) {
-        if (isBuffed(ctx.player ?: return, ctx.reward)) throw ALREADY_BUFFED.create(ctx.reward.display)
+        if (buffs(ctx).all {
+            isBuffed(it, ctx.reward)
+        }) throw ALREADY_BUFFED.create(ctx.reward.display)
     }
 
     abstract fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer>

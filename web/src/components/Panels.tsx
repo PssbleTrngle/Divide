@@ -10,9 +10,13 @@ const Panels = styled.section`
    grid-template-columns: repeat(2, 1fr);
 `
 
-export const Panel: FC<{ price: number; onBuy?: DispatchWithoutAction }> = ({ children, price, onBuy }) => {
+export const Panel: FC<{
+   price: number
+   onBuy?: DispatchWithoutAction
+   disabled?: boolean
+}> = ({ children, price, onBuy, disabled }) => {
    const { data: points } = useApi<number>('points')
-   const canBuy = useMemo(() => price <= (points ?? 0), [price, points])
+   const canBuy = useMemo(() => !disabled && price <= (points ?? 0), [price, points, disabled])
 
    return (
       <Style>
@@ -24,6 +28,13 @@ export const Panel: FC<{ price: number; onBuy?: DispatchWithoutAction }> = ({ ch
       </Style>
    )
 }
+
+export const Info = styled.small`
+   grid-area: more;
+   display: grid;
+   justify-self: start;
+   text-align: left;
+`
 
 export const Indicator = styled.div`
    position: absolute;
@@ -56,6 +67,7 @@ const Style = styled(Box)`
 
    grid-template:
       'content price buy'
+      'more more more'
       / 3fr 2fr 1fr;
 `
 

@@ -37,15 +37,35 @@ object TeamCommand {
                             .then(argument("players", EntityArgument.players()).executes(::addToTeam))
                     )
                 )
+                .then(
+                    literal("remove").then(
+                        argument("team", TeamArgument.team())
+                            .suggests(DivideTeamArgument.suggestions())
+                            .executes(::removeTeam)
+                    )
+                )
         )
     }
 
     private fun addToTeam(ctx: CommandContext<CommandSourceStack>): Int {
         val team = DivideTeamArgument.getTeam(ctx, "team")
-        EntityArgument.getPlayers(ctx, "players").forEach {
+        val players = EntityArgument.getPlayers(ctx, "players")
+        players.forEach {
             it.tags.remove("spectator")
             ctx.source.server.scoreboard.addPlayerToTeam(it.scoreboardName, team)
         }
+
+        ctx.source.sendSuccess(TextComponent("added ${players.size} players to team"), true)
+
+        return players.size
+    }
+
+    private fun removeTeam(ctx: CommandContext<CommandSourceStack>): Int {
+        val team = DivideTeamArgument.getTeam(ctx, "team")
+
+        ctx.source.server.scoreboard.removePlayerTeam(team)
+        ctx.source.sendSuccess(TextComponent("removed team"), true)
+
         return 1
     }
 

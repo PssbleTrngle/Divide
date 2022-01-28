@@ -1,5 +1,5 @@
 import { memo, VFC } from 'react'
-import { relativePos } from './Point'
+import { pointsPos } from './Point'
 import { DataPoint, SeriesContext } from './types'
 
 const Line: VFC<
@@ -7,14 +7,10 @@ const Line: VFC<
       from: DataPoint
       to: DataPoint
    }
-> = ({ from, to, min, max, start, end, color = 'white' }) => (
-   <line
-      x1={relativePos(start, end, from.time)}
-      y1={relativePos(min, max, from.value, true)}
-      x2={relativePos(start, end, to.time)}
-      y2={relativePos(min, max, to.value, true)}
-      stroke={color}
-   />
-)
+> = ({ from, to, color = 'white', ...ctx }) => {
+   const fromPos = pointsPos(from, ctx)
+   const toPos = pointsPos(to, ctx)
+   return <line x1={fromPos.x} y1={fromPos.y} x2={toPos.x} y2={toPos.y} stroke={color} />
+}
 
 export default memo(Line)

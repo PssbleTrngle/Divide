@@ -33,7 +33,7 @@ const Messages: VFC = () => {
    return (
       <Style>
          {transitions(({ life, ...style }, msg) => (
-            <Bubble key={msg.id} {...msg} style={style}>
+            <Bubble key={msg.id} style={style}>
                <div ref={r => r && refMap.set(msg, r)}>
                   <CustomEventLine {...msg} />
                   <Life style={{ width: life }} />

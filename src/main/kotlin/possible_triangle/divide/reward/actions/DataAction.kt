@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType
 import net.minecraft.network.chat.TextComponent
@@ -30,7 +30,7 @@ abstract class DataAction(
 
     final override fun <T> prepare(ctx: RewardContext<T>) {
         if (isRunning(ctx.server, ctx.reward) { it.target == ctx.target }) {
-            ALREADY_TARGETED.create(ctx.targetEvent()?.name, ctx.reward.display)
+            throw ALREADY_TARGETED.create(ctx.targetEvent()?.name, ctx.reward.display)
         }
         onPrepare(ctx)
     }

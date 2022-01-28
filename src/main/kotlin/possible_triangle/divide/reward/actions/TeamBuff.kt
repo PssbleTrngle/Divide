@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -14,10 +14,10 @@ object TeamBuff : BaseBuff() {
     }
 
     fun isBuffed(server: MinecraftServer, team: Team, reward: Reward): Boolean {
-        return return isRunning(server, reward) { ctx ->
+        return isRunning(server, reward) { ctx ->
             val action = reward.action
             if (action !is TeamBuff) false
-            else ctx.team == team
+            else ctx.targetTeam() == team
         }
     }
 

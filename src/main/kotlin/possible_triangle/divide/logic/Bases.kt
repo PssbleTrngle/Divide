@@ -23,7 +23,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.actions.TeamBuff
+import possible_triangle.divide.reward.actions.TeamBuff
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.reward.Reward

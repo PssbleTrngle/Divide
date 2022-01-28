@@ -76,7 +76,7 @@ object CrateScheduler {
         server: MinecraftServer,
         pos: BlockPos,
         ignoreTag: Boolean = false,
-        uuid: UUID? = null
+        uuid: UUID? = null,
     ): RandomizableContainerBlockEntity? {
         val tile = server.overworld().getBlockEntity(pos)
         if (tile is RandomizableContainerBlockEntity) {
@@ -92,6 +92,14 @@ object CrateScheduler {
         if (lock != null) nbt.putString("Lock", lock)
         else nbt.remove("Lock")
         container.load(nbt)
+    }
+
+    fun getOrders(server: MinecraftServer, team: Team): Map<Order, Int> {
+        return ORDERS[server][team]
+            .filterKeys { it != null }
+            .mapKeys { it.key as Order }
+            .mapValues { it.value.sumOf { stack -> stack.count } }
+            .filter { it.value > 0 }
     }
 
     private fun addOrder(server: MinecraftServer, team: Team? = null, order: Order? = null, stack: ItemStack) {
@@ -171,7 +179,7 @@ object CrateScheduler {
         seconds: Int,
         pos: BlockPos,
         type: CrateLoot,
-        withoutOrders: Boolean = false
+        withoutOrders: Boolean = false,
     ): Long {
         val world = server.overworld()
         val time = server.overworld().gameTime + seconds * 20

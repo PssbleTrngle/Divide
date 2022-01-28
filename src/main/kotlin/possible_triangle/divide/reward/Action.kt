@@ -28,15 +28,15 @@ abstract class Action {
 
         val NOT_ONLINE = SimpleCommandExceptionType(TextComponent("Target is not online"))
 
-        fun <T> run(ctx: RewardContext<T>, duration: Int?) {
+        fun <T> run(ctx: RewardContext<T>, duration: Int? = ctx.reward.duration, charge: Int? = ctx.reward.charge) {
             ctx.prepare()
-            if (ctx.reward.charge == null) ctx.start()
+            if (charge == null) ctx.start()
 
-            val realDuration = (duration ?: 0) + (ctx.reward.charge ?: 0)
+            val realDuration = (duration ?: 0) + (charge ?: 0)
             if (realDuration > 0) {
                 val now = ctx.server.overworld().gameTime
                 val until = now + (realDuration * 20)
-                val chargedAt = ctx.reward.charge?.times(20)?.plus(now)
+                val chargedAt = charge?.times(20)?.plus(now)
                 DATA.modify(ctx.server) {
                     add(ActionContext(ctx, until, chargedAt))
                 }
@@ -49,10 +49,10 @@ abstract class Action {
             ifCharged: Boolean = false,
             predicate: (ctx: RewardContext<*>) -> Boolean = { true },
         ): Boolean {
-            return DATA[server].any { (ctx, _, chargedAt) ->
-                ctx.reward == reward
-                        && predicate(ctx)
-                        && (!ifCharged || (chargedAt ?: 0) <= server.overworld().gameTime)
+            return DATA[server].any {
+                it.ctx.reward == reward
+                        && predicate(it.ctx)
+                        && (!ifCharged || (it.chargedAt ?: 0) <= server.overworld().gameTime)
             }
         }
 

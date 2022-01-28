@@ -1,8 +1,8 @@
-package possible_triangle.divide.actions.secret
+package possible_triangle.divide.reward.actions.secret
 
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
-import possible_triangle.divide.actions.DataAction
+import possible_triangle.divide.reward.actions.DataAction
 import possible_triangle.divide.hacks.DataHacker.Type.INVISIBLE
 import possible_triangle.divide.reward.RewardContext
 

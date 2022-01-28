@@ -39,6 +39,7 @@ import org.slf4j.event.Level
 import possible_triangle.divide.Config
 import possible_triangle.divide.GameData
 import possible_triangle.divide.bounty.Bounty
+import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.ReloadedResource
@@ -96,7 +97,7 @@ object ServerApi {
     fun <T> notify(
         event: LoggedEvent<T>,
         serializer: KSerializer<T>,
-        predicate: (ServerPlayer?) -> Boolean
+        predicate: (ServerPlayer?) -> Boolean,
     ) {
         val server = server ?: return
         if (!Config.CONFIG.api.enabled) return
@@ -143,7 +144,7 @@ object ServerApi {
             return optionalTeam() ?: throw ApiException("not playing", Forbidden)
         }
 
-        fun <T> Route.resource(path: String, resource: ReloadedResource<T>) {
+        fun <T> Route.resource(path: String, resource: ReloadedResource<T>, additionalRoutes: Route.() -> Unit = {}) {
             route(path) {
                 route("/{id}") {
                     get {
@@ -162,6 +163,8 @@ object ServerApi {
                         .map { Resource(resource.idOf(it), it) }
                     call.respond(Json.encodeToString(ListSerializer(Resource.serializer(resource.serializer())), list))
                 }
+
+                additionalRoutes(this)
             }
         }
 
@@ -237,7 +240,19 @@ object ServerApi {
 
                         resource("reward", Reward)
                         resource("bounty", Bounty)
-                        resource("order", Order)
+                        resource("order", Order) {
+                            route("/bought") {
+
+                                @Serializable
+                                data class TeamOrder(val order: Order, val amount: Int)
+
+                                get {
+                                    val team = call.team()
+                                    call.respond(CrateScheduler.getOrders(server, team)
+                                        .map { TeamOrder(it.key, it.value) })
+                                }
+                            }
+                        }
 
                         route("/status") {
 
@@ -246,7 +261,7 @@ object ServerApi {
                                 val peaceUntil: Int?,
                                 val mission: MissionStatus?,
                                 val paused: Boolean,
-                                val started: Boolean
+                                val started: Boolean,
                             )
 
                             get {

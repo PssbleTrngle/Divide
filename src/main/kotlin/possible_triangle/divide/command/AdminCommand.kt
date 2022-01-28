@@ -22,6 +22,7 @@ object AdminCommand {
         ResetCommand.register(base)
         PauseCommand.register(base)
         ResourceCommand.register(base)
+        ActionCommand.register(base)
 
         base.then(literal("reset").then(literal("events")
             .executes { EventLogger.archive(it.source.server) }

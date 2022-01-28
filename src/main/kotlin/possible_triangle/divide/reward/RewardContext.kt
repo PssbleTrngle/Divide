@@ -37,11 +37,11 @@ data class RewardContext<Target>(
     }
 
     fun targetPlayers(): List<ServerPlayer> {
-        return targetType.players(server, target)
+        return targetType.players(this)
     }
 
     fun targetTeam(): PlayerTeam? {
-        return targetType.team(server, target)
+        return targetType.team(this)
     }
 
     fun targetPlayer(): ServerPlayer? {

@@ -12,6 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.command.arguments.RewardArgument
+import possible_triangle.divide.command.arguments.TargetArgument
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.Reward
@@ -25,27 +26,20 @@ object BuyCommand {
     @SubscribeEvent
     fun register(event: RegisterCommandsEvent) {
         event.dispatcher.register(
-            ActionTarget.values.fold(
-                literal("buy").requires(Requirements::isPlayerInGame)
-            ) { node, target ->
-
-                val argument = target.argument()
-                val base = argument("reward", StringArgumentType.string()).suggests(RewardArgument.suggestions(target))
-                val command = { ctx: CommandContext<CommandSourceStack> ->
-                    buyReward(ctx) { RewardArgument.getReward(ctx, "reward", target) }
-                }
-
-                node.then(if (argument == null) base.executes(command) else base.then(argument.executes(command)))
-
-            }
+            literal("buy").requires(Requirements::isPlayerInGame)
+                .then(argument("reward", StringArgumentType.string()).suggests(RewardArgument.suggestions())
+                    .then(argument("target", StringArgumentType.string()).suggests(TargetArgument.suggestions())
+                        .executes(::buyReward)
+                    ).executes(::buyReward)
+                )
         )
     }
 
-    private fun buyReward(ctx: CommandContext<CommandSourceStack>, supplier: () -> Reward): Int {
-        val reward = supplier()
+    private fun buyReward(ctx: CommandContext<CommandSourceStack>): Int {
+        val reward = RewardArgument.getReward(ctx, "reward")
 
         fun <T> parseFor(targetType: ActionTarget<T>): RewardContext<T> {
-            val target = targetType.fromContext(ctx) ?: throw NO_TARGET.create()
+            val target = TargetArgument.getTarget(ctx, "target", targetType)
             return RewardContext(
                 Teams.requiredTeam(ctx.source.playerOrException),
                 ctx.source.server,

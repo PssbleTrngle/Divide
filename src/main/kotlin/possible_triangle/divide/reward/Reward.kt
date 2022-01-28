@@ -7,9 +7,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.scores.PlayerTeam
-import possible_triangle.divide.actions.*
-import possible_triangle.divide.actions.secret.BlindTeam
-import possible_triangle.divide.actions.secret.MiningFatigue
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
@@ -17,6 +14,11 @@ import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.m
+import possible_triangle.divide.reward.actions.*
+import possible_triangle.divide.reward.actions.secret.BlindTeam
+import possible_triangle.divide.reward.actions.secret.MiningFatigue
+import possible_triangle.divide.reward.actions.secret.ScarePlayer
+import possible_triangle.divide.reward.actions.secret.StrengthenGravity
 
 @Serializable
 data class Reward(
@@ -99,7 +101,7 @@ data class Reward(
             Reward(
                 "Blind a Team",
                 200,
-                duration =  1.m,
+                duration = 1.m,
                 secret = true,
                 targetType = ActionTarget.TEAM.id,
             )
@@ -115,11 +117,33 @@ data class Reward(
             )
         }
 
+        val SCARE_PLAYER by register("scare_player", ScarePlayer) {
+            Reward(
+                "Scares a player by playing sounds near him",
+                100,
+                duration = 1.m,
+                secret = true,
+                targetType = ActionTarget.PLAYER.id,
+            )
+        }
+
+        val STRONGER_GRAVITY by register("stronger_gravity", StrengthenGravity) {
+            Reward(
+                "Increases the players gravitational pull",
+                200,
+                duration = 1.m,
+                secret = true,
+                targetType = ActionTarget.PLAYER.id,
+            )
+        }
 
         fun <T> buy(ctx: RewardContext<T>): Boolean {
             return ctx.player?.let { player ->
+                ctx.targetType.validate(ctx.target, player)
                 with(ctx.reward) {
                     Points.modify(ctx.server, ctx.team, -price) { pointsNow ->
+
+                        Action.run(ctx, duration)
 
                         LOGGER.log(
                             ctx.server,
@@ -141,8 +165,6 @@ data class Reward(
                                 )
                             )
                         }
-
-                        Action.run(ctx, duration)
 
                     }
                 }

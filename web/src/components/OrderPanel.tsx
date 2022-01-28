@@ -1,18 +1,22 @@
-import { useEffect, VFC } from 'react'
+import { useMemo, VFC } from 'react'
+import useApi from '../hooks/useApi'
 import useSubmit from '../hooks/useSubmit'
-import { Order } from './Orders'
-import { Panel } from './Panels'
+import useTooltip from '../hooks/useTooltip'
+import { BoughtOrder, Order } from './Orders'
+import { Info, Panel } from './Panels'
 
-const OrderPanel: VFC<Order> = ({ id, cost, item }) => {
-   const buy = useSubmit(`order/${id}`, { data: { amount: 1 } })
+const OrderPanel: VFC<Order> = ({ id, cost, item, max }) => {
+   const buy = useSubmit(`order/${id}`, { data: { amount: 1 }, keys: ['order/bought'] })
+   const { data: bought } = useApi<BoughtOrder[]>('order/bought')
+   const alreadyBought = useMemo(() => bought?.find(it => it.order.item === item)?.amount ?? 0, [bought])
+   const disabled = useMemo(() => !!max && alreadyBought >= max, [alreadyBought])
 
-   useEffect(() => {
-      if (buy.error) console.error(buy.error)
-   }, [buy.error])
+   useTooltip()
 
    return (
-      <Panel price={cost} onBuy={buy.send}>
+      <Panel disabled={disabled} price={cost} onBuy={buy.send}>
          {item}
+         {!!max && <Info>max. {max}</Info>}
       </Panel>
    )
 }

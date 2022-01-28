@@ -12,6 +12,7 @@ export interface Reward {
    price: number
    description?: string
    duration?: number
+   charge?: number
    target?: 'player' | 'team'
    secret?: boolean
 }

@@ -1,4 +1,4 @@
-package possible_triangle.divide.actions
+package possible_triangle.divide.reward.actions
 
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
@@ -47,7 +47,7 @@ object TrackPlayerWeak : DataAction(GLOWING) {
         Util.withoutCollision(marker, ctx.server, target.team)
         Util.persistentData(target).putInt(TARGET_TAG, marker.id)
 
-        Chat.subtitle(target, "You will be tracked in ${ctx.reward.charge}s")
+        Chat.subtitle(target, "Your position will be recorded in ${ctx.reward.charge}s")
         Teams.players(ctx.server, ctx.team).forEach {
             Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
         }

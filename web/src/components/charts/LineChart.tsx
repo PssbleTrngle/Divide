@@ -42,25 +42,26 @@ const LineChart: VFC<{
 }
 
 const Series: VFC<Series & SeriesContext & { initial?: number }> = ({ data, label, initial, ...values }) => {
-   const sorted = useMemo(() => orderBy(data, p => p.time).filter(exists), [data, initial])
-   const [first, ...rest] = sorted
-   const withNext = useMemo(
-      () => rest.map((point, i) => [point, sorted[i]].map((p, ii) => ({ ...p, x: (i - ii) / sorted.length }))),
-      [sorted]
+   const startingPoint = useMemo(
+      () =>
+         typeof initial === 'number'
+            ? { id: '', time: values.start - 10, value: initial, x: 0, label: 'Start' }
+            : undefined,
+      [initial]
    )
+
+   const sorted = useMemo(
+      () => [startingPoint, ...orderBy(data, p => p.time)].filter(exists).map((p, i, a) => ({ ...p, x: i / a.length })),
+      [data, startingPoint]
+   )
+
+   const withNext = useMemo(() => sorted.map((point, i) => [point, sorted[i - 1]]), [sorted])
 
    return (
       <>
-         {typeof initial === 'number' && (
-            <>
-               <Point {...values} label='Start' x={0} time={values.start} value={initial} />
-               <Line {...values} from={{ time: values.start - 10, value: initial }} to={first} />
-            </>
-         )}
-         {withNext.map(([point, previous], i) => (
+         {withNext.map(([point, previous]) => (
             <Fragment key={point.id}>
                <Point {...values} {...point} />
-               {previous && <Point {...values} {...previous} />}
                {previous && <Line {...values} from={point} to={previous} />}
             </Fragment>
          ))}
