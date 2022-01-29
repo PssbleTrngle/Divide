@@ -56,9 +56,11 @@ export function useEvents(
    useSubscribe(listener)
 }
 
+const socketURL = `ws://${window.location.hostname}:8080/api`
+
 export const SocketProvider: FC = ({ children }) => {
    const socket = useMemo(() => {
-      const socket = new WebSocket('ws://localhost:8080/api')
+      const socket = new WebSocket(socketURL)
 
       socket.onopen = () => {
          socket.send('ping')

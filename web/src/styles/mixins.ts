@@ -27,6 +27,6 @@ export const loading = css<{ size?: string }>`
       ${pseudo};
       transform: rotate(30deg) scale(2);
       animation: ${p => shimmer(p.size)} 1s linear infinite;
-      background: linear-gradient(-90deg, #0001, #0005, #0001);
+      background-image: linear-gradient(-90deg, #0001, #0005, #0001);
    }
 `

@@ -20,7 +20,11 @@ function relativePos(min: number, max: number, value: number, invert = false) {
    return invert ? 100 - percentage : percentage
 }
 
-const Point: VFC<SeriesContext & DataPoint> = ({ unit, time, value, color = 'white', label, x, y, ...ctx }) => {
+interface DataPointProps extends SeriesContext, DataPoint {
+   owner?: string
+}
+
+const Point: VFC<DataPointProps> = ({ unit, time, value, color = 'white', label, x, y, owner, ...ctx }) => {
    const [hovered, setHovered] = useState(false)
    const { radius } = useSpring({ radius: hovered ? 0.8 : 0.4 })
    const pos = pointsPos({ time, value, x, y }, ctx)
@@ -32,8 +36,9 @@ const Point: VFC<SeriesContext & DataPoint> = ({ unit, time, value, color = 'whi
          <animated.circle
             r={radius.to(r => `${r}em`)}
             data-tip={
-               label ??
-               `${DateTime.fromMillis(time).toLocaleString(DateTime.TIME_WITH_SECONDS)} : ${value} ${unit ?? ''}`
+               (owner ? `${owner} - ` : '') +
+               (label ??
+                  `${value} ${unit ?? ''}  (${DateTime.fromMillis(time).toLocaleString(DateTime.TIME_WITH_SECONDS)})`)
             }
             strokeWidth={radius.to(r => `${1.6 - r}em`)}
             cx={pos.x}

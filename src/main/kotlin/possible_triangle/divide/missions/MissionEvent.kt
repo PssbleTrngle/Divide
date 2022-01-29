@@ -12,6 +12,7 @@ import net.minecraft.world.BossEvent
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.GameData
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.events.Countdown
@@ -46,7 +47,7 @@ object MissionEvent : CycleEvent("missions") {
         return ACTIVE[server]?.let { active ->
             MissionStatus(
                 mission = active.mission,
-                secondsLeft = remaining(server),
+                secondsLeft = COUNTDOWN.remaining(server),
                 done = player != null && active.teams.none { it.name == player.team?.name }
             )
         }
@@ -97,14 +98,17 @@ object MissionEvent : CycleEvent("missions") {
         val canFail = mission.type == Mission.Type.FAIL
         if (!active.teams.any { team.name == it.name }) return
 
+        val ranFor = mission.time - COUNTDOWN.remaining(server)
+        if (canFail && (ranFor <= Config.CONFIG.missions.safeTime || GameData.DATA[server].paused)) return
+
         ACTIVE.modify(server) {
             this?.teams?.removeIf { it.name == team.name }
         }
 
         val bar = COUNTDOWN.bar(server)
+        if (canFail) fail(server, team, mission)
+        else succeed(server, team, mission)
         Teams.players(server, team).forEach {
-            if (canFail) fail(server, team, mission)
-            else succeed(server, team, mission)
             bar.removePlayer(it)
         }
     }

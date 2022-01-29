@@ -1,6 +1,11 @@
 package possible_triangle.divide.command
 
+import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.TranslatableComponent
 import net.minecraft.server.MinecraftServer
 import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -28,6 +33,8 @@ object AdminCommand {
             .executes { EventLogger.archive(it.source.server) }
         ))
 
+        base.then(literal("publish").executes(::publish))
+
         event.dispatcher.register(base)
     }
 
@@ -36,6 +43,22 @@ object AdminCommand {
         server.playerList.reloadResources()
         server.playerList.players.forEach {
             server.playerList.sendPlayerPermissionLevel(it)
+        }
+    }
+
+    private val ERROR_FAILED = SimpleCommandExceptionType(TranslatableComponent("commands.publish.failed"))
+    private val ERROR_ALREADY_PUBLISHED =
+        DynamicCommandExceptionType { TranslatableComponent("commands.publish.alreadyPublished", it) }
+
+    private fun publish(ctx: CommandContext<CommandSourceStack>): Int {
+        val port = 25565
+        return if (ctx.source.server.isPublished) {
+            throw ERROR_ALREADY_PUBLISHED.create(ctx.source.server.port)
+        } else if (!ctx.source.server.publishServer(null, false, port)) {
+            throw ERROR_FAILED.create()
+        } else {
+            ctx.source.sendSuccess(TranslatableComponent("commands.publish.success", port), true)
+            port
         }
     }
 

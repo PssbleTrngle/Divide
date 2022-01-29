@@ -26,7 +26,7 @@ const Rewards: VFC = () => {
          <Points>
             Your team has <Colored>{points}</Colored> points
          </Points>
-         <Panels>
+         <Panels by={2}>
             {rewards?.map(reward => (
                <RewardPanel key={reward.id} {...reward} />
             ))}

@@ -1,13 +1,14 @@
-import { useMemo, VFC } from 'react'
+import { VFC } from 'react'
 import styled from 'styled-components'
 import useApi from '../hooks/useApi'
 import { biColorGradient } from '../styles/mixins'
+import { formatDuration } from '../util'
 import EventBanner from './EventBanner'
-import MissionInfo, { Mission } from './Mission'
+import MissionInfo, { MissionStatus } from './Mission'
 
 export interface GameStatus {
    peaceUntil?: number
-   mission?: Mission
+   mission?: MissionStatus
    paused: boolean
    started: boolean
 }
@@ -15,11 +16,9 @@ export interface GameStatus {
 const Status: VFC = () => {
    const { data } = useApi<GameStatus>('status')
 
-   const isPeace = useMemo(() => !!data?.peaceUntil, [data])
-
    return (
       <Style>
-         {isPeace && <Peace>Peace {data?.peaceUntil}s</Peace>}
+         {data?.peaceUntil && <Peace>Peace {formatDuration(data.peaceUntil)}</Peace>}
          {data?.mission && <MissionInfo {...data.mission} />}
       </Style>
    )

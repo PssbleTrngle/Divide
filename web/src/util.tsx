@@ -1,3 +1,5 @@
+import { Duration, DurationUnit } from 'luxon'
+
 export function delay<T>(data: T, error = true) {
    return () =>
       new Promise<T>((res, rej) => {
@@ -18,4 +20,14 @@ export function colorOf(value?: number) {
 
 export function exists<T>(value: T | null | undefined): value is T {
    return (value ?? null) !== null
+}
+
+const UNITS: DurationUnit[] = ['hours', 'minutes', 'seconds']
+
+export function formatDuration(seconds: number) {
+   const duration = Duration.fromMillis(seconds * 1000).shiftTo(...UNITS)
+   return UNITS.map(unit => ({ unit, value: Math.floor(duration.get(unit)) }))
+      .filter(it => it.value > 0)
+      .map(({ unit, value }) => `${value}${unit.charAt(0)}`)
+      .join(' ')
 }

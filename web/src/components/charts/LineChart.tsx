@@ -61,7 +61,7 @@ const Series: VFC<Series & SeriesContext & { initial?: number }> = ({ data, labe
       <>
          {withNext.map(([point, previous]) => (
             <Fragment key={point.id}>
-               <Point {...values} {...point} />
+               <Point owner={label} {...values} {...point} />
                {previous && <Line {...values} from={point} to={previous} />}
             </Fragment>
          ))}
@@ -70,6 +70,7 @@ const Series: VFC<Series & SeriesContext & { initial?: number }> = ({ data, labe
 }
 
 const Style = styled.svg`
+   margin: 0 auto;
    height: 500px;
    min-width: 800px;
    background: ${p => darken(0.05, p.theme.bg)};

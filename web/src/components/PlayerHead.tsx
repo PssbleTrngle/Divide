@@ -27,11 +27,13 @@ interface TextureData {
 }
 
 async function fetchData(uuid: string) {
-   const url = `http://localhost:8001/https://sessionserver.mojang.com/session/minecraft/profile/${uuid.replaceAll(
-      '-',
-      ''
-   )}`
-   return request<PlayerData>(url)
+   const { hostname } = window.location
+   const url = `http://${hostname}/mojang/session/minecraft/profile/${uuid.replaceAll('-', '')}`
+   return request<PlayerData>(url, {
+      headers: {
+         'X-Requested-With': 'XMLHttpRequest',
+      },
+   })
 }
 
 const PlayerHead: VFC<

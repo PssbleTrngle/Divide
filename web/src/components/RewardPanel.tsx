@@ -1,28 +1,13 @@
-import { Duration, DurationUnit } from 'luxon'
 import { FC, useCallback } from 'react'
 import styled from 'styled-components'
 import useDialog from '../hooks/useDialog'
 import useSubmit from '../hooks/useSubmit'
 import useTooltip from '../hooks/useTooltip'
+import { formatDuration } from '../util'
 import ChoosePlayer from './dialogs/ChoosePlayer'
 import ChooseTeam from './dialogs/ChooseTeam'
 import { Indicator, Info, Panel } from './Panels'
 import type { Reward } from './Rewards'
-import { Colored } from './Text'
-
-const UNITS: DurationUnit[] = ['hours', 'minutes', 'seconds']
-
-function formatDuration(seconds: number) {
-   const duration = Duration.fromMillis(seconds * 1000)
-   return (
-      <Colored>
-         {UNITS.map(unit => ({ unit, value: Math.floor(duration.as(unit)) }))
-            .filter(it => it.value > 0)
-            .map(({ unit, value }) => `${value}${unit.charAt(0)}`)
-            .join(' ')}
-      </Colored>
-   )
-}
 
 const RewardPanel: FC<Reward> = ({ id, display, secret, target, duration, charge, ...props }) => {
    const buy = useSubmit(`buy/${id}`, { data: { target: '' }, keys: ['points'] })

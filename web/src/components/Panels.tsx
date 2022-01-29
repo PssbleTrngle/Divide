@@ -4,10 +4,10 @@ import useApi from '../hooks/useApi'
 import Box from './Box'
 import Button from './Button'
 
-const Panels = styled.section`
+const Panels = styled.section<{ by: number }>`
    display: grid;
    gap: 1rem;
-   grid-template-columns: repeat(2, 1fr);
+   grid-template-columns: repeat(${p => p.by}, 1fr);
 `
 
 export const Panel: FC<{

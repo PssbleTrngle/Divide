@@ -1,10 +1,18 @@
-import { createContext, FC, useContext, useEffect, useReducer, useState } from 'react'
-import { useQuery } from 'react-query'
+import {
+   createContext,
+   DispatchWithoutAction,
+   FC,
+   useCallback,
+   useContext,
+   useEffect,
+   useReducer,
+   useState
+} from 'react'
+import { useQuery, useQueryClient } from 'react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LoadingPage from '../pages/LoadingPage'
 import LoggedOut from '../pages/LoggedOut'
 import { request } from './useApi'
-
 
 export interface Team {
    name: string
@@ -22,6 +30,7 @@ export interface Session {
    token?: string
    player?: Player
    loggedIn: boolean
+   logout: DispatchWithoutAction
 }
 
 const CTX = createContext<Session | null>(null)
@@ -35,6 +44,7 @@ export default function useSession(): Session {
 export const SessionProvider: FC = ({ children }) => {
    const { search, pathname } = useLocation()
    const navigate = useNavigate()
+   const client = useQueryClient()
 
    const [isSpectator, joinSpectating] = useState(false)
 
@@ -54,12 +64,14 @@ export const SessionProvider: FC = ({ children }) => {
       }
    }, [search, token])
 
+   const logout = useCallback(() => {
+      setToken(undefined)
+      navigate('/')
+      client.invalidateQueries({ predicate: () => true })
+   }, [setToken])
+
    if (!token && !isSpectator) return <LoggedOut onSpectate={() => joinSpectating(true)} />
    if (token && !player) return <LoadingPage />
 
-   return (
-      <CTX.Provider value={{ token, player, loggedIn: !!player }}>
-         {children}
-      </CTX.Provider>
-   )
+   return <CTX.Provider value={{ token, player, loggedIn: !!player, logout }}>{children}</CTX.Provider>
 }

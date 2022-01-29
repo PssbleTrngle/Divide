@@ -23,9 +23,9 @@ abstract class DefaultedResource<Entry>(
         if (defaultsMap.containsKey(lower)) throw IllegalArgumentException("Duplicate ID $lower for $dir")
         defaultsMap[lower] = supplier
         with(supplier()) {
-            populate(this, null, id)
+            populate(this, null, lower)
             registry[lower] = this
-            save(id, this, false)
+            save(lower, this, false)
         }
 
         return Delegate(lower, supplier)

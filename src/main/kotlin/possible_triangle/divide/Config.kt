@@ -106,6 +106,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val enabled: Boolean = true,
         val singleBonus: Boolean = true,
         val startAfter: Int = 90.m,
+        val safeTime: Int = 5,
         val pause: IntRange = IntRange(30.m, 90.m),
     )
 

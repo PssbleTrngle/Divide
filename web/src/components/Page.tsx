@@ -8,6 +8,7 @@ const Page = styled.section<{ center?: boolean; mini?: boolean }>`
    text-align: center;
 
    padding-top: 4rem;
+   padding-bottom: 2rem;
 `
 
 export default Page
