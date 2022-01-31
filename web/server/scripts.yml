@@ -1,0 +1,12 @@
+allow:
+  - net
+  - read
+  - write
+  - run
+  
+importMap: dependencies.json
+unstable: true
+
+scripts:
+  start: deno run .\src\app.ts
+  dev: deno run --watch .\src\app.ts
