@@ -3,8 +3,15 @@ import { Event, EventType } from '../models/events'
 
 const CTX = createContext<WebSocket | null>(null)
 
-function isEvent<T extends EventType>(data: any, type?: T): data is Event<T> {
-   return !!data && 'event' in data && 'type' in data && typeof data.event === 'object' && (!type || data.type === type)
+function isEvent<T extends EventType>(data: unknown, type?: T): data is Event<T> {
+   return (
+      !!data &&
+      typeof data === 'object' &&
+      'event' in data &&
+      'type' in data &&
+      typeof (data as Event).event === 'object' &&
+      (!type || (data as Event).type === type)
+   )
 }
 
 function useSocket() {
@@ -29,7 +36,7 @@ export function useEvent<T extends EventType>(type: T, consumer: Dispatch<Event<
             consumer(json)
          }
       },
-      [consumer]
+      [consumer, type]
    )
 
    useSubscribe(listener)
@@ -50,7 +57,7 @@ export function useEvents(
             consumer(json)
          }
       },
-      [consumer]
+      [consumer, predicate, types.length]
    )
 
    useSubscribe(listener)

@@ -2,7 +2,7 @@ import { Router, Status } from "oak"
 import Games from "../models/games.ts"
 import { Game } from "models/game.d.ts"
 import { isAdmin } from "../middleware/permissions.ts"
-import { Event, EventType } from "models/events.d.ts"
+import { Event, EventType, ScoreEvent } from "models/events.d.ts"
 import { exists } from "../util.ts"
 import { Bson } from "mongo"
 
@@ -31,7 +31,6 @@ router.get("/:id/events/:type", async ({ response, params }) => {
       { $match: { _id: new Bson.ObjectId(params.id) } },
       { $unwind: "$events" },
       { $match: { "events.type": params.type } },
-      { $limit: 100 },
       { $group: { _id: "$_id", events: { $push: "$events" } } },
    ]).toArray()
 
@@ -51,10 +50,16 @@ router.post("/", isAdmin(), async ctx => {
          const content = await Deno.readTextFile(filename)
 
          const events = content
+            .replaceAll("613891f0-96f5-3dc4-9a30-ea9a70f91dd4", "3a5af8e5-b97c-4c1e-a219-ee5383942ae3")
+            .replaceAll("23c87f5c-80d7-3c48-875d-631802f24527", "061ed725-1287-4e9a-ad0a-62a1a8706e58")
+            .replaceAll("5f7159c8-d481-397f-990d-35725c863624", "76be3424-87c5-4df9-8cd2-175e0784beaa")
+            .replaceAll("68a87e5f-47d3-3828-aef7-cd2e35ee564c", "3bc28cab-04f8-41fc-b343-4060cb515f44")
+            .replaceAll("c89335d3-abbc-3bbe-aa80-f98c6904fa76", "bd2dafb0-44b0-4458-b4d9-fd4121ef6344")
             .split("\n")
             .map(e => e.trim())
             .filter(e => e.length)
             .map(e => JSON.parse(e) as Event)
+            .filter(e => e.type !== "score" || (e.event as ScoreEvent).objective !== "Jumps")
             .sort((a, b) => a.realTime - b.realTime)
 
          await Deno.remove(filename)

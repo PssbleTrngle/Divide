@@ -1,51 +1,31 @@
-import { DateTime } from 'luxon'
 import { darken } from 'polished'
-import { memo, useState, VFC } from 'react'
+import { memo, VFC } from 'react'
 import { animated, useSpring } from 'react-spring'
 import { useTheme } from 'styled-components'
-import { DataPoint, SeriesContext } from './types'
+import { colorOf } from '../../util'
+import DataWrapper from './DataWrapper'
+import { DataPoint, DataProps } from './types'
+import { usePointPos } from './util'
 
-function pad(percentage: number, padding = 0.05) {
-   return percentage * (1 - padding * 2) + padding * 100
+const Point: VFC<DataPoint & DataProps> = props => {
+   return <DataWrapper type='point' {...props}>{p => <Render {...props} {...p} />}</DataWrapper>
 }
 
-export function pointsPos({ time, value, ...pos }: DataPoint, { min, max, start, end }: SeriesContext) {
-   const x = `${pad(pos.x ? pos.x * 100 : relativePos(start, end, time))}%`
-   const y = `${pad(pos.y ? pos.y * 100 : relativePos(min, max, value, true))}%`
-   return { x, y }
-}
-
-function relativePos(min: number, max: number, value: number, invert = false) {
-   const percentage = ((value - min) / (max - min)) * 100
-   return invert ? 100 - percentage : percentage
-}
-
-interface DataPointProps extends SeriesContext, DataPoint {
-   owner?: string
-}
-
-const Point: VFC<DataPointProps> = ({ unit, time, value, color = 'white', label, x, y, owner, ...ctx }) => {
-   const [hovered, setHovered] = useState(false)
-   const { radius } = useSpring({ radius: hovered ? 0.8 : 0.4 })
-   const pos = pointsPos({ time, value, x, y }, ctx)
+const Render: VFC<DataPoint & DataProps & { hovered?: boolean }> = ({ time, series, value, x, y, hovered }) => {
+   const { radius } = useSpring({ radius: hovered ? 1 : 0.5 })
+   const pos = usePointPos({ time, value, x, y })
    const { bg } = useTheme()
-
    return (
-      <g onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-         <circle r='1.2em' color={darken(0.05, bg)} opacity={0.001} cy={pos.y} cx={pos.x} />
+      <>
+         <circle r='1.5%' color={darken(0.05, bg)} opacity={0.001} cx={`${pos.x}%`} cy={`${pos.y}%`} />
          <animated.circle
-            r={radius.to(r => `${r}em`)}
-            data-tip={
-               (owner ? `${owner} - ` : '') +
-               (label ??
-                  `${value} ${unit ?? ''}  (${DateTime.fromMillis(time).toLocaleString(DateTime.TIME_WITH_SECONDS)})`)
-            }
-            strokeWidth={radius.to(r => `${1.6 - r}em`)}
-            cx={pos.x}
-            cy={pos.y}
-            color={color}
+            r={radius.to(r => `${r}%`)}
+            strokeWidth={radius.to(r => `${1.6 - r}%`)}
+            cx={`${pos.x}%`}
+            cy={`${pos.y}%`}
+            color={colorOf(series.color)}
          />
-      </g>
+      </>
    )
 }
 

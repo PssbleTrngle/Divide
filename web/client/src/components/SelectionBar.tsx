@@ -9,7 +9,7 @@ const SelectionBar: VFC<{
    value?: string
 }> = ({ values, onChange, value, ...props }) => (
    <Style {...props}>
-      <Bar>
+      <Bar narrow={values.length > 4}>
          {values.map(k => (
             <Button active={value === k} key={k} onClick={() => onChange(k)}>
                {k}
@@ -36,15 +36,16 @@ const Button = styled.button<{ active?: boolean }>`
       `}
 `
 
-const Bar = styled.nav`
+const Bar = styled.nav<{ narrow?: boolean }>`
    display: grid;
    grid-auto-flow: column;
    align-items: center;
    justify-content: space-evenly;
-   gap: 4em;
+   gap: ${p => (p.narrow ? 1 : 4)}em;
    margin: 0 auto;
 
    width: fit-content;
+   max-width: 800px;
 
    border: 2px solid ${p => darken(0.05, p.theme.bg)};
    border-radius: 0.5em;

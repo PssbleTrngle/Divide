@@ -1,75 +1,109 @@
-import { maxBy, minBy, orderBy } from 'lodash'
+import { groupBy, max, min, orderBy } from 'lodash'
+import { DateTime } from 'luxon'
 import { darken } from 'polished'
 import { Fragment, useMemo, VFC } from 'react'
 import styled from 'styled-components'
-import useTooltip from '../../hooks/useTooltip'
+import useChartContext from '../../hooks/useChart'
 import { exists } from '../../util'
+import Blob from './Blob'
 import Line from './Line'
 import Point from './Point'
-import { DataPoint, SeriesContext } from './types'
+import { Data, DataPoint, Series } from './types'
+import { pointsOf } from './util'
+import XAxis from './XAxis'
+import YAxis from './YAxis'
 
-interface Series {
-   data: (DataPoint & { id: string })[]
-   label?: string
-   color?: string
-   unit?: string
+interface Props {
+   normalize?: boolean
+   blobify?: boolean
 }
 
-const LineChart: VFC<{
-   series: Series[]
-   initial?: number
-}> = ({ series, initial }) => {
-   const points = useMemo(() => series.map(s => s.data).flat(), [series])
-
-   const values = useMemo(() => {
-      const min = Math.min(initial ?? Number.MAX_SAFE_INTEGER, minBy(points, p => p.value)?.value ?? 0)
-      const max = Math.max(initial ?? Number.MIN_SAFE_INTEGER, maxBy(points, p => p.value)?.value ?? 0)
-
-      const start = minBy(points, p => p.time)?.time ?? 0
-      const end = maxBy(points, p => p.time)?.time ?? 0
-      return { min, max, start, end, initial }
-   }, [points, initial])
-
-   useTooltip()
+const LineChart: VFC<Props> = props => {
+   const { series } = useChartContext()
 
    return (
       <Style>
-         {series.map(series => (
-            <Series key={series.label} {...values} {...series}></Series>
-         ))}
+         <YAxis />
+         <XAxis />
+         <SVG>
+            {series.map(series => (
+               <SeriesPoints key={series.id} {...props} {...series}></SeriesPoints>
+            ))}
+         </SVG>
       </Style>
    )
 }
 
-const Series: VFC<Series & SeriesContext & { initial?: number }> = ({ data, label, initial, ...values }) => {
+const SeriesPoints: VFC<Series & Props> = ({ data, hidden, normalize, blobify = true, ...ctx }) => {
+   const { initial, start } = useChartContext()
+
    const startingPoint = useMemo(
+      () => (typeof initial === 'number' ? { id: '', time: start, value: initial, x: 0, label: 'Start' } : undefined),
+      [initial, start]
+   )
+
+   const sorted = useMemo<DataPoint[]>(
       () =>
-         typeof initial === 'number'
-            ? { id: '', time: values.start - 10, value: initial, x: 0, label: 'Start' }
-            : undefined,
-      [initial]
+         [startingPoint, ...orderBy(data, p => p.time)]
+            .filter(exists)
+            .map((p, i, a) => (normalize ? { ...p, x: p.x ?? i / a.length } : p)),
+      [data, startingPoint, normalize]
    )
 
-   const sorted = useMemo(
-      () => [startingPoint, ...orderBy(data, p => p.time)].filter(exists).map((p, i, a) => ({ ...p, x: i / a.length })),
-      [data, startingPoint]
-   )
+   const blobs = useMemo(() => {
+      const grouped = groupBy(sorted, s => DateTime.fromMillis(s.time).toFormat('hh-mm'))
+      return Object.values(grouped).map<Data>(points => {
+         const first = points[0]
+         if (!blobify || points.length === 1) return { ...first, type: 'point' }
 
-   const withNext = useMemo(() => sorted.map((point, i) => [point, sorted[i - 1]]), [sorted])
+         const keys = Object.keys(first) as Array<keyof DataPoint>
+         const [from, to] = [min, max].map(fn =>
+            keys.reduce((o, k) => ({ ...o, [k]: fn(points.map(p => p[k])) }), {} as DataPoint)
+         )
+
+         return {
+            type: 'blob',
+            id: first.id,
+            x: from.x,
+            values: points.map(p => p.value),
+            from,
+            to,
+         }
+      })
+   }, [sorted, blobify])
+
+   const withNext = useMemo(() => blobs.map((points, i) => [points, blobs[i - 1]]), [blobs])
+
+   if (hidden) return null
 
    return (
       <>
-         {withNext.map(([point, previous]) => (
-            <Fragment key={point.id}>
-               <Point owner={label} {...values} {...point} />
-               {previous && <Line {...values} from={point} to={previous} />}
+         {withNext.map(([data, previous]) => (
+            <Fragment key={data.id}>
+               {data.type === 'point' && <Point series={ctx} {...data} />}
+               {data.type === 'blob' && <Blob series={ctx} {...data} />}
+               {previous && <Line {...ctx} from={pointsOf(previous).to} to={pointsOf(data).from} />}
             </Fragment>
          ))}
       </>
    )
 }
 
-const Style = styled.svg`
+const Style = styled.section`
+   grid-area: graph;
+
+   margin-bottom: 5em;
+
+   display: grid;
+   gap: 0.5em;
+   grid-template:
+      'y graph'
+      '. x';
+`
+
+const SVG = styled.svg`
+   border-radius: 0.5em;
+   grid-area: graph;
    margin: 0 auto;
    height: 500px;
    min-width: 800px;

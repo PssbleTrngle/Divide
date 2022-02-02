@@ -1,4 +1,3 @@
-import { invert } from 'polished'
 import { createElement, memo, VFC } from 'react'
 import styled, { DefaultTheme, keyframes } from 'styled-components'
 import { Event, EventType, EventTypes } from '../../models/events'
@@ -55,13 +54,6 @@ const Style = styled.li`
    align-items: center;
    justify-content: start;
    gap: 0.3em;
-`
-
-const Type = styled.span`
-   background: ${p => p.theme.primary};
-   color: ${p => invert(p.theme.text)};
-   border-radius: 0.4em;
-   padding: 0.4em;
 `
 
 export default EventLine

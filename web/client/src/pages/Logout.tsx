@@ -7,7 +7,7 @@ const Logout: VFC = () => {
    useEffect(() => {
       if (session.token) session.logout()
       console.log('logging out')
-   }, [session.token])
+   }, [session])
    return <LoadingPage />
 }
 

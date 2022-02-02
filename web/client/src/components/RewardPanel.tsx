@@ -17,7 +17,7 @@ const RewardPanel: FC<Reward> = ({ id, display, secret, target, duration, charge
       if (target === 'player') return open(<ChoosePlayer {...buy} />)
       if (target === 'team') return open(<ChooseTeam {...buy} />)
       return buy.send()
-   }, [target, buy])
+   }, [target, open, buy])
 
    useTooltip()
 

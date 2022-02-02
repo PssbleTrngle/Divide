@@ -13,6 +13,8 @@ import Logout from './pages/Logout'
 import NotFound from './pages/NotFound'
 import GameView from './pages/saved/Game'
 import Games from './pages/saved/Games'
+import Player from './pages/saved/Player'
+import Players from './pages/saved/Players'
 
 const commonRoutes: RouteObject[] = [{ path: '*', element: <NotFound /> }]
 
@@ -44,6 +46,8 @@ const spectatorRoutes: RouteObject[] = [
 
 const savedRoutes: RouteObject[] = [
    { path: '/', element: <Games /> },
+   { path: '/players', element: <Players /> },
+   { path: '/players/:uuid', element: <Player /> },
    {
       path: '/game/:game',
       element: <GameView />,
@@ -70,7 +74,7 @@ export default function useRouter() {
       }
    }, [loggedIn, type])
 
+   const element = useRoutes(routes)
    if (loading) return <LoadingPage />
-
-   return useRoutes(routes)
+   return element
 }

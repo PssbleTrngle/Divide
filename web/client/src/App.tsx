@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useQueryClient } from 'react-query'
+import { useLocation } from 'react-router-dom'
 import ReactTooltip from 'react-tooltip'
 import Messages from './components/Messages'
 import { useEvent, useEvents } from './hooks/useSocket'
@@ -16,6 +18,12 @@ function App() {
    useEvent('points', ({ event }) => {
       client.setQueriesData<number>('points', event.now)
    })
+
+   const { pathname } = useLocation()
+   useEffect(() => {
+      ReactTooltip.hide()
+      ReactTooltip.rebuild()
+   }, [pathname])
 
    return (
       <section>

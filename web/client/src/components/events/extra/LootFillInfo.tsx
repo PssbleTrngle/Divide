@@ -1,9 +1,13 @@
 import { VFC } from 'react'
 import { LootFillEvent } from '../../../models/events'
+import { Colored } from '../../Text'
 
-const LootFillInfo: VFC<LootFillEvent> = ({ pos, table }) => (
+const LootFillInfo: VFC<LootFillEvent> = ({ pos }) => (
    <>
-      {pos.x}/{pos.y}/{pos.z} {table}
+      Loot has appeared at{' '}
+      <Colored>
+         {pos.x}/{pos.y}/{pos.z}
+      </Colored>
    </>
 )
 

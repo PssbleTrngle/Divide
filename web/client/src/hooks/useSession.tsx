@@ -51,7 +51,7 @@ const LocalSession: FC<Session> = ({ children, token, ...session }) => {
          session.login(queryToken)
          navigate({ pathname })
       }
-   }, [search, token])
+   }, [navigate, pathname, search, session, token])
 
    if (!token && !isSpectator) return <LoggedOut onSpectate={() => joinSpectating(true)} />
    if (token && !player) return <LoadingPage />
@@ -78,7 +78,7 @@ export const SessionProvider: FC = ({ children }) => {
       login(undefined)
       navigate('/')
       client.invalidateQueries({ predicate: () => true })
-   }, [login])
+   }, [client, navigate])
 
    const session = useMemo(() => ({ token, login, logout }), [token, login, logout])
 
@@ -92,5 +92,5 @@ export const SessionProvider: FC = ({ children }) => {
          default:
             return <EmptySession />
       }
-   }, [type, session, loading])
+   }, [loading, type, session, children])
 }

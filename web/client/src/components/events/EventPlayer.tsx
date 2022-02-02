@@ -1,22 +1,17 @@
 import { VFC } from 'react'
-import styled from 'styled-components'
 import { Player } from '../../models/player'
 import { colorOf } from '../../util'
 import PlayerHead from '../PlayerHead'
 import { Colored } from '../Text'
 
-const EventPlayer: VFC<Player> = player => {
-   const color = colorOf(player.team?.color)
+const EventPlayer: VFC<Player & { color?: string }> = player => {
+   const color = player.color ?? colorOf(player.team?.color)
    return (
       <>
-         <InlineHead highlight={color} {...player} size='1.4em' />
+         <PlayerHead highlight={color} {...player} size='1.4em' />
          <Colored color={color}>{player.name}</Colored>
       </>
    )
 }
-
-const InlineHead = styled(PlayerHead)`
-   margin-right: -0.1em;
-`
 
 export default EventPlayer

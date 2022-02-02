@@ -5,7 +5,7 @@ import useSession from './useSession'
 
 type Body = Record<string, unknown>
 
-function isEvent(e?: any): e is SyntheticEvent {
+function isEvent(e?: Body | SyntheticEvent): e is SyntheticEvent {
    return !!e && 'preventDefault' in e && typeof (e as SyntheticEvent).preventDefault === 'function'
 }
 
@@ -30,7 +30,7 @@ export default function useSubmit(
             if (reThrow) throw e
          }
       },
-      [uri, data]
+      [data, uri, config, method, token, keys, client]
    )
    return useMemo(() => ({ send, error }), [send, error])
 }

@@ -15,7 +15,7 @@ const Games: VFC = () => {
          <ul>
             {data?.map(game => (
                <Link key={game._id} to={`/game/${game._id}`}>
-                  {DateTime.fromISO(game.startedAt).toLocaleString()}
+                  {game.name ?? DateTime.fromISO(game.startedAt).toLocaleString()}
                </Link>
             ))}
          </ul>

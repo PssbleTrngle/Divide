@@ -10,8 +10,9 @@ export function delay<T>(data: T, error = true) {
       })
 }
 
-export function colorOf(value?: number) {
+export function colorOf(value?: number | string) {
    if (!value) return undefined
+   if (typeof value === 'string') return value
    const red = (value >> 16) & 0xff
    const green = (value >> 8) & 0xff
    const blue = (value >> 0) & 0xff

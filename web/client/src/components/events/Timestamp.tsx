@@ -22,7 +22,7 @@ const Timestamp: VFC<{ time: number; refresh?: number; update?: boolean }> = ({
          .join(' ')
 
       return `${since.length ? since : 'moments'} ago`
-   }, [time, tooltip])
+   }, [now, time])
 
    useEffect(() => {
       if (!update) return

@@ -26,7 +26,7 @@ const Events: VFC = () => {
    const location = useLocation()
    const max = useMemo(() => {
       const query = new URLSearchParams(location.search)
-      const parsed = Number.parseInt(query.get('max') ?? '20')
+      const parsed = Number.parseInt(query.get('max') ?? '100')
       return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
    }, [location])
 
@@ -45,11 +45,11 @@ const Events: VFC = () => {
       const grouped = Object.entries(groupBy(filtered, e => e.gameTime))
       const sorted = grouped.map(([k, events]) => [k, orderBy(events, e => e.realTime)] as [typeof k, typeof events])
       return orderBy(sorted, e => -e[0]).slice(0, max)
-   }, [filtered])
+   }, [filtered, max])
 
    return (
       <Page mini>
-         <Input placeholder='Search...' value={search} onChange={e => setSearch(e.target.value)} />
+         <Input placeholder='Search for terms like "reward" or "death"' value={search} onChange={e => setSearch(e.target.value)} />
          <List>
             {grouped.map(([key, events], i) => (
                <Group key={key}>

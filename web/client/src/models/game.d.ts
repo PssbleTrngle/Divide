@@ -11,8 +11,9 @@ export interface GameStatus {
 
 export interface Game<D = Date> {
    _id: string
+   name?: string
    uploadedAt: D
-   events: Event[]
+   events?: Event[]
    players: Player[]
    startedAt: D
    endedAt: D

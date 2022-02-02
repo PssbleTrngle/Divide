@@ -19,4 +19,5 @@ export const Code = styled.code`
    padding: 0.3em;
    border-radius: 0.3em;
    margin: 0 0.2em;
+   text-align: left;
 `

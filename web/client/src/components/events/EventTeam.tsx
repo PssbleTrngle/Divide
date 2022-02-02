@@ -19,8 +19,6 @@ const EventTeam: VFC<Team> = team => {
 }
 
 const InlineHead = styled.div<{ color?: string }>`
-   margin-right: -0.1em;
-
    background: ${p => p.color};
 
    width: 1.4em;

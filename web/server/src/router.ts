@@ -1,5 +1,6 @@
 import { Router, Status } from "https://deno.land/x/oak/mod.ts"
 import gameRouter from "./routes/game.ts"
+import playerRouter from "./routes/player.ts"
 
 const router = new Router()
 
@@ -22,5 +23,6 @@ router.use(async ({ state }, next) => {
 })
 
 router.use("/game", gameRouter.routes(), gameRouter.allowedMethods())
+router.use("/player", playerRouter.routes(), playerRouter.allowedMethods())
 
 export default router
