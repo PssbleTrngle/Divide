@@ -3,6 +3,7 @@ allow:
   - read
   - write
   - run
+  - env
   
 importMap: imports.json
 unstable: true
