@@ -19,4 +19,4 @@ jobs:
           password: "${{ secrets.DOCKER_PASSWORD }}"
           image_name: ${{ secrets.DOCKER_USERNAME }}/divide-server
           context: web
-          dockerfile: web/server/Dockerfile
+          dockerfile: server/Dockerfile
