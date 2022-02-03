@@ -66,6 +66,7 @@ const SeriesPoints: VFC<Series & Props> = ({ data, hidden, normalize, blobify = 
             id: first.id,
             x: from.x,
             values: points.map(p => p.value),
+            info: <>{points.map(p => p.info)}</>,
             from,
             to,
          }
@@ -92,8 +93,6 @@ const SeriesPoints: VFC<Series & Props> = ({ data, hidden, normalize, blobify = 
 const Style = styled.section`
    grid-area: graph;
 
-   margin-bottom: 5em;
-
    display: grid;
    gap: 0.5em;
    grid-template:
@@ -105,8 +104,9 @@ const SVG = styled.svg`
    border-radius: 0.5em;
    grid-area: graph;
    margin: 0 auto;
-   height: 500px;
-   min-width: 800px;
+   height: 400px;
+   width: 600px;
+   max-width: 60vw;
    background: ${p => darken(0.05, p.theme.bg)};
 `
 

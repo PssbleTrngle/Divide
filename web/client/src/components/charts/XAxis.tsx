@@ -13,8 +13,8 @@ const XAxis: VFC<{ precicion?: number }> = ({ precicion = 10 }) => {
 
    return (
       <Style>
-         {values.map(v => (
-            <span key={v.toMillis()}>{v.toLocaleString(DateTime.TIME_SIMPLE)}</span>
+         {values.map((v, i) => (
+            <span key={i}>{v.toLocaleString(DateTime.TIME_SIMPLE)}</span>
          ))}
       </Style>
    )

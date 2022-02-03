@@ -15,21 +15,23 @@ function EventChart<T extends EventType, O extends { id: string; color?: string 
    group,
    ownerOf,
    label,
+   info,
    type,
-   unit = type,
+   unit = '',
    children,
 }: PropsWithChildren<{
    type: T
-   value: (event: EventTypes[T]) => DataPoint['value']
-   group: (event: EventTypes[T]) => unknown
+   value: (event: EventTypes[T], i: number) => DataPoint['value']
+   group?: (event: EventTypes[T]) => unknown
    ownerOf: (event: EventTypes[T]) => O | undefined
-   label: (owner: O, color: O['color']) => ReactNode
+   label: (owner: O, color?: string) => ReactNode
+   info?: (event: EventTypes[T]) => ReactNode
    unit?: string
 }>) {
    const { data } = useGameData<Event<T>[]>(`events/${type}`)
 
    const grouped = useMemo(() => {
-      return Object.entries(groupBy(data ?? [], e => group(e.event))).map(([groupLabel, events]) => ({
+      return Object.entries(groupBy(data ?? [], e => group?.(e.event) ?? '')).map(([groupLabel, events]) => ({
          label: groupLabel,
          data: orderBy(
             Object.entries(groupBy(events ?? [], e => ownerOf(e.event)?.id)).map(([, events]) => ({
@@ -46,12 +48,17 @@ function EventChart<T extends EventType, O extends { id: string; color?: string 
                   id: owner.id,
                   color,
                   unit,
-                  data: events.map(e => ({ value: value(e.event), time: e.realTime, id: e.id })),
+                  data: events.map((e, i) => ({
+                     value: value(e.event, i + 1),
+                     time: e.realTime,
+                     id: e.id,
+                     info: info?.(e.event),
+                  })),
                }
             })
             .filter(exists),
       }))
-   }, [data, group, ownerOf, unit, value, label])
+   }, [data, group, ownerOf, unit, value, label, info])
 
    const [selected, setSelected] = useState<string>()
    useEffect(() => {

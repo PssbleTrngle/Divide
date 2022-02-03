@@ -66,7 +66,6 @@ const PlayerHead: VFC<
    return (
       <Head
          {...props}
-         onClick={() => window.navigator.clipboard.writeText(uuid)}
          data-tip={title}
          highlight={highlight ?? yourself}
          size={typeof size === 'number' ? `${100 * size}px` : size}

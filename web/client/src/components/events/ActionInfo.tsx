@@ -1,10 +1,18 @@
 import { VFC } from 'react'
 import { ActionEvent } from '../../models/events'
-import { Colored } from '../Text'
+import { Capitalize, Colored } from '../Text'
+import EventPlayer from './EventPlayer'
+import EventTarget from './EventTarget'
 
-const ActionInfo: VFC<ActionEvent> = ({ reward, action }) => (
+const ActionInfo: VFC<ActionEvent> = ({ reward, action, target, boughtBy }) => (
    <>
-      {action} <Colored>{reward}</Colored>
+      <Capitalize>{action}</Capitalize> reward <Colored>{reward}</Colored>{' '}
+      {target ? (
+         <>
+            targeting <EventTarget {...target} />
+         </>
+      ) : null}
+      bought by <EventPlayer {...boughtBy} onlyHead />
    </>
 )
 

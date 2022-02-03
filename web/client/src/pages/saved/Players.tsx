@@ -1,5 +1,5 @@
 import { VFC } from 'react'
-import { Link } from 'react-router-dom'
+import Link from '../../components/Link'
 import Page from '../../components/Page'
 import PlayerHead from '../../components/PlayerHead'
 import PlayerList from '../../components/PlayerList'

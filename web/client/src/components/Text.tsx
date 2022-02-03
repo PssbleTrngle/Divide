@@ -21,3 +21,15 @@ export const Code = styled.code`
    margin: 0 0.2em;
    text-align: left;
 `
+
+export const Capitalize = styled.span`
+   text-transform: capitalize;
+`
+
+export const Inline = styled.span<{ center?: boolean }>`
+   display: grid;
+   grid-auto-flow: column;
+   align-items: center;
+   justify-content: ${p => (p.center ? 'center' : 'start')};
+   gap: 0.3em;
+`

@@ -1,7 +1,9 @@
 import { maxBy, minBy, orderBy } from 'lodash'
-import { createContext, Dispatch, FC, SetStateAction, useContext, useMemo, useState } from 'react'
+import { darken } from 'polished'
+import { createContext, Dispatch, FC, SetStateAction, useCallback, useContext, useMemo, useState } from 'react'
 import ReactTooltip from 'react-tooltip'
 import styled from 'styled-components'
+import Box from '../components/Box'
 import DataTooltip from '../components/charts/DataTooltip'
 import { Data, DataProps, Series } from '../components/charts/types'
 import useTooltip from './useTooltip'
@@ -9,15 +11,21 @@ import useTooltip from './useTooltip'
 export interface ChartContext {
    series: Series[]
    setHidden: Dispatch<SetStateAction<string[]>>
-   hover: (data?: Data & DataProps) => void
+   hover: (data: Data & DataProps) => void
+   blur: (data?: Data & DataProps) => void
    initial?: number
    min: number
    max: number
    start: number
    end: number
+   id: string
 }
 
 const CTX = createContext<ChartContext | null>(null)
+
+export function useInChart() {
+   return !!useContext(CTX)
+}
 
 export default function useChartContext() {
    const ctx = useContext(CTX)
@@ -27,6 +35,7 @@ export default function useChartContext() {
 
 export const Chart: FC<{ series: Series[]; initial?: number }> = ({ children, initial, ...props }) => {
    const [hidden, setHidden] = useState<string[]>([])
+   const id = useMemo(() => (Math.random() * 100000).toFixed(), [])
 
    const series = useMemo(
       () =>
@@ -48,9 +57,19 @@ export const Chart: FC<{ series: Series[]; initial?: number }> = ({ children, in
    }, [points, initial])
 
    const [hovered, hover] = useState<Data & DataProps>()
+   const blur = useCallback(
+      (d?: Data & DataProps) => {
+         hover(c => {
+            if (d && c && d.id !== c.id) return c
+            return undefined
+         })
+      },
+      [hover]
+   )
+
    const context = useMemo<ChartContext>(
-      () => ({ ...bounds, series, initial, hover, setHidden }),
-      [bounds, series, hover, initial, setHidden]
+      () => ({ ...bounds, series, initial, hover, setHidden, id, blur }),
+      [bounds, series, hover, initial, setHidden, id, blur]
    )
 
    useTooltip()
@@ -58,16 +77,15 @@ export const Chart: FC<{ series: Series[]; initial?: number }> = ({ children, in
    return (
       <ChartProvider value={context}>
          <Style>{children}</Style>
-         <ReactTooltip effect='solid' id='chart' getContent={() => hovered && <DataTooltip {...hovered} />} />
+         <ReactTooltip effect='solid' id={`chart-${id}`} getContent={() => hovered && <DataTooltip {...hovered} />} />
       </ChartProvider>
    )
 }
 
-const Style = styled.div`
-   display: grid;
+const Style = styled(Box)`
+   background: ${p => darken(0.02, p.theme.bg)};
    grid-template: 'graph legend';
-   justify-content: center;
-   gap: 0.5em;
+   align-items: start;
 `
 
 export const ChartProvider = CTX.Provider

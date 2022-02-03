@@ -1,10 +1,10 @@
-import { Router, Status } from "oak"
+import { Router, Status, Bson } from "../deps.ts"
 import Games from "../models/games.ts"
-import { Game } from "models/game.d.ts"
 import { isAdmin } from "../middleware/permissions.ts"
 import { Event, EventType, ScoreEvent } from "models/events.d.ts"
 import { exists } from "../util.ts"
-import { Bson } from "mongo"
+import eventsRouter from "./events.ts"
+import playerRouter from "./player.ts"
 
 const router = new Router()
 
@@ -14,29 +14,14 @@ router.get("/", async ({ response }) => {
    response.body = await Games.find({}, { projection }).toArray()
 })
 
-router.get("/:id", async ({ response, params }) => {
-   const game = await Games.findOne({ _id: new Bson.ObjectId(params.id) }, { projection })
+router.get("/:game", async ({ response, params }) => {
+   const game = await Games.findOne({ _id: new Bson.ObjectId(params.game) }, { projection })
    if (game) response.body = game
    else response.status = Status.NotFound
 })
 
-router.get("/:id/events", async ({ response, params }) => {
-   const game = await Games.findOne({ _id: new Bson.ObjectId(params.id) }, { projection: { events: 1 } })
-   if (game) response.body = game.events
-   else response.status = Status.NotFound
-})
-
-router.get("/:id/events/:type", async ({ response, params }) => {
-   const [game] = await Games.aggregate<Game>([
-      { $match: { _id: new Bson.ObjectId(params.id) } },
-      { $unwind: "$events" },
-      { $match: { "events.type": params.type } },
-      { $group: { _id: "$_id", events: { $push: "$events" } } },
-   ]).toArray()
-
-   if (game) response.body = game.events
-   else response.status = Status.NotFound
-})
+router.use("/:game/events", eventsRouter.routes(), eventsRouter.allowedMethods())
+router.use("/:game/player", playerRouter.routes(), playerRouter.allowedMethods())
 
 router.post("/", isAdmin(), async ctx => {
    const body = ctx.request.body({ type: "form-data" })
@@ -84,6 +69,7 @@ router.post("/", isAdmin(), async ctx => {
       .map(it => [it.event.player, it.event.killer])
       .flat()
       .filter(exists)
+      .sort((a, b) => [a, b].reduce((t, it) => t + (it.team ? 1 : -1), 0))
       .filter((p1, i1, a) => !a.some((p2, i2) => i2 < i1 && p1.uuid === p2.uuid))
 
    await Games.insertOne({

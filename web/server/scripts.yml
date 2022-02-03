@@ -4,9 +4,9 @@ allow:
   - write
   - run
   
-importMap: dependencies.json
+importMap: imports.json
 unstable: true
 
 scripts:
-  start: deno run .\src\app.ts
-  dev: deno run --watch .\src\app.ts
+  start: deno run app.ts
+  dev: deno run --watch app.ts

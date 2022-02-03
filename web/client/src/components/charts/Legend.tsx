@@ -56,6 +56,7 @@ const Style = styled(Box)`
    grid-area: legend;
    align-items: center;
    height: fit-content;
+   font-size: 0.8em;
    gap: 1em;
 `
 

@@ -54,6 +54,7 @@ const savedRoutes: RouteObject[] = [
       children: [
          { path: 'events', element: <Events /> },
          { path: 'stats', element: <Stats /> },
+         { path: 'player/:uuid', element: <Player /> },
       ],
    },
    ...commonRoutes,

@@ -26,7 +26,7 @@ const Events: VFC = () => {
    const location = useLocation()
    const max = useMemo(() => {
       const query = new URLSearchParams(location.search)
-      const parsed = Number.parseInt(query.get('max') ?? '100')
+      const parsed = Number.parseInt(query.get('max') ?? '')
       return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
    }, [location])
 

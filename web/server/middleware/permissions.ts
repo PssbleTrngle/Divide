@@ -1,4 +1,4 @@
-import { RouterMiddleware, RouteParams, Status } from "oak"
+import { RouterMiddleware, RouteParams, Status } from "../deps.ts"
 
 interface SessionState {
    loggedIn: boolean

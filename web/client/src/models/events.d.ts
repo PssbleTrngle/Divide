@@ -21,12 +21,19 @@ export interface Position {
    x: number
    y: number
    z: number
+   dimension: string
 }
 
-export interface LootFillEvent {
+export interface LootEvent {
    pos: Position
-   dimension: string
+}
+
+export interface LootFillEvent extends LootEvent {
    table: string
+}
+
+export interface LootNotifyEvent extends LootEvent {
+   team: Team
 }
 
 export interface DeathEvent {
@@ -39,16 +46,18 @@ export interface DeathEvent {
 export interface RewardEvent {
    reward: string
    boughtBy: Player
-   target?: Player | Team
+   target?: Target
    pointsPaid: number
    pointsNow: number
 }
+
+export type Target = Player | Team
 
 export interface ActionEvent {
    action: string
    reward: string
    boughtBy?: Player
-   target?: Player | Team
+   target?: Target
 }
 
 export interface EraEvent {
@@ -104,6 +113,8 @@ export interface PointsEvent {
 export interface EventTypes {
    cycle_event: CycleEvent
    loot_crate_filled: LootFillEvent
+   loot_crate_notify: LootNotifyEvent
+   loot_crate_cleaned: LootEvent
    death: DeathEvent
    reward: RewardEvent
    action: ActionEvent

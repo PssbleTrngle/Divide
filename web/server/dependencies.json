@@ -1,8 +1,0 @@
-{
-   "imports": {
-      "fmt/": "https://deno.land/std@0.123.0/fmt/",
-      "mongo": "https://deno.land/x/mongo@v0.29.1/mod.ts",
-      "oak": "https://deno.land/x/oak/mod.ts",
-      "models/": "../client/src/models/"
-   }
-}

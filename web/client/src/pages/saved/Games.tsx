@@ -1,6 +1,6 @@
-import { DateTime } from 'luxon'
 import { VFC } from 'react'
-import { Link } from 'react-router-dom'
+import Box from '../../components/Box'
+import GameLink from '../../components/GameLink'
 import Page from '../../components/Page'
 import { Title } from '../../components/Text'
 import useApi from '../../hooks/useApi'
@@ -12,13 +12,11 @@ const Games: VFC = () => {
    return (
       <Page>
          <Title>Saved Games</Title>
-         <ul>
+         <Box>
             {data?.map(game => (
-               <Link key={game._id} to={`/game/${game._id}`}>
-                  {game.name ?? DateTime.fromISO(game.startedAt).toLocaleString()}
-               </Link>
+               <GameLink key={game._id} {...game} />
             ))}
-         </ul>
+         </Box>
       </Page>
    )
 }

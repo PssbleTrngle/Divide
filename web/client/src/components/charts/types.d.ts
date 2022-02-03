@@ -9,6 +9,7 @@ export interface DataProps {
 
 export interface DataPoint {
    id: string
+   info?: ReactNode
    time: number
    value: number
    x?: number
@@ -17,6 +18,7 @@ export interface DataPoint {
 
 export interface DataBlob {
    id: string
+   info?: ReactNode
    x?: number
    values: number[]
    from: DataPoint

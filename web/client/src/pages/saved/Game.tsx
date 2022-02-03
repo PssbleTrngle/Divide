@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { VFC } from 'react'
 import { useParams } from 'react-router-dom'
 import styled from 'styled-components'
+import Link from '../../components/Link'
 import LinkSelectionBar from '../../components/LinkSelectionBar'
 import Page from '../../components/Page'
 import PlayerHead from '../../components/PlayerHead'
@@ -9,6 +10,7 @@ import BasePlayerList from '../../components/PlayerList'
 import { Title } from '../../components/Text'
 import useApi from '../../hooks/useApi'
 import { Game } from '../../models/game'
+import { colorOf } from '../../util'
 import LoadingPage from '../LoadingPage'
 
 const GameView: VFC = () => {
@@ -22,9 +24,15 @@ const GameView: VFC = () => {
          <Title>
             {data.name ?? data._id} - {DateTime.fromISO(data.startedAt).toLocaleString()}
          </Title>
-         <PlayerList perRow={3}>
+         <PlayerList center size='60px'>
             {data.players.map(player => (
-               <PlayerHead size='100px' key={player.uuid} {...player} />
+               <Link key={player.uuid} to={`player/${player.uuid}`}>
+                  <PlayerHead
+                     highlight={params.uuid === player.uuid && colorOf(player.team.color)}
+                     size='60px'
+                     {...player}
+                  />
+               </Link>
             ))}
          </PlayerList>
          <LinkSelectionBar values={['events', 'stats']} />
@@ -33,8 +41,6 @@ const GameView: VFC = () => {
 }
 
 const PlayerList = styled(BasePlayerList)`
-   width: fit-content;
-   margin: 0 auto;
    margin-bottom: 2em;
 `
 
