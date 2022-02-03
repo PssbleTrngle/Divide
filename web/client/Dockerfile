@@ -8,7 +8,6 @@ RUN yarn install
 
 # Build application
 COPY src ./src/
-COPY lang ./lang/
 COPY public ./public/
 COPY tsconfig.json .eslintrc ./
 RUN npm run build
