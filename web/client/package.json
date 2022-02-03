@@ -32,6 +32,7 @@
     "build": "react-scripts build",
     "lint": "eslint --fix **/*.{ts,tsx}",
     "format": "prettier --write **/*.{ts,tsx}",
+    "test-all": "tsc --noEmit && yarn lint",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
