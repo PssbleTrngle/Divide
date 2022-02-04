@@ -13,6 +13,17 @@ router.get("/mojang/:url*", async ({ response, params }) => {
 })
 
 const app = new Application()
+
+app.use(async ({ response }, next) => {
+   try {
+      await next()
+   } catch (error) {
+      console.error(error)
+      response.status = error.status ?? Status.InternalServerError
+      response.body = { message: error.message }
+   }
+})
+
 app.use(router.routes())
 app.use(router.allowedMethods())
 

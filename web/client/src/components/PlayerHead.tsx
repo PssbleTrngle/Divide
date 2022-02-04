@@ -48,7 +48,7 @@ const PlayerHead: VFC<
    const { player } = useSession()
    const yourself = useMemo(() => player?.uuid == uuid, [uuid, player])
 
-   const { data } = useQuery(['skin', uuid], () => fetchData(uuid), { refetchInterval: false })
+   const { data, isLoading } = useQuery(['skin', uuid], () => fetchData(uuid), { refetchInterval: false })
 
    const texture = useMemo(() => {
       const base = data?.properties.find(p => p.name === 'textures')?.value
@@ -69,12 +69,13 @@ const PlayerHead: VFC<
          data-tip={title}
          highlight={highlight ?? yourself}
          size={typeof size === 'number' ? `${100 * size}px` : size}
+         animate={isLoading}
          src={texture?.textures?.SKIN?.url}
       />
    )
 }
 
-const Head = styled.div<{ src?: string; size: string; highlight?: string | boolean }>`
+const Head = styled.div<{ src?: string; size: string; highlight?: string | boolean; animate?: boolean }>`
    ${loading};
 
    height: ${p => p.size};

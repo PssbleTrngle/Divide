@@ -1,13 +1,16 @@
 import { RouterMiddleware, RouteParams, Status } from "../deps.ts"
-
-interface SessionState {
-   loggedIn: boolean
-   isAdmin: boolean
-}
+import { SessionState } from "./authenticate.ts"
 
 export function isAdmin<R extends string>(): RouterMiddleware<R, RouteParams<R>, SessionState> {
    return async (ctx, next) => {
-      if (ctx.state.isAdmin && ctx.state.loggedIn) await next()
+      if (ctx.state.session?.isAdmin) await next()
+      else ctx.throw(Status.Unauthorized)
+   }
+}
+
+export function isUser<R extends string>(): RouterMiddleware<R, RouteParams<R>, SessionState> {
+   return async (ctx, next) => {
+      if (ctx.state.session) await next()
       else ctx.throw(Status.Unauthorized)
    }
 }

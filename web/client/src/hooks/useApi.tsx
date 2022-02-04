@@ -12,9 +12,13 @@ export async function request<T>(url: string, { token, ...config }: Partial<Requ
    const response = await fetch(url.endsWith('/') ? url : `${url}/`, {
       ...config,
       headers: {
-         ...config?.headers,
          Authorization: token ? `Bearer ${token}` : '',
-         'Content-Type': 'application/json',
+         ...(typeof config.body === 'string'
+            ? {
+                 'Content-Type': 'application/json',
+              }
+            : {}),
+         ...config?.headers,
       },
    })
 

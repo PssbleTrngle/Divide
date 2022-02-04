@@ -19,14 +19,19 @@ export const shimmer = (size?: string) => keyframes`
    to { background-position: ${size ?? '1em'} 0 }
 `
 
-export const loading = css<{ size?: string }>`
+export const loading = css<{ size?: string; animate?: boolean }>`
    position: relative;
    overflow: hidden;
 
    &::before {
       ${pseudo};
+      will-change: background-position;
       transform: rotate(30deg) scale(2);
-      animation: ${p => shimmer(p.size)} 1s linear infinite;
+      ${p =>
+         p.animate &&
+         css`
+            animation: ${shimmer(p.size)} 1s linear infinite;
+         `};
       background-image: linear-gradient(-90deg, #0001, #0005, #0001);
       background-repeat: repeat-x;
    }

@@ -15,13 +15,14 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Player } from '../models/player'
 import LoadingPage from '../pages/LoadingPage'
 import LoggedOut from '../pages/LoggedOut'
-import { request } from './useApi'
+import { request, RequestError } from './useApi'
 import useStatus from './useStatus'
 
 export interface Session {
    token?: string
    player?: Player
    loggedIn?: boolean
+   isAdmin?: boolean
    logout: DispatchWithoutAction
    login: Dispatch<string>
 }
@@ -34,29 +35,40 @@ export default function useSession(): Session {
    throw new Error('Session Provider missing')
 }
 
-const RemoteSession: FC<Session> = ({ children, ...session }) => {
-   return <CTX.Provider value={session}>{children}</CTX.Provider>
+function useMe<T>({ token, logout }: Pick<Session, 'token' | 'logout'>) {
+   const { error, data } = useQuery<T, RequestError, T, string>('me', () => request<T>('/api/auth', { token }), {
+      enabled: !!token,
+   })
+
+   useEffect(() => {
+      if (token && error?.status === 401) logout()
+   }, [error, token, logout])
+
+   return token ? data : undefined
 }
 
-const LocalSession: FC<Session> = ({ children, token, ...session }) => {
+const RemoteSession: FC<Session> = ({ children, ...session }) => {
+   const data = useMe<Partial<Session>>(session)
+   return <CTX.Provider value={{ ...session, ...data, loggedIn: !!data }}>{children}</CTX.Provider>
+}
+
+const LocalSession: FC<Session> = ({ children, ...session }) => {
    const [isSpectator, joinSpectating] = useState(false)
    const { search, pathname } = useLocation()
-   const navigate = useNavigate()
 
-   const { data: player } = useQuery('me', () => request<Player>('/api/auth'), { enabled: !!token })
+   const player = useMe<Player>(session)
 
    useEffect(() => {
       const queryToken = new URLSearchParams(search).get('token')
-      if (queryToken && token !== queryToken) {
+      if (queryToken && session.token !== queryToken) {
          session.login(queryToken)
-         navigate({ pathname })
       }
-   }, [navigate, pathname, search, session, token])
+   }, [pathname, search, session])
 
-   if (!token && !isSpectator) return <LoggedOut onSpectate={() => joinSpectating(true)} />
-   if (token && !player) return <LoadingPage />
+   if (!session.token && !isSpectator) return <LoggedOut onSpectate={() => joinSpectating(true)} />
+   if (session.token && !player) return <LoadingPage />
 
-   return <CTX.Provider value={{ ...session, token, player, loggedIn: !!player }}>{children}</CTX.Provider>
+   return <CTX.Provider value={{ ...session, player, loggedIn: !!player }}>{children}</CTX.Provider>
 }
 
 const EmptySession: FC = ({ children }) => (
@@ -67,18 +79,28 @@ export const SessionProvider: FC = ({ children }) => {
    const client = useQueryClient()
    const { type, loading } = useStatus()
    const navigate = useNavigate()
+   const { search } = useLocation()
 
-   const [token, login] = useReducer((_: string | undefined, v: string | undefined) => {
+   const [token, setToken] = useReducer((_: string | undefined, v: string | undefined) => {
       if (v) localStorage.setItem('token', v)
       else localStorage.removeItem('token')
       return v
    }, localStorage.getItem('token') ?? undefined)
 
+   const login = useCallback(
+      (token?: string) => {
+         setToken(token)
+         client.setQueryData('me', undefined)
+         client.invalidateQueries({ predicate: () => true })
+         const redirect = new URLSearchParams(search).get('redirect') ?? '/'
+         navigate(redirect)
+      },
+      [setToken, navigate, client, search]
+   )
+
    const logout = useCallback(() => {
       login(undefined)
-      navigate('/')
-      client.invalidateQueries({ predicate: () => true })
-   }, [client, navigate])
+   }, [login])
 
    const session = useMemo(() => ({ token, login, logout }), [token, login, logout])
 

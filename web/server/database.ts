@@ -1,9 +1,9 @@
 import { MongoClient, colors } from "./deps.ts"
+import config from './config.ts'
 
 const client = new MongoClient()
 
-const uri = Deno.env.get("MONGO_URI") || "mongodb://localhost:27017"
-console.log(`Connecting to database at ${colors.underline(uri)}`)
-await client.connect(uri)
+console.log(`Connecting to database at ${colors.underline(config.mongo.uri)}`)
+await client.connect(config.mongo.uri)
 
-export default client.database(Deno.env.get("MONGO_DB") || "divide")
+export default client.database(config.mongo.db)

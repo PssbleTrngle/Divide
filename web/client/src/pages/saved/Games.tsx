@@ -8,7 +8,6 @@ import { Game } from '../../models/game'
 
 const Games: VFC = () => {
    const { data } = useApi<Game<string>[]>('game')
-
    return (
       <Page>
          <Title>Saved Games</Title>

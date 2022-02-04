@@ -1,4 +1,4 @@
-import { Router, Status, Bson } from "../deps.ts"
+import { Router, Status, Bson, RouterMiddleware } from "../deps.ts"
 import Games from "../models/games.ts"
 import { isAdmin } from "../middleware/permissions.ts"
 import { Event, EventType, ScoreEvent } from "models/events.d.ts"
@@ -23,7 +23,10 @@ router.get("/:game", async ({ response, params }) => {
 router.use("/:game/events", eventsRouter.routes(), eventsRouter.allowedMethods())
 router.use("/:game/player", playerRouter.routes(), playerRouter.allowedMethods())
 
-router.post("/", isAdmin(), async ctx => {
+const uploadLog: RouterMiddleware<string> = async (ctx, next) => {
+   const type = ctx.request.headers.get("Content-Type")
+   if (!type?.includes("form-data")) return await next()
+
    const body = ctx.request.body({ type: "form-data" })
    const { files } = await body.value.read()
 
@@ -72,15 +75,44 @@ router.post("/", isAdmin(), async ctx => {
       .sort((a, b) => [a, b].reduce((t, it) => t + (it.team ? 1 : -1), 0))
       .filter((p1, i1, a) => !a.some((p2, i2) => i2 < i1 && p1.uuid === p2.uuid))
 
-   await Games.insertOne({
-      startedAt: new Date(startedAt),
-      endedAt: new Date(endedAt),
-      uploadedAt: new Date(),
-      events,
-      players,
-   })
+   const _id = ctx.params.game && new Bson.ObjectId(ctx.params.game)
 
-   ctx.response.status = Status.Created
+   if (_id) {
+      const existing = await Games.findOne({ _id }, { projection: { players: { uuid: 1 }, events: { id: 1 } } })
+      const existingPlayers = existing?.players.map(it => it.uuid) ?? []
+      const existingEvents = existing?.events?.map(it => it.id) ?? []
+      await Games.updateOne(
+         { _id },
+         {
+            $push: {
+               players: { $each: players.filter(p => !existingPlayers.includes(p.uuid)) },
+               events: { $each: events.filter(p => !existingEvents.includes(p.id)) },
+            },
+         }
+      )
+      ctx.response.status = Status.OK
+   } else {
+      await Games.insertOne({
+         startedAt: new Date(startedAt),
+         endedAt: new Date(endedAt),
+         uploadedAt: new Date(),
+         events,
+         players,
+      })
+
+      ctx.response.status = Status.Created
+   }
+}
+
+router.put("/:game", isAdmin(), uploadLog, async ({ params, response, request }) => {
+   const body = await request.body({ type: "json" }).value
+
+   console.log(body)
+   await Games.updateOne({ _id: new Bson.ObjectId(params.game) }, { $set: body })
+
+   response.status = Status.OK
 })
+
+router.post("/", isAdmin(), uploadLog)
 
 export default router
