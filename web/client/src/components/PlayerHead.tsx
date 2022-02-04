@@ -28,8 +28,8 @@ interface TextureData {
 }
 
 async function fetchData(uuid: string) {
-   const { hostname } = window.location
-   const url = `http://${hostname}/mojang/session/minecraft/profile/${uuid.replaceAll('-', '')}`
+   const { hostname, protocol } = window.location
+   const url = `${protocol}//${hostname}/mojang/session/minecraft/profile/${uuid.replaceAll('-', '')}`
    return request<PlayerData>(url, {
       headers: {
          'X-Requested-With': 'XMLHttpRequest',
