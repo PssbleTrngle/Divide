@@ -1,5 +1,5 @@
 import { invert } from 'polished'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { InputStyles } from './Input'
 
 interface ButtonProps {
@@ -7,7 +7,7 @@ interface ButtonProps {
    size?: number
 }
 
-const Button = styled.button<ButtonProps>`
+export const ButtonStyles = css<ButtonProps>`
    color: ${p => invert(p.theme.text)};
 
    ${p => InputStyles(p.theme.primary)};
@@ -21,6 +21,10 @@ const Button = styled.button<ButtonProps>`
    border-radius: 99999px;
 
    cursor: pointer;
+`
+
+const Button = styled.button<ButtonProps>`
+   ${ButtonStyles}
 `
 
 export default Button

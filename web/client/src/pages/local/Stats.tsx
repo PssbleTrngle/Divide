@@ -1,5 +1,6 @@
 import { VFC } from 'react'
 import styled from 'styled-components'
+import BackLink from '../../components/BackLink'
 import EventChart from '../../components/charts/EventChart'
 import EventPlayer from '../../components/events/EventPlayer'
 import EventTeam from '../../components/events/EventTeam'
@@ -28,6 +29,7 @@ function getTeam<T extends EventType>(supplier: (e: EventTypes[T]) => Team) {
 const Stats: VFC = () => {
    return (
       <Page>
+         <BackLink>back to overview</BackLink>
          <Title>Stats</Title>
 
          <Layout>

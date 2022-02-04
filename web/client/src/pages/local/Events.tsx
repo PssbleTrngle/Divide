@@ -2,7 +2,10 @@ import { groupBy, orderBy } from 'lodash'
 import { darken } from 'polished'
 import { useMemo, useState, VFC } from 'react'
 import { useLocation } from 'react-router-dom'
-import styled from 'styled-components'
+import AutoSizer from 'react-virtualized-auto-sizer'
+import { VariableSizeList as VirtualList } from 'react-window'
+import styled, { createGlobalStyle } from 'styled-components'
+import BackLink from '../../components/BackLink'
 import EventLine from '../../components/events/EventLine'
 import Timestamp from '../../components/events/Timestamp'
 import Input from '../../components/Input'
@@ -42,46 +45,70 @@ const Events: VFC = () => {
    }, [data, search])
 
    const grouped = useMemo(() => {
-      const grouped = Object.entries(groupBy(filtered, e => e.gameTime))
-      const sorted = grouped.map(([k, events]) => [k, orderBy(events, e => e.realTime)] as [typeof k, typeof events])
+      const grouped = Object.values(groupBy(filtered, e => e.gameTime))
+      const sorted = grouped.map(events => orderBy(events, e => e.realTime))
       return orderBy(sorted, e => -e[0]).slice(0, max)
    }, [filtered, max])
 
    return (
-      <Page mini>
-         <Input placeholder='Search for terms like "reward" or "death"' value={search} onChange={e => setSearch(e.target.value)} />
+      <Page center>
+         <BackLink>back to overview</BackLink>
+         <Global />
+         <Search
+            placeholder='Search for terms like "reward" or "death"'
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+         />
          <List>
-            {grouped.map(([key, events], i) => (
-               <Group key={key}>
-                  <Timestamp refresh={i <= 10 ? 10 : 60} time={events[0].realTime} />
-                  <ul>
-                     {events.map(e => (
-                        <EventLine key={e.id} {...e} />
-                     ))}
-                  </ul>
-               </Group>
-            ))}
+            <AutoSizer>
+               {style => (
+                  <VirtualList {...style} itemCount={grouped.length} itemSize={i => grouped[i].length * 60}>
+                     {({ index, style }) => {
+                        const events = grouped[index]
+                        return (
+                           <Group style={style} odd={index % 2 === 1}>
+                              <Timestamp refresh={index <= 10 ? 10 : 60} time={events[0].realTime} />
+                              <ul>
+                                 {events.map(e => (
+                                    <EventLine key={e.id} {...e} />
+                                 ))}
+                              </ul>
+                           </Group>
+                        )
+                     }}
+                  </VirtualList>
+               )}
+            </AutoSizer>
          </List>
       </Page>
    )
 }
 
-const Group = styled.ul`
-   padding: 0.5rem 0;
-   &:nth-of-type(odd) {
-      background: ${p => darken(0.05, p.theme.bg)};
+const Search = styled(Input)`
+   width: 500px;
+   max-width: 90vw;
+   margin: 0 auto;
+`
+
+const Global = createGlobalStyle`
+   html, body {
+     // overflow: hidden;
    }
+`
+
+const Group = styled.ul<{ odd?: boolean }>`
+   padding: 0.5rem 0;
+   background: ${p => (p.odd ? darken(0.05, p.theme.bg) : darken(0.02, p.theme.bg))};
 
    display: grid;
    align-items: center;
    grid-template-columns: 1fr 4fr;
 `
 
-const List = styled.ul`
-   margin-top: 1rem;
-   list-type: none;
-
-   min-width: 800px;
+const List = styled.section`
+   margin-top: 2em;
+   height: calc(100vh - 20rem);
+   width: 100vw;
 `
 
 export default Events

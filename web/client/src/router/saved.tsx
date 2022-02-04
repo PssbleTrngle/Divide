@@ -14,11 +14,10 @@ const routes: RouteObject[] = [
    { path: '/players/:uuid', element: <Player /> },
    {
       path: '/game/:game',
-      element: <GameView />,
       children: [
+         { path: '', element: <GameView />, children: [{ path: 'player/:uuid', element: <Player /> }] },
          { path: 'events', element: <Events /> },
          { path: 'stats', element: <Stats /> },
-         { path: 'player/:uuid', element: <Player /> },
       ],
    },
 ]

@@ -1,5 +1,6 @@
 import { Link as BaseLink } from 'react-router-dom'
 import styled from 'styled-components'
+import { ButtonStyles } from './Button'
 
 const Link = styled(BaseLink)`
    color: ${p => p.theme.text};
@@ -8,6 +9,11 @@ const Link = styled(BaseLink)`
    &:hover {
       text-decoration: underline;
    }
+`
+
+export const ButtonLink = styled(Link)`
+   ${ButtonStyles};
+   margin: 0 auto;
 `
 
 export default Link

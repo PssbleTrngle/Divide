@@ -24,6 +24,7 @@ const Button = styled.button<{ active?: boolean }>`
    padding: 0.3em 1em;
    border-radius: 0.3em;
    transition: background 0.1s linear;
+   text-transform: capitalize;
 
    &:hover {
       background: ${p => darken(0.05, p.theme.bg)};
