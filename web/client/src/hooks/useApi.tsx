@@ -9,7 +9,7 @@ export class RequestError extends Error {
 }
 
 export async function request<T>(url: string, { token, ...config }: Partial<RequestInit> & { token?: string } = {}) {
-   const response = await fetch(url, {
+   const response = await fetch(url.endsWith('/') ? url : `${url}/`, {
       ...config,
       headers: {
          ...config?.headers,
@@ -35,5 +35,5 @@ export default function useApi<T>(uri: string, config?: ApiConfig<T>) {
       onError: setError,
       onSuccess: () => setError(null),
    })
-   return useMemo(() => ({ ...query, error }) as UseQueryResult<T, RequestError>, [query, error])
+   return useMemo(() => ({ ...query, error } as UseQueryResult<T, RequestError>), [query, error])
 }

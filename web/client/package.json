@@ -1,7 +1,7 @@
 {
   "name": "web",
   "version": "0.1.0",
-  "proxy": "http://localhost:8080",
+  "proxy": "https://divide.macarena.ceo",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.14.1",
