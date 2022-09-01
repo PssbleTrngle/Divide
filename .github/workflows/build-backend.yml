@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
     paths: [web/server/**]
+    
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-server
 
 jobs:
   build:
@@ -16,7 +20,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
