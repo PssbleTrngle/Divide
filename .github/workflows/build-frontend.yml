@@ -1,11 +1,11 @@
-name: Build Frontend
+name: Build Backend
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths: [web/client/**]
-
+    
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-client
@@ -19,7 +19,7 @@ jobs:
       
     steps:
       - uses: actions/checkout@v3
-
+          
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
