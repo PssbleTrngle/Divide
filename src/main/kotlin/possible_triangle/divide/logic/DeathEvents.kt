@@ -2,7 +2,6 @@ package possible_triangle.divide.logic
 
 import kotlinx.serialization.Serializable
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.minecraft.block.Blocks
 import net.minecraft.enchantment.EnchantmentHelper
 import net.minecraft.entity.LivingEntity
@@ -178,20 +177,20 @@ object DeathEvents {
         return target to killer
     }
 
+    fun restoreItems(player: ServerPlayerEntity) {
+        val stacks = STORED[player.uuid]
+        stacks?.map(::degrade)
+            ?.filterNot { player.giveItemStack(it) }
+            ?.forEach { player.dropItem(it, false) }
+    }
+
+    fun copyHeartModifier(original: ServerPlayerEntity, cloned: ServerPlayerEntity) {
+        val attribute = original.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH) ?: return
+        val modifier = attribute.getModifier(SellCommand.HEARTS_UUID) ?: return
+        cloned.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)?.addPersistentModifier(modifier)
+    }
+
     init {
-        ServerPlayerEvents.AFTER_RESPAWN.register { player, _, _ ->
-            val stacks = STORED[player.uuid]
-            stacks?.map(::degrade)
-                ?.filterNot { player.giveItemStack(it) }
-                ?.forEach { player.dropItem(it, false) }
-        }
-
-        ServerPlayerEvents.COPY_FROM.register { original, player, _ ->
-            val attribute = original.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH) ?: return@register
-            val modifier = attribute.getModifier(SellCommand.HEARTS_UUID) ?: return@register
-            player.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)?.addPersistentModifier(modifier)
-        }
-
         ServerLivingEntityEvents.AFTER_DEATH.register { target, source ->
             val (player, killer) = playerAndKiller(target, source) ?: return@register
 

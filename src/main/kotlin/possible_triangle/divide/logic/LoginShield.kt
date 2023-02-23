@@ -10,6 +10,12 @@ object LoginShield {
 
     private var players = mapOf<UUID, Int>()
 
+    fun tickLogin() {
+        players = players
+            .mapValues { it.value - 1 }
+            .filterValues { it > 0 }
+    }
+
     init {
         ServerTickEvents.START_SERVER_TICK.register { server ->
             if (server.overworld.time % 20 != 0L) return@register

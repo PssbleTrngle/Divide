@@ -1,7 +1,6 @@
 package possible_triangle.divide.info
 
 import kotlinx.serialization.Serializable
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket
 import net.minecraft.scoreboard.ScoreboardPlayerScore
@@ -66,14 +65,10 @@ object Scores {
         LOGGER.log(server, Event(EventTarget.of(player), score.score, name))
     }
 
-    init {
-        ServerTickEvents.END_WORLD_TICK.register { world ->
-            if (world.time % 5 == 0L) return@register
-
-            Teams.ranked(world.server).forEachIndexed { index, team ->
-                team.participants(world.server).forEach {
-                    updateForPlayer(it, index + 1)
-                }
+    fun updateScores(server: MinecraftServer) {
+        Teams.ranked(server).forEachIndexed { index, team ->
+            team.participants(server).forEach {
+                updateForPlayer(it, index + 1)
             }
         }
     }

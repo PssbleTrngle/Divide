@@ -5,7 +5,6 @@ import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.DivideMod
@@ -36,25 +35,23 @@ abstract class ReloadedResource<Entry>(
         private val WATCHERS = arrayListOf<Pair<ReloadedResource<*>, WatchService>>()
         private var IS_LOADING = false
 
-        init {
-            ServerTickEvents.START_SERVER_TICK.register { server ->
-                if(server.overworld.time % 10 != 0L) return@register
+        fun tickWatchers(server: MinecraftServer) {
+            if (server.overworld.time % 10 != 0L) return
 
-                WATCHERS.removeIf { (resource, watcher) ->
-                    val key = watcher.poll() ?: return@removeIf false
-                    if (key.pollEvents().isNotEmpty() && !IS_LOADING) {
-                        DivideMod.LOGGER.info("Detected chances for ${resource.dir}")
-                        resource.load(server)
-                    }
+            WATCHERS.removeIf { (resource, watcher) ->
+                val key = watcher.poll() ?: return@removeIf false
+                if (key.pollEvents().isNotEmpty() && !IS_LOADING) {
+                    DivideMod.LOGGER.info("Detected chances for ${resource.dir}")
+                    resource.load(server)
+                }
 
-                    if (!key.reset()) {
-                        DivideMod.LOGGER.warn("Closing ${resource.dir}")
-                        key.cancel()
-                        watcher.close()
-                        true
-                    } else {
-                        false
-                    }
+                if (!key.reset()) {
+                    DivideMod.LOGGER.warn("Closing ${resource.dir}")
+                    key.cancel()
+                    watcher.close()
+                    true
+                } else {
+                    false
                 }
             }
         }
@@ -85,7 +82,7 @@ abstract class ReloadedResource<Entry>(
     }
 
     fun getOrThrow(id: String): Entry {
-        return registry[id] ?: throw  NullPointerException("$resourceID with id $resourceID missing")
+        return registry[id] ?: throw NullPointerException("$resourceID with id $resourceID missing")
     }
 
     protected val folder
