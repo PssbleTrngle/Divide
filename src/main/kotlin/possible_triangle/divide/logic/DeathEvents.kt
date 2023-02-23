@@ -23,7 +23,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.reward.actions.BaseBuff
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
 import possible_triangle.divide.data.EventPos
@@ -33,6 +32,7 @@ import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.missions.Mission
 import possible_triangle.divide.reward.Reward
+import possible_triangle.divide.reward.actions.BaseBuff
 import java.util.*
 import kotlin.math.min
 import kotlin.random.Random
@@ -42,7 +42,7 @@ private data class Event(
     val player: EventTarget,
     val killer: EventTarget? = null,
     val pos: EventPos,
-    val source: String
+    val source: String,
 )
 
 @Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -181,17 +181,27 @@ object DeathEvents {
 
     @SubscribeEvent
     fun onPlayerClone(event: PlayerEvent.Clone) {
+        val original = event.original
+        val player = event.player
+        if (original is ServerPlayer && player is ServerPlayer) {
+            player.setRespawnPosition(original.respawnDimension,
+                original.respawnPosition,
+                original.respawnAngle,
+                original.isRespawnForced,
+                false)
+        }
+
         with(SellCommand.HEARTS_UUID) {
-            val attribute = event.original.getAttribute(Attributes.MAX_HEALTH) ?: return
+            val attribute = original.getAttribute(Attributes.MAX_HEALTH) ?: return
             val modifier = attribute.getModifier(this) ?: return
-            event.player.getAttribute(Attributes.MAX_HEALTH)?.addPermanentModifier(modifier)
+            player.getAttribute(Attributes.MAX_HEALTH)?.addPermanentModifier(modifier)
         }
     }
 
     private fun <T> playerOf(
         event: LivingEvent,
         source: DamageSource,
-        consumer: (ServerPlayer, ServerPlayer?) -> T
+        consumer: (ServerPlayer, ServerPlayer?) -> T,
     ): T? {
         val player = event.entity
         if (player !is ServerPlayer) return null

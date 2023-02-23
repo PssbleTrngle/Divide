@@ -5,8 +5,8 @@ import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.StringTag
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.scores.PlayerTeam
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams
 
 object SecretRewards {
@@ -22,7 +22,7 @@ object SecretRewards {
         val rewards = Reward.values.filter { it.secret }.shuffled()
         val perTeam = rewards.size / teams.size
 
-        if (perTeam <= 0) DivideMod.LOGGER.warn("Not enough secret rewards for ${teams.size} teams")
+        if (perTeam <= 0) Chat.warn(server, "Not enough secret rewards for ${teams.size} teams")
         else {
             DATA[server] = teams.mapIndexed { i, team ->
                 team to rewards.subList(i * perTeam, (i + 1) * perTeam).map { it.id }

@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.BossEvent
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.GameData
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.ModSavedData
@@ -149,7 +148,7 @@ object MissionEvent : CycleEvent("missions") {
             MissionCallback.schedule(server, mission.time, MissionCallback())
 
         } else {
-            DivideMod.LOGGER.warn("No missions found")
+            Chat.warn(server, "No missions found")
         }
 
         return Config.CONFIG.missions.pause.value

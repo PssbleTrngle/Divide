@@ -3,6 +3,7 @@ package possible_triangle.divide
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.Serializable
 import possible_triangle.divide.data.DefaultedResource
+import java.util.*
 import kotlin.random.Random
 
 
@@ -15,7 +16,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     }
 
     @Serializable
-    data class IntRange(private val min: Int, private val max: Int) {
+    data class IntRange(private val min: Int, private val max: Int = min) {
         val value
             get() = if (min >= max) min else Random.nextInt(min, max)
     }
@@ -58,9 +59,10 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val lobbySize: Int = 10,
         val bigBorder: Int = 400,
         val smallBorder: Int = 200,
-        val staySmallFor: IntRange = IntRange(10.m, 15.m),
-        val stayBigFor: IntRange = IntRange(1.h, 2.h),
-        val moveTime: Int = 5.m,
+        val staySmallFor: IntRange = IntRange(8.m, 12.m),
+        val stayBigFor: IntRange = IntRange(40.m, 1.h),
+        val firstGrowTime: Int = 5.m,
+        val secondsPerBlock: Int = 2,
         val showBar: Boolean = false,
         val damagePerBlock: Double = 1.0,
         val damageSafeZone: Double = 2.0,
@@ -69,23 +71,23 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class CrateValues(
         val enabled: Boolean = true,
-        val startAfter: Int = 30.m,
-        val lockedFor: Int = 5.m,
-        val pause: IntRange = IntRange(30.m, 1.h),
+        val startAfter: Int = 10.m,
+        val lockedFor: Int = 4.m,
+        val pause: IntRange = IntRange(20.m, 40.m),
         val cleanUpTime: Int = 10.m,
         val cleanNonEmpty: Boolean = true,
         val clearOnCleanup: Boolean = true,
         val itemSaveChance: Double = 0.125,
         val splitAndShuffle: Boolean = true,
-        val levels: List<Int> = listOf(70, 100, 120),
+        val levels: List<Int> = listOf(50, 70, 100, 120),
     )
 
     @Serializable
     data class EraValues(
         val enabled: Boolean = true,
         val startAfter: Int = 0,
-        val peaceTime: IntRange = IntRange(10.m, 10.m),
-        val warTime: IntRange = IntRange(1.h, 2.h),
+        val peaceTime: IntRange = IntRange(10.m),
+        val warTime: IntRange = IntRange(40.m, 1.h),
         val showPeaceBar: Boolean = true,
         val showWarBar: Boolean = false,
     )
@@ -93,10 +95,10 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class BountyValues(
         val enabled: Boolean = true,
-        val startAfter: Int = 2.h,
+        val startAfter: Int = 1.h,
         val baseAmount: Int = 120,
         val bonusPerAliveMinute: Int = 10,
-        val pause: IntRange = IntRange(90.m, 150.m),
+        val pause: IntRange = IntRange(40.m, 90.m),
         val bountyTime: Int = 20.m,
         val clearOnDeath: Boolean = false,
     )
@@ -107,7 +109,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val singleBonus: Boolean = true,
         val startAfter: Int = 90.m,
         val safeTime: Int = 5,
-        val pause: IntRange = IntRange(30.m, 90.m),
+        val pause: IntRange = IntRange(30.m, 1.h),
     )
 
     @Serializable
@@ -117,7 +119,7 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
 
     @Serializable
     data class ApiValues(
-        val secret: String = "banana",
+        val secret: String = UUID.randomUUID().toString(),
         val port: Int = 8080,
         val enabled: Boolean = true,
         val host: String = "http://localhost:3000",

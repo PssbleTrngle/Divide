@@ -57,7 +57,6 @@ object PacketIntercepting {
     }
 
     fun updateData(entity: Entity, server: MinecraftServer) {
-        if (!shouldModify(server, entity)) return
         server.playerList.players.forEach {
             val cloned = modifyData(entity, it)
             it.connection.send(ClientboundSetEntityDataPacket(entity.id, cloned, true), null)

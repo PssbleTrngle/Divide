@@ -11,6 +11,7 @@ import net.minecraftforge.event.server.ServerAboutToStartEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.logic.Chat
 import thedarkcolour.kotlinforforge.forge.FORGE_BUS
 import java.io.File
 import java.nio.file.*
@@ -162,7 +163,7 @@ abstract class ReloadedResource<Entry>(
             val parsed = try {
                 Yaml(configuration = CONFIG).decodeFromStream(serializer, stream)
             } catch (e: SerializationException) {
-                DivideMod.LOGGER.warn("an error occurred loading $resourceID '$id'")
+                Chat.warn(server, "an error occurred loading $resourceID '$id'")
                 null
             }
 

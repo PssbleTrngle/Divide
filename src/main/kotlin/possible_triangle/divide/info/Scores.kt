@@ -36,7 +36,8 @@ object Scores {
     @Serializable
     private data class Event(val player: EventTarget, val score: Int, val objective: String)
 
-    private val LOGGER = EventLogger("score", { Event.serializer() }) { isPlayer { it.player } }
+    private val LOGGER = EventLogger("score", { Event.serializer() }, saveLocal = false) { isPlayer { it.player } }
+    private val IGNORED = setOf("custom:jump", "health")
 
     private const val SPOOFED = "${DivideMod.ID}_per_player_info"
 
@@ -61,7 +62,8 @@ object Scores {
     fun scoreUpdate(score: Score, server: MinecraftServer) {
         val player = server.playerList.getPlayerByName(score.owner) ?: return
         val objective = score.objective ?: return
-        if (objective.criteria.isReadOnly) return
+        if (!objective.name.startsWith("${DivideMod.ID}_")) return
+        if (IGNORED.contains(objective.criteria.name)) return
         val name = objective.displayName.let {
             if (it is TextComponent) it.text else objective.name
         }
@@ -139,7 +141,9 @@ object Scores {
                     Bases.isInBase(player, useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
                     PlayerBountyEvent.getBounty(player)?.takeIf { it.until >= now }
                         ?.let { apply("Bounty on your Head until", RED) },
-                    Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) { it.targetPlayers().contains(player) }
+                    Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) {
+                        it.targetPlayers().contains(player)
+                    }
                         .takeIf { it }
                         ?.let { apply("You are being tracked", YELLOW) },
                     MissionEvent.status(player.server, player)?.let {

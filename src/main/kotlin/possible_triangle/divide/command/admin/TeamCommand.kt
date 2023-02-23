@@ -12,6 +12,7 @@ import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.TeamArgument
 import net.minecraft.network.chat.TextComponent
 import net.minecraft.network.chat.TranslatableComponent
+import net.minecraft.world.scores.Team
 import possible_triangle.divide.command.arguments.DivideTeamArgument
 import possible_triangle.divide.logic.Teams
 
@@ -83,6 +84,7 @@ object TeamCommand {
         team.displayName = TextComponent(name)
         team.isAllowFriendlyFire = false
         team.setSeeFriendlyInvisibles(true)
+        team.nameTagVisibility = Team.Visibility.HIDE_FOR_OTHER_TEAMS
         team.color = color
 
         ctx.source.sendSuccess(TranslatableComponent("commands.team.add.success", team.formattedDisplayName), true)

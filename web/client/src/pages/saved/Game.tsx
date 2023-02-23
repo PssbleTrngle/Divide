@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { VFC } from 'react'
 import { useParams } from 'react-router-dom'
 import styled from 'styled-components'
+import Head from '../../components/Head'
 import Link from '../../components/Link'
 import LinkSelectionBar from '../../components/LinkSelectionBar'
 import Page from '../../components/Page'
@@ -18,11 +19,13 @@ const GameView: VFC = () => {
    const { data } = useApi<Game<string>>(`game/${params.game}`)
 
    if (!data) return <LoadingPage />
+   const date = DateTime.fromISO(data.startedAt).toLocaleString()
 
    return (
       <Page>
+         <Head title={date} />
          <Title>
-            {data.name ?? data._id} - {DateTime.fromISO(data.startedAt).toLocaleString()}
+            {data.name ?? data._id} - {date}
          </Title>
          <PlayerList center size='60px'>
             {data.players.map(player => (

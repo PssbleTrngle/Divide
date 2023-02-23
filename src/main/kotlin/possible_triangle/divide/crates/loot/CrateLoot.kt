@@ -8,6 +8,7 @@ import net.minecraft.world.item.Items
 import possible_triangle.divide.crates.loot.LootFunction.*
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.logic.makeWeightedDecision
+import kotlin.random.Random
 
 
 @Serializable
@@ -61,6 +62,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             )
 
             val redstone = normalized(
+                LootEntry(Items.TNT, 100.0, listOf(3, 5)),
                 LootEntry(Items.REDSTONE, 30.0, listOf(2, 6)),
                 LootEntry(Items.SLIME_BALL, 30.0, listOf(2, 6)),
                 LootEntry(Items.GUNPOWDER, 30.0, listOf(2, 6)),
@@ -115,6 +117,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                     LootEntry(Items.PUFFERFISH_BUCKET, 5.0),
                     LootEntry(Items.SADDLE, 5.0),
                     LootEntry(Items.SHIELD, 5.0),
+                    LootEntry(Items.TRIDENT, 1.0, functions = listOf(BREAK)),
                 ) + matrix(
                     listOf(
                         LootEntry(Items.CROSSBOW, 5.0),
@@ -196,6 +199,24 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                 )
             }
 
+            defaulted("legendary") {
+                CrateLoot(
+                    1.0, listOf(
+                        LootPools(rolls = 3, rarities),
+                        LootPools(rolls = 2, food),
+                        LootPools(rolls = 3, potions),
+                        LootPools(
+                            rolls = 3,
+                            matrix(diamondStuff, enchanted)+ LootEntry(
+                                Items.ELYTRA,
+                                20.0,
+                                functions = listOf(BREAK, VANISH)
+                            ), functions = listOf(DAMAGE)
+                        ),
+                    )
+                )
+            }
+
             defaulted("trash") {
                 CrateLoot(
                     1.0, listOf(
@@ -232,8 +253,8 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
 
     }
 
-    fun generate(): List<ItemStack> {
-        return pools.map { it.generate() }.flatten()
+    fun generate(random: Random = Random): List<ItemStack> {
+        return pools.map { it.generate(random) }.flatten()
     }
 
 }

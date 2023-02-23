@@ -12,7 +12,7 @@ import possible_triangle.divide.reward.RewardContext
 abstract class DataAction(
     private val type: DataHacker.Type,
     private val clearOnDeath: Boolean = true,
-    private val clearInBase: Boolean = true,
+    private val clearInBase: Boolean = false,
 ) :
     Action() {
 

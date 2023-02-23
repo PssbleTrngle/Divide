@@ -66,6 +66,7 @@ class EventPredicate<T> internal constructor() {
 class EventLogger<T>(
     private val name: String,
     private val serializer: () -> KSerializer<T>,
+    private val saveLocal: Boolean = true,
     private val predicateBuilder: EventPredicate<T>.() -> Unit
 ) {
 
@@ -137,6 +138,7 @@ class EventLogger<T>(
     }
 
     private fun read(event: ServerAboutToStartEvent) {
+        if(!saveLocal) return
         val deserializer = LoggedEvent.serializer(serializer())
         logFile(event.server, name).forEachLine {
             try {
@@ -169,9 +171,11 @@ class EventLogger<T>(
             UUID.randomUUID().toString()
         )
 
-        events.add(line)
-        ServerApi.notify(line, serializer()) {
-            visibleTo(event, it, Config.CONFIG.api.ignoreEventPermission)
+        if(saveLocal) {
+            events.add(line)
+            ServerApi.notify(line, serializer()) {
+                visibleTo(event, it, Config.CONFIG.api.ignoreEventPermission)
+            }
         }
 
         listOf(name, "full").forEach {

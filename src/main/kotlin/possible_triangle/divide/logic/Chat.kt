@@ -8,10 +8,13 @@ import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.event.TickEvent
+import net.minecraftforge.event.server.ServerStoppingEvent
+import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.Util
 import thedarkcolour.kotlinforforge.forge.FORGE_BUS
 import java.util.*
@@ -64,11 +67,20 @@ object Chat {
         SUBTITLE.send(player, message)
     }
 
+    fun warn(server: MinecraftServer, message: String) {
+        DivideMod.LOGGER.warn(message)
+        server.playerList.players.filter { Teams.isAdmin(it) }.forEach { message(it, message, log= true) }
+    }
+
     class QueuedChat(private val consumer: (ServerPlayer, Component) -> Unit) {
 
         private val queue = hashMapOf<UUID, Queue<Component>>()
 
-        fun tick(event: TickEvent.PlayerTickEvent) {
+        private fun clear(event: ServerStoppingEvent) {
+            queue.clear()
+        }
+
+        private fun tick(event: TickEvent.PlayerTickEvent) {
             if (Util.shouldSkip(event, { it.player.level }, ticks = 10)) return
 
             val player = event.player
@@ -80,6 +92,7 @@ object Chat {
 
         init {
             FORGE_BUS.addListener(::tick)
+            FORGE_BUS.addListener(::clear)
         }
 
         fun send(to: ServerPlayer, message: Component) {

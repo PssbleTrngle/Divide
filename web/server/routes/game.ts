@@ -107,7 +107,6 @@ const uploadLog: RouterMiddleware<string> = async (ctx, next) => {
 router.put("/:game", isAdmin(), uploadLog, async ({ params, response, request }) => {
    const body = await request.body({ type: "json" }).value
 
-   console.log(body)
    await Games.updateOne({ _id: new Bson.ObjectId(params.game) }, { $set: body })
 
    response.status = Status.OK
