@@ -1,11 +1,11 @@
 package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.item.ItemEntity
-import net.minecraft.world.phys.AABB
+import net.minecraft.entity.Entity
+import net.minecraft.entity.ItemEntity
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
+import net.minecraft.util.math.Box
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Chat
@@ -14,7 +14,7 @@ import possible_triangle.divide.reward.RewardContext
 
 object FindGrave : DataAction(GLOWING) {
 
-    private val NOT_DIED = SimpleCommandExceptionType(TextComponent("You have not died yet"))
+    private val NOT_DIED = SimpleCommandExceptionType(Text.literal("You have not died yet"))
 
     override fun <T> onPrepare(ctx: RewardContext<T>) {
         DeathEvents.getDeathPos(ctx.player ?: return) ?: throw NOT_DIED.create()
@@ -27,9 +27,9 @@ object FindGrave : DataAction(GLOWING) {
             val minutes = timeDead / 20 / 60
             Chat.message(
                 player,
-                TextComponent("You died at ").append(
+                Text.literal("You died at ").append(
                     Util.encodePos(pos, player)
-                ).append(TextComponent(" ${minutes}m ago")),
+                ).append(" ${minutes}m ago"),
                 log = true
             )
         }
@@ -37,12 +37,12 @@ object FindGrave : DataAction(GLOWING) {
 
     override fun <T> targets(ctx: RewardContext<T>): List<Entity> {
         val pos = DeathEvents.getDeathPos(ctx.player ?: return emptyList()) ?: return emptyList()
-        return ctx.server.allLevels.map {
-            it.getEntitiesOfClass(ItemEntity::class.java, AABB(pos).inflate(5.0))
+        return ctx.server.worlds.map {
+            it.getEntitiesByClass(ItemEntity::class.java, Box(pos).expand(5.0)) { true }
         }.flatten()
     }
 
-    override fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayer> {
+    override fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayerEntity> {
         return listOfNotNull(ctx.player)
     }
 

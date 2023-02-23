@@ -1,62 +1,60 @@
 package possible_triangle.divide.crates.loot
 
-import net.minecraft.ChatFormatting
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.StringTag
-import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.Style.EMPTY
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.network.chat.TranslatableComponent
-import net.minecraft.world.effect.MobEffect
-import net.minecraft.world.effect.MobEffectInstance
-import net.minecraft.world.effect.MobEffectUtil
-import net.minecraft.world.effect.MobEffects.*
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.alchemy.PotionUtils
-import net.minecraft.world.item.enchantment.EnchantmentHelper
-import net.minecraft.world.item.enchantment.Enchantments
+import net.minecraft.enchantment.EnchantmentHelper
+import net.minecraft.enchantment.Enchantments
+import net.minecraft.entity.effect.StatusEffect
+import net.minecraft.entity.effect.StatusEffectInstance
+import net.minecraft.entity.effect.StatusEffectUtil
+import net.minecraft.entity.effect.StatusEffects.*
+import net.minecraft.item.ItemStack
+import net.minecraft.nbt.NbtList
+import net.minecraft.nbt.NbtString
+import net.minecraft.potion.PotionUtil
+import net.minecraft.text.Style
+import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 import kotlin.random.Random
-import java.util.Random as JavaRandom
+import net.minecraft.util.math.random.Random as MCRandom
 
 enum class LootFunction(private val consumer: (ItemStack) -> Unit, val canApply: (ItemStack) -> Boolean = { true }) {
 
     ENCHANT({
         val level = Random.nextInt(1, 3)
-        if (level > 0) EnchantmentHelper.enchantItem(JavaRandom(), it, level, true)
+        if (level > 0) EnchantmentHelper.enchant(MCRandom.create(), it, level, true)
     }, { it.isEnchantable }),
 
-    VANISH({ it.enchant(Enchantments.VANISHING_CURSE, 1) }, { it.isEnchantable }),
+    VANISH({ it.addEnchantment(Enchantments.VANISHING_CURSE, 1) }, { it.isEnchantable }),
 
-    BREAK({ it.damageValue = it.maxDamage - 10 }, { it.isDamageableItem && it.damageValue == 0 }),
+    BREAK({ it.damage = it.maxDamage - 10 }, { it.isDamageable && it.damage == 0 }),
 
     DAMAGE(
-        { it.damageValue = (it.maxDamage * Random.nextDouble(0.3, 0.7)).toInt() },
-        { it.isDamageableItem && it.damageValue == 0 }
+        { it.damage = (it.maxDamage * Random.nextDouble(0.3, 0.7)).toInt() },
+        { it.isDamageable && it.damage == 0 }
     ),
 
     BREW_GOOD({ stack ->
         val effect = Companion.getEffect { it.isBeneficial }
-        PotionUtils.setCustomEffects(stack, listOf(effect))
+        PotionUtil.setCustomPotionEffects(stack, listOf(effect))
     }),
 
     BREW_BAD({ stack ->
         val effect = Companion.getEffect { !it.isBeneficial }
-        PotionUtils.setCustomEffects(stack, listOf(effect))
+        PotionUtil.setCustomPotionEffects(stack, listOf(effect))
     }),
 
     BREW_RANDOM({ stack ->
         val effects = listOf(Companion.getEffect { it.isBeneficial }, Companion.getEffect { !it.isBeneficial })
-            .onEach { it.curativeItems = listOf() }
+            .onEach { it }
 
-        stack.orCreateTag.putInt("HideFlags", 32)
-        stack.hoverName = TextComponent("Random Potion").withStyle(EMPTY.withItalic(false))
+        stack.orCreateNbt.putInt("HideFlags", 32)
+        stack.setCustomName(Text.literal("Random Potion").styled { it.withItalic(false) })
 
         val lore = effects.map { Companion.fakePotionLine(it) }
-            .map { Component.Serializer.toJson(it) }
-            .mapTo(ListTag()) { StringTag.valueOf(it) }
+            .map { Text.Serializer.toJson(it) }
+            .mapTo(NbtList()) { NbtString.of(it) }
 
-        stack.orCreateTag.getCompound("display").put("Lore", lore)
-        PotionUtils.setCustomEffects(stack, effects)
+        stack.orCreateNbt.getCompound("display").put("Lore", lore)
+        PotionUtil.setCustomPotionEffects(stack, effects)
     });
 
     fun apply(stack: ItemStack) {
@@ -67,10 +65,10 @@ enum class LootFunction(private val consumer: (ItemStack) -> Unit, val canApply:
         private val EFFECTS = listOf(
             ABSORPTION,
             BLINDNESS,
-            CONFUSION,
-            DAMAGE_RESISTANCE,
-            DIG_SLOWDOWN,
-            DIG_SPEED,
+            NAUSEA,
+            RESISTANCE,
+            MINING_FATIGUE,
+            HASTE,
             FIRE_RESISTANCE,
             GLOWING,
             WEAKNESS,
@@ -79,35 +77,34 @@ enum class LootFunction(private val consumer: (ItemStack) -> Unit, val canApply:
             REGENERATION,
             POISON,
             SATURATION,
-            JUMP,
+            JUMP_BOOST,
             LEVITATION,
             HUNGER,
-            MOVEMENT_SLOWDOWN,
-            MOVEMENT_SLOWDOWN,
+            SLOWNESS,
             NIGHT_VISION
         )
 
-        fun fakePotionLine(effect: MobEffectInstance): Component {
-            val text = if (effect.effect.isBeneficial) "Something Good" else "Something Bad"
-            val color = if (effect.effect.isBeneficial) ChatFormatting.BLUE else ChatFormatting.RED
-            val style = EMPTY.withItalic(false).withColor(color)
-            val base = TextComponent(text)
+        fun fakePotionLine(effect: StatusEffectInstance): Text {
+            val text = if (effect.effectType.isBeneficial) "Something Good" else "Something Bad"
+            val color = if (effect.effectType.isBeneficial) Formatting.BLUE else Formatting.RED
+            val style = Style.EMPTY.withItalic(false).withColor(color)
+            val base = Text.literal(text)
 
-            val withAmplifier = if (effect.amplifier > 0) TranslatableComponent(
+            val withAmplifier = if (effect.amplifier > 0) Text.translatable(
                 "potion.withAmplifier", base,
-                TranslatableComponent("potion.potency." + effect.amplifier)
+                Text.translatable("potion.potency." + effect.amplifier)
             ) else base
 
-            return TranslatableComponent(
+            return Text.translatable(
                 "potion.withDuration",
                 withAmplifier,
-                MobEffectUtil.formatDuration(effect, 1F)
-            ).withStyle(style)
+                StatusEffectUtil.durationToString(effect, 1F)
+            ).setStyle(style)
         }
 
-        fun getEffect(filter: (MobEffect) -> Boolean): MobEffectInstance {
+        fun getEffect(filter: (StatusEffect) -> Boolean): StatusEffectInstance {
             val effect = EFFECTS.filter(filter).random()
-            return MobEffectInstance(effect, 20 * Random.nextInt(5, 30), Random.nextInt(0, 3))
+            return StatusEffectInstance(effect, 20 * Random.nextInt(5, 30), Random.nextInt(0, 3))
         }
     }
 

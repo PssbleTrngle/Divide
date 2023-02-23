@@ -1,75 +1,69 @@
 package possible_triangle.divide.logic
 
-import net.minecraft.core.BlockPos
-import net.minecraft.nbt.CompoundTag
+import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.minecraft.block.Blocks
+import net.minecraft.block.CropBlock
+import net.minecraft.enchantment.Enchantments
+import net.minecraft.item.ItemStack
+import net.minecraft.item.Items
+import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.NbtHelper
 import net.minecraft.nbt.NbtOps
-import net.minecraft.nbt.NbtUtils
-import net.minecraft.network.chat.Style
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.resources.ResourceKey
+import net.minecraft.registry.RegistryKey
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerLevel
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
-import net.minecraft.world.item.enchantment.Enchantments
-import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.Blocks
-import net.minecraft.world.level.block.CropBlock
-import net.minecraft.world.phys.AABB
-import net.minecraft.world.scores.Team
-import net.minecraftforge.event.TickEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
+import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Box
+import net.minecraft.world.World
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.reward.actions.TeamBuff
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.data.Util
+import possible_triangle.divide.data.Util.persistentData
+import possible_triangle.divide.extensions.items
+import possible_triangle.divide.logic.Teams.participantTeam
+import possible_triangle.divide.logic.Teams.teammates
 import possible_triangle.divide.reward.Reward
-import java.util.*
+import possible_triangle.divide.reward.actions.TeamBuff
 
-@Mod.EventBusSubscriber
 object Bases {
 
     const val COMPASS_TAG = "${DivideMod.ID}:base_compass"
     private const val IN_BASE_TAG = "${DivideMod.ID}:in_base"
-    private val TICK_RANDOM = Random()
 
-    @SubscribeEvent
-    fun playerTick(event: TickEvent.PlayerTickEvent) {
-        if (Util.shouldSkip(event, { it.player.level }, ticks = 1)) return
+    init {
+        PlayerTickEvents.START.register { player ->
+            if (player !is ServerPlayerEntity) return@register
 
-        val player = event.player
-        if (player !is ServerPlayer) return
-
-        val data = Util.persistentData(player)
-        val lastState = data.getBoolean(IN_BASE_TAG)
-        val currentState = isInBase(player)
-        if (lastState != currentState) {
-            data.putBoolean(IN_BASE_TAG, currentState)
+            val data = player.persistentData()
+            val lastState = data.getBoolean(IN_BASE_TAG)
+            val currentState = player.isInBase()
+            if (lastState != currentState) {
+                data.putBoolean(IN_BASE_TAG, currentState)
+            }
         }
-    }
 
-    @SubscribeEvent
-    fun worldTick(event: TickEvent.WorldTickEvent) {
-        if (Util.shouldSkip(event, { event.world }, ticks = 200, onlyOverworld = false)) return
-        val world = event.world as ServerLevel
+        ServerTickEvents.END_WORLD_TICK.register { world ->
+            if (world.time % 200 != 0L) return@register
 
-        Data[world.server]
-            .filterKeys { TeamBuff.isBuffed(world.server, it, Reward.BUFF_CROPS) }
-            .filterValues { (_, dim) -> dim == world.dimension() }
-            .forEach { (_, pos) ->
-                if (world.isAreaLoaded(pos.first, 1)) {
-                    val blocks = Util.blocksIn(baseBox(pos.first))
-                    blocks.forEach {
-                        val state = world.getBlockState(it)
-                        if (state.block is CropBlock) {
-                            (state.block as CropBlock).randomTick(state, world, it, TICK_RANDOM)
+            Data[world.server]
+                .filterKeys { TeamBuff.isBuffed(world.server, it, Reward.BUFF_CROPS) }
+                .filterValues { (_, dim) -> dim == world.registryKey }
+                .forEach { (_, pos) ->
+                    if (world.isAreaLoaded(pos.first, 1)) {
+                        val blocks = Util.blocksIn(baseBox(pos.first))
+                        blocks.forEach {
+                            val state = world.getBlockState(it)
+                            if (state.block is CropBlock) {
+                                (state.block as CropBlock).randomTick(state, world, it, world.random)
+                            }
                         }
                     }
                 }
-            }
+        }
     }
 
     fun removeBase(team: Team, server: MinecraftServer) {
@@ -78,75 +72,75 @@ object Bases {
         }
     }
 
-    fun setBase(player: ServerPlayer) {
-        val team = player.team ?: return
+    fun setBase(player: ServerPlayerEntity) {
+        val team = player.participantTeam() ?: return
         val oldBase = Data[player.server][team]
 
         if (oldBase != null) {
-            player.server.getLevel(oldBase.second)?.setBlock(
-                oldBase.first.atY(player.level.minBuildHeight),
-                Blocks.BEDROCK.defaultBlockState(), 2
+            player.server.getWorld(oldBase.second)?.setBlockState(
+                oldBase.first.withY(player.world.bottomY),
+                Blocks.BEDROCK.defaultState, 2
             )
         }
 
-        player.level.setBlock(
-            player.blockPosition().atY(player.level.minBuildHeight),
-            Blocks.LODESTONE.defaultBlockState(), 2
+        player.world.setBlockState(
+            player.blockPos.withY(player.world.bottomY),
+            Blocks.LODESTONE.defaultState, 2
         )
 
         Data.modify(player.server) {
-            set(team, player.blockPosition() to player.level.dimension())
+            set(team, player.blockPos to player.world.registryKey)
         }
 
         val compass = createCompass(player) ?: return
-        Teams.teammates(player).forEach { teammate ->
-            val compassSlot = teammate.inventory.items.indexOfFirst { it.tag?.getBoolean(COMPASS_TAG) == true }
-            if (compassSlot >= 0) teammate.inventory.setItem(compassSlot, compass)
-            else if (oldBase == null) teammate.addItem(compass)
+        player.teammates().forEach { teammate ->
+            val compassSlot = teammate.inventory.items().indexOfFirst { it.nbt?.getBoolean(COMPASS_TAG) == true }
+            if (compassSlot >= 0) teammate.inventory.setStack(compassSlot, compass)
+            else if (oldBase == null) teammate.giveItemStack(compass)
         }
     }
 
-    fun getBase(server: MinecraftServer, team: Team): Pair<BlockPos, ResourceKey<Level>>? {
+    fun getBase(server: MinecraftServer, team: Team): Pair<BlockPos, RegistryKey<World>>? {
         return Data[server][team]
     }
 
-    fun baseBox(pos: BlockPos): AABB {
-        return AABB(pos).inflate(Config.CONFIG.bases.radius)
+    fun baseBox(pos: BlockPos): Box {
+        return Box(pos).expand(Config.CONFIG.bases.radius)
     }
 
-    fun createCompass(player: ServerPlayer): ItemStack? {
-        val team = player.team ?: return null
+    fun createCompass(player: ServerPlayerEntity): ItemStack? {
+        val team = player.participantTeam() ?: return null
         val (pos, dimension) = getBase(player.server, team) ?: return null
 
         val stack = ItemStack(Items.COMPASS)
-        stack.orCreateTag.putBoolean(COMPASS_TAG, true)
-        stack.enchant(Enchantments.VANISHING_CURSE, 1)
-        stack.hoverName = TextComponent("Base Compass").withStyle(Style.EMPTY.withItalic(false))
+        stack.orCreateNbt.putBoolean(COMPASS_TAG, true)
+        stack.addEnchantment(Enchantments.VANISHING_CURSE, 1)
+        stack.setCustomName(Text.literal("Base Compass").styled { it.withItalic(false) })
 
-        stack.orCreateTag.put("LodestonePos", NbtUtils.writeBlockPos(pos.atY(player.level.minBuildHeight)))
-        Level.RESOURCE_KEY_CODEC.encodeStart(NbtOps.INSTANCE, dimension).result().ifPresent {
-            stack.orCreateTag.put("LodestoneDimension", it)
+        stack.orCreateNbt.put("LodestonePos", NbtHelper.fromBlockPos(pos.withY(player.world.bottomY)))
+        World.CODEC.encodeStart(NbtOps.INSTANCE, dimension).result().ifPresent {
+            stack.orCreateNbt.put("LodestoneDimension", it)
         }
 
-        stack.orCreateTag.putBoolean("LodestoneTracked", true)
+        stack.orCreateNbt.putBoolean("LodestoneTracked", true)
 
         return stack
     }
 
-    fun isInBase(player: ServerPlayer, useTag: Boolean = false): Boolean {
-        val persistent = Util.persistentData(player)
-        if(useTag && persistent.contains(IN_BASE_TAG)) return persistent.getBoolean(IN_BASE_TAG)
-        val team = player.team ?: return false
-        val (pos, dimension) = getBase(player.server, team) ?: return false
-        if (dimension != player.level.dimension()) return false
-        return baseBox(pos).contains(player.position())
+    fun ServerPlayerEntity.isInBase(useTag: Boolean = false): Boolean {
+        val persistent = persistentData()
+        if (useTag && persistent.contains(IN_BASE_TAG)) return persistent.getBoolean(IN_BASE_TAG)
+        val team = participantTeam() ?: return false
+        val (pos, dimension) = getBase(server, team) ?: return false
+        if (dimension != world.dimensionKey) return false
+        return baseBox(pos).contains(this.pos)
     }
 
-    private val Data = object : ModSavedData<MutableMap<Team, Pair<BlockPos, ResourceKey<Level>>>>("bases") {
-        override fun save(nbt: CompoundTag, value: MutableMap<Team, Pair<BlockPos, ResourceKey<Level>>>) {
+    private val Data = object : ModSavedData<MutableMap<Team, Pair<BlockPos, RegistryKey<World>>>>("bases") {
+        override fun save(nbt: NbtCompound, value: MutableMap<Team, Pair<BlockPos, RegistryKey<World>>>) {
             value.forEach { (team, pos) ->
-                with(NbtUtils.writeBlockPos(pos.first)) {
-                    Level.RESOURCE_KEY_CODEC.encodeStart(NbtOps.INSTANCE, pos.second).result().ifPresent {
+                with(NbtHelper.fromBlockPos(pos.first)) {
+                    World.CODEC.encodeStart(NbtOps.INSTANCE, pos.second).result().ifPresent {
                         put("dimension", it)
                         nbt.put(team.name, this)
                     }
@@ -155,18 +149,18 @@ object Bases {
         }
 
         override fun load(
-            nbt: CompoundTag,
-            server: MinecraftServer
-        ): MutableMap<Team, Pair<BlockPos, ResourceKey<Level>>> {
-            return nbt.allKeys.mapNotNull { server.scoreboard.getPlayerTeam(it) }.associateWith { team ->
+            nbt: NbtCompound,
+            server: MinecraftServer,
+        ): MutableMap<Team, Pair<BlockPos, RegistryKey<World>>> {
+            return nbt.keys.mapNotNull { server.scoreboard.getPlayerTeam(it) }.associateWith { team ->
                 val tag = nbt.getCompound(team.name)
-                val pos = NbtUtils.readBlockPos(tag)
-                val dimension = Level.RESOURCE_KEY_CODEC.decode(NbtOps.INSTANCE, tag.get("dimension")).result()
+                val pos = NbtHelper.toBlockPos(tag)
+                val dimension = World.CODEC.decode(NbtOps.INSTANCE, tag.get("dimension")).result()
                 dimension.map { pos to it.first }
             }.filterValues { it.isPresent }.mapValues { it.value.get() }.toMutableMap()
         }
 
-        override fun default(): MutableMap<Team, Pair<BlockPos, ResourceKey<Level>>> {
+        override fun default(): MutableMap<Team, Pair<BlockPos, RegistryKey<World>>> {
             return mutableMapOf()
         }
     }

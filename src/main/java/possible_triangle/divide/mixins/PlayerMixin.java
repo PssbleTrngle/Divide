@@ -1,7 +1,6 @@
 package possible_triangle.divide.mixins;
 
-import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -10,29 +9,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import possible_triangle.divide.events.Eras;
 import possible_triangle.divide.missions.Mission;
 
-@Mixin(Player.class)
+@Mixin(PlayerEntity.class)
 public class PlayerMixin {
 
-    @Inject(at = @At("HEAD"), method = "canHarmPlayer(Lnet/minecraft/world/entity/player/Player;)Z", cancellable = true)
-    public void canHarmPlayer(Player player, CallbackInfoReturnable<Boolean> callback) {
-        var self = (Player) (Object) this;
+    @Inject(at = @At("HEAD"), method = "shouldDamagePlayer(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable = true)
+    public void canHarmPlayer(PlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
+        var self = (PlayerEntity) (Object) this;
         var server = self.getServer();
         if (server != null) {
             var isPeace = Eras.INSTANCE.isPeace(server);
-            if (isPeace) callback.setReturnValue(false);
+            if (isPeace) cir.setReturnValue(false);
         }
     }
 
-    @Inject(at = @At("HEAD"), method = "jumpFromGround()V")
+    @Inject(at = @At("HEAD"), method = "jump()V")
     public void jumpFromGround(CallbackInfo callback) {
-        var self = (Player) (Object) this;
+        var self = (PlayerEntity) (Object) this;
         Mission.Companion.getJUMP().fulfill(self);
-    }
-
-    @Inject(at = @At("RETURN"), method = "updatePlayerPose()V")
-    public void updatePlayerPose(CallbackInfo callback) {
-        var self = (Player) (Object) this;
-        if (self.getPose() == Pose.CROUCHING) Mission.Companion.getSNEAK().fulfill(self);
     }
 
 }

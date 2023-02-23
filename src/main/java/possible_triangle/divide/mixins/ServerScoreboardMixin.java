@@ -1,8 +1,8 @@
 package possible_triangle.divide.mixins;
 
+import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerScoreboard;
-import net.minecraft.world.scores.Score;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,8 +18,8 @@ public class ServerScoreboardMixin {
     @Final
     private MinecraftServer server;
 
-    @Inject(at = @At("HEAD"), method = "onScoreChanged(Lnet/minecraft/world/scores/Score;)V")
-    private void onScoreChanged(Score score, CallbackInfo callback) {
+    @Inject(at = @At("HEAD"), method = "updateScore(Lnet/minecraft/scoreboard/ScoreboardPlayerScore;)V")
+    private void onScoreChanged(ScoreboardPlayerScore score, CallbackInfo ci) {
         Scores.INSTANCE.scoreUpdate(score, server);
     }
 

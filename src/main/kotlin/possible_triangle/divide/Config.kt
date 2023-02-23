@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 import possible_triangle.divide.data.DefaultedResource
 import kotlin.random.Random
 
-
 object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, id = "config") {
 
     val CONFIG by defaulted("config") { Values() }
@@ -41,7 +40,6 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
         val bases: BaseValues = BaseValues(),
         val missions: MissionValues = MissionValues(),
         val admins: List<String> = listOf(),
-        val api: ApiValues = ApiValues(),
     )
 
     @Serializable
@@ -113,15 +111,6 @@ object Config : DefaultedResource<Config.Values>(".", { Values.serializer() }, i
     @Serializable
     data class BaseValues(
         val radius: Double = 6.0,
-    )
-
-    @Serializable
-    data class ApiValues(
-        val secret: String = "banana",
-        val port: Int = 8080,
-        val enabled: Boolean = true,
-        val host: String = "http://localhost:3000",
-        val ignoreEventPermission: Boolean = false,
     )
 
 }

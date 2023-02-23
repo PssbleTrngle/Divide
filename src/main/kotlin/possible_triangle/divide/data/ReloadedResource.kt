@@ -4,14 +4,11 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.scores.PlayerTeam
-import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.server.ServerAboutToStartEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.DivideMod
-import thedarkcolour.kotlinforforge.forge.FORGE_BUS
 import java.io.File
 import java.nio.file.*
 import java.nio.file.StandardWatchEventKinds.*
@@ -32,7 +29,6 @@ abstract class ReloadedResource<Entry>(
         return CONFIG
     }
 
-    @Mod.EventBusSubscriber
     companion object {
 
         val CONFIG = YamlConfiguration(encodeDefaults = false)
@@ -40,25 +36,25 @@ abstract class ReloadedResource<Entry>(
         private val WATCHERS = arrayListOf<Pair<ReloadedResource<*>, WatchService>>()
         private var IS_LOADING = false
 
-        @SubscribeEvent
-        fun onTick(event: TickEvent.WorldTickEvent) {
-            if (Util.shouldSkip(event, { it.world }, ticks = 10)) return
-            val server = event.world.server ?: return
+        init {
+            ServerTickEvents.START_SERVER_TICK.register { server ->
+                if(server.overworld.time % 10 != 0L) return@register
 
-            WATCHERS.removeIf { (resource, watcher) ->
-                val key = watcher.poll() ?: return@removeIf false
-                if (key.pollEvents().isNotEmpty() && !IS_LOADING) {
-                    DivideMod.LOGGER.info("Detected chances for ${resource.dir}")
-                    resource.load(server)
-                }
+                WATCHERS.removeIf { (resource, watcher) ->
+                    val key = watcher.poll() ?: return@removeIf false
+                    if (key.pollEvents().isNotEmpty() && !IS_LOADING) {
+                        DivideMod.LOGGER.info("Detected chances for ${resource.dir}")
+                        resource.load(server)
+                    }
 
-                if (!key.reset()) {
-                    DivideMod.LOGGER.warn("Closing ${resource.dir}")
-                    key.cancel()
-                    watcher.close()
-                    true
-                } else {
-                    false
+                    if (!key.reset()) {
+                        DivideMod.LOGGER.warn("Closing ${resource.dir}")
+                        key.cancel()
+                        watcher.close()
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
         }
@@ -73,7 +69,7 @@ abstract class ReloadedResource<Entry>(
             get() = RESOURCES.values.toList()
 
         fun register(resource: ReloadedResource<*>) {
-            FORGE_BUS.addListener(resource::setup)
+            ServerLifecycleEvents.SERVER_STARTING.register(resource::setup)
             RESOURCES[resource.resourceID] = resource
             resource.preLoad()
         }
@@ -107,9 +103,8 @@ abstract class ReloadedResource<Entry>(
         })
     }
 
-    @SubscribeEvent
-    fun setup(event: ServerAboutToStartEvent) {
-        load(event.server)
+    fun setup(server: MinecraftServer) {
+        load(server)
         val watcher = FileSystems.getDefault().newWatchService()
         registerRecursive(folder.toPath(), watcher)
         WATCHERS.add(this to watcher)
@@ -128,7 +123,7 @@ abstract class ReloadedResource<Entry>(
     val entries
         get() = registry.toMap()
 
-    open fun isVisible(entry: Entry, team: PlayerTeam?, server: MinecraftServer): Boolean {
+    open fun isVisible(entry: Entry, team: Team?, server: MinecraftServer): Boolean {
         return true
     }
 

@@ -1,13 +1,13 @@
 package possible_triangle.divide.crates.callbacks
 
 import kotlinx.serialization.Serializable
-import net.minecraft.core.BlockPos
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.NbtUtils
-import net.minecraft.network.chat.TextComponent
+import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.NbtHelper
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.level.timers.TimerCallback
-import net.minecraft.world.level.timers.TimerQueue
+import net.minecraft.text.Text
+import net.minecraft.util.math.BlockPos
+import net.minecraft.world.timer.Timer
+import net.minecraft.world.timer.TimerCallback
 import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
@@ -18,7 +18,7 @@ import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.participants
 
 class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) : TimerCallback<MinecraftServer> {
 
@@ -26,14 +26,14 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
         @Serializable
         private data class Event(val pos: EventPos, val team: EventTarget)
 
-        override fun serialize(nbt: CompoundTag, callback: MessageCallback) {
-            nbt.put("pos", NbtUtils.writeBlockPos(callback.pos))
+        override fun serialize(nbt: NbtCompound, callback: MessageCallback) {
+            nbt.put("pos", NbtHelper.fromBlockPos(callback.pos))
             nbt.putString("team", callback.teamName)
             nbt.putLong("time", callback.time)
         }
 
-        override fun deserialize(nbt: CompoundTag): MessageCallback {
-            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
+        override fun deserialize(nbt: NbtCompound): MessageCallback {
+            val pos = NbtHelper.toBlockPos(nbt.getCompound("pos"))
             val teamName = nbt.getString("team")
             val time = nbt.getLong("time")
             return MessageCallback(teamName, pos, time)
@@ -42,9 +42,9 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
         private val LOGGER = EventLogger("loot_crate_notify", { Event.serializer() }) { inTeam { it.team } }
     }
 
-    override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, now: Long) {
+    override fun call(server: MinecraftServer, queue: Timer<MinecraftServer>, now: Long) {
         val team = server.scoreboard.getPlayerTeam(teamName) ?: return
-        val players = Teams.players(server, team)
+        val players = team.participants(server)
 
         LOGGER.log(server, Event(EventPos.of(pos), EventTarget.of(team)))
 
@@ -60,7 +60,7 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
         players.forEach {
             CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)
             Chat.message(
-                it, TextComponent(
+                it, Text.literal(
                     if (inSeconds <= 0)
                         "Loot dropped at "
                     else

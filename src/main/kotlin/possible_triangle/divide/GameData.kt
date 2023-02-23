@@ -1,28 +1,25 @@
 package possible_triangle.divide
 
+import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
 import kotlinx.serialization.Serializable
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.entity.effect.StatusEffectInstance
+import net.minecraft.entity.effect.StatusEffects
+import net.minecraft.nbt.NbtCompound
+import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.effect.MobEffectInstance
-import net.minecraft.world.effect.MobEffects
-import net.minecraft.world.level.GameRules
-import net.minecraft.world.level.GameType
-import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.entity.player.PlayerEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.world.GameMode
+import net.minecraft.world.GameRules
 import possible_triangle.divide.command.AdminCommand
 import possible_triangle.divide.command.admin.PauseCommand
 import possible_triangle.divide.data.ModSavedData
-import possible_triangle.divide.data.Util
 import possible_triangle.divide.events.Border
 import possible_triangle.divide.events.CycleEvent.Companion.EVENTS
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.reward.SecretRewards
 
 data class GameData(val paused: Boolean, val started: Boolean) {
@@ -30,7 +27,6 @@ data class GameData(val paused: Boolean, val started: Boolean) {
     @Serializable
     private data class Event(val action: String)
 
-    @Mod.EventBusSubscriber
     companion object {
 
         private val LOGGER = EventLogger("game", { Event.serializer() }) { always() }
@@ -52,15 +48,15 @@ data class GameData(val paused: Boolean, val started: Boolean) {
             DATA[server] = current.copy(started = boolean)
             AdminCommand.reload(server)
 
-            server.gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(!boolean, server)
+            server.gameRules.get(GameRules.KEEP_INVENTORY).set(!boolean, server)
 
             if (boolean) {
 
                 if (Config.CONFIG.secretRewards) SecretRewards.choose(server)
 
-                Teams.players(server).forEach { player ->
-                    player.setGameMode(GameType.SURVIVAL)
-                    DeathEvents.startedGear(player).forEach { player.addItem(it) }
+                server.participants().forEach { player ->
+                    player.changeGameMode(GameMode.SURVIVAL)
+                    DeathEvents.startedGear(player).forEach { player.giveItemStack(it) }
                     Chat.subtitle(player, "Started")
                 }
 
@@ -76,12 +72,12 @@ data class GameData(val paused: Boolean, val started: Boolean) {
 
         val DATA = object : ModSavedData<GameData>("_gamedata") {
 
-            override fun save(nbt: CompoundTag, value: GameData) {
+            override fun save(nbt: NbtCompound, value: GameData) {
                 nbt.putBoolean("paused", value.paused)
                 nbt.putBoolean("started", value.started)
             }
 
-            override fun load(nbt: CompoundTag, server: MinecraftServer): GameData {
+            override fun load(nbt: NbtCompound, server: MinecraftServer): GameData {
                 val paused = nbt.getBoolean("paused")
                 val started = nbt.getBoolean("started")
                 return GameData(paused || (started && Config.CONFIG.autoPause), started)
@@ -92,27 +88,22 @@ data class GameData(val paused: Boolean, val started: Boolean) {
             }
         }
 
-        private val LOBBY_EFFECTS = listOf(MobEffects.SATURATION, MobEffects.DAMAGE_RESISTANCE)
-            .map { MobEffectInstance(it, 20 * 5, 100, false, false) }
+        private val LOBBY_EFFECTS = listOf(StatusEffects.SATURATION, StatusEffects.RESISTANCE)
+            .map { StatusEffectInstance(it, 20 * 5, 100, false, false) }
 
-        @SubscribeEvent
-        fun tick(event: TickEvent.PlayerTickEvent) {
-            if (Util.shouldSkip(event, { it.player.level }, ticks = 1)) return
-
-            val player = event.player
-            if (player !is ServerPlayer) return
-            if (!DATA[player.server].started) {
-                LOBBY_EFFECTS.forEach(player::addEffect)
+        init {
+            PlayerTickEvents.START.register { player ->
+                if(player !is ServerPlayerEntity) return@register
+                if (!DATA[player.server].started) {
+                    LOBBY_EFFECTS.forEach(player::addStatusEffect)
+                }
             }
-        }
 
-        @SubscribeEvent
-        fun playerJoin(event: PlayerEvent.PlayerLoggedInEvent) {
-            val player = event.player
-            if (player !is ServerPlayer) return
-            player.awardRecipes(player.server.recipeManager.recipes)
-            player.setGameMode(if (DATA[player.server].started) GameType.SURVIVAL else GameType.ADVENTURE)
-            player.connection.send(ClientboundSetTitlesAnimationPacket(5, 20, 5))
+            ServerPlayConnectionEvents.JOIN.register { handler, _, server ->
+                handler.player.unlockRecipes(server.recipeManager.values())
+                handler.player.changeGameMode(if (DATA[server].started) GameMode.SURVIVAL else GameMode.ADVENTURE)
+                handler.player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 20, 5))
+            }
         }
     }
 }

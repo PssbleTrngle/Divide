@@ -3,22 +3,21 @@ package possible_triangle.divide.reward
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.ChatFormatting
-import net.minecraft.network.chat.TextComponent
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.teammates
 import possible_triangle.divide.m
 import possible_triangle.divide.reward.actions.*
 import possible_triangle.divide.reward.actions.secret.BlindTeam
 import possible_triangle.divide.reward.actions.secret.MiningFatigue
 import possible_triangle.divide.reward.actions.secret.ScarePlayer
-import possible_triangle.divide.reward.actions.secret.StrengthenGravity
 
 @Serializable
 data class Reward(
@@ -27,9 +26,7 @@ data class Reward(
     val duration: Int? = null,
     val charge: Int? = null,
     val secret: Boolean = false,
-    @Serializable(with = ActionTarget.Serializer::class)
-    @SerialName("target")
-    private val targetType: String = ActionTarget.NONE.id,
+    @Serializable(with = ActionTarget.Serializer::class) @SerialName("target") private val targetType: String = ActionTarget.NONE.id,
 ) {
 
     @Transient
@@ -48,14 +45,13 @@ data class Reward(
     val target
         get() = ActionTarget[targetType] ?: throw IllegalArgumentException("Unknown ActionTarget $targetType")
 
-    companion object :
-        DefaultedResource<Reward>("rewards", { Reward.serializer() }) {
+    companion object : DefaultedResource<Reward>("rewards", { Reward.serializer() }) {
 
         private val LOGGER = EventLogger("reward", { Event.serializer() }) { inTeam { it.boughtBy.team } }
 
         private val ACTIONS = hashMapOf<String, Action>()
 
-        override fun isVisible(entry: Reward, team: PlayerTeam?, server: MinecraftServer): Boolean {
+        override fun isVisible(entry: Reward, team: Team?, server: MinecraftServer): Boolean {
             return !entry.secret || SecretRewards.isVisible(server, team ?: return false, entry)
         }
 
@@ -127,16 +123,6 @@ data class Reward(
             )
         }
 
-        val STRONGER_GRAVITY by register("stronger_gravity", StrengthenGravity) {
-            Reward(
-                "Increases the players gravitational pull",
-                200,
-                duration = 1.m,
-                secret = true,
-                targetType = ActionTarget.PLAYER.id,
-            )
-        }
-
         fun <T> buy(ctx: RewardContext<T>): Boolean {
             return ctx.player?.let { player ->
                 ctx.targetType.validate(ctx.target, player)
@@ -146,8 +132,7 @@ data class Reward(
                         Action.run(ctx, duration)
 
                         LOGGER.log(
-                            ctx.server,
-                            Event(
+                            ctx.server, Event(
                                 id,
                                 EventTarget.of(player),
                                 ctx.targetEvent(),
@@ -156,11 +141,11 @@ data class Reward(
                             )
                         )
 
-                        Teams.teammates(player).forEach {
+                        player.teammates().forEach {
                             Chat.message(
-                                it, TextComponent("Bought ${ctx.reward.display} for ").append(
-                                    TextComponent("${ctx.reward.price}").withStyle(
-                                        ChatFormatting.LIGHT_PURPLE
+                                it, Text.literal("Bought ${ctx.reward.display} for ").append(
+                                    Text.literal("${ctx.reward.price}").formatted(
+                                        Formatting.LIGHT_PURPLE
                                     )
                                 )
                             )

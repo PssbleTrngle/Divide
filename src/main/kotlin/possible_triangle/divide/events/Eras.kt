@@ -1,11 +1,12 @@
 package possible_triangle.divide.events
 
 import kotlinx.serialization.Serializable
-import net.minecraft.network.chat.TextComponent
+import net.minecraft.entity.boss.BossBar
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.BossEvent
+import net.minecraft.text.Text
 import possible_triangle.divide.Config
 import possible_triangle.divide.GameData
+import possible_triangle.divide.extensions.players
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 
@@ -36,28 +37,28 @@ object Eras : CycleEvent("eras") {
     private fun peace(server: MinecraftServer) {
         LOGGER.log(server, Event("peace"))
 
-        server.playerList.players.forEach {
+        server.players().forEach {
             Chat.subtitle(it, "Peace has begun", false)
             Chat.title(it, "❤")
         }
 
         val bar = bar(server)
-        bar.name = TextComponent("Peace Era")
-        bar.color = BossEvent.BossBarColor.GREEN
+        bar.name = Text.literal("Peace Era")
+        bar.color = BossBar.Color.GREEN
         bar.isVisible = Config.CONFIG.eras.showPeaceBar
     }
 
     private fun war(server: MinecraftServer) {
         LOGGER.log(server, Event("war"))
 
-        server.playerList.players.forEach {
+        server.players().forEach {
             Chat.subtitle(it, "War has started", false)
             Chat.title(it, "⚔")
         }
 
         val bar = bar(server)
-        bar.name = TextComponent("War Era")
-        bar.color = BossEvent.BossBarColor.RED
+        bar.name = Text.literal("War Era")
+        bar.color = BossBar.Color.RED
         bar.isVisible = Config.CONFIG.eras.showWarBar
     }
 

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "divide",
+  "version": "${version}",
+  "name": "Divide",
+  "description": "Divide the people",
+  "authors": [
+    "possible_triangle"
+  ],
+  "contact": {
+    "sources": "https://github.com/PssbleTrngle/Divide"
+  },
+  "license": "CC0-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "com.possible_triangle.divide.DivideMod"
+      }
+    ]
+  },
+  "mixins": [
+    "divide.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.11",
+    "fabric-api": "*",
+    "minecraft": "~1.19.3",
+    "java": ">=17",
+    "fabric-language-kotlin": ">=1.9.1+kotlin.1.8.10"
+  }
+}

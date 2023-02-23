@@ -1,11 +1,11 @@
 package possible_triangle.divide.reward.actions
 
-import net.minecraft.server.level.ServerPlayer
+import net.minecraft.server.network.ServerPlayerEntity
 import possible_triangle.divide.reward.RewardContext
 
 object PlayerBuff : BaseBuff() {
 
-   override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer> {
+   override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayerEntity> {
         return listOfNotNull(ctx.targetPlayer())
     }
 

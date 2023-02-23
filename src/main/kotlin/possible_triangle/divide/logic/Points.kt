@@ -1,17 +1,13 @@
 package possible_triangle.divide.logic
 
 import kotlinx.serialization.Serializable
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.scores.PlayerTeam
-import net.minecraft.world.scores.Team
-import net.minecraftforge.fml.common.Mod
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.PerTeamIntData
 import possible_triangle.divide.logging.EventLogger
 
-@Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object Points {
 
     @Serializable
@@ -32,7 +28,7 @@ object Points {
 
     fun modify(
         server: MinecraftServer,
-        team: PlayerTeam,
+        team: Team,
         amount: Int,
         runnable: (pointsAfter: Int) -> Unit = {}
     ): Boolean {
@@ -56,7 +52,7 @@ object Points {
             false
     }
 
-    fun set(server: MinecraftServer, team: PlayerTeam, amount: Int) {
+    fun set(server: MinecraftServer, team: Team, amount: Int) {
         if (amount < 0) throw IllegalArgumentException("Amount must be >= 0")
         val total = TOTAL[server][team]
 

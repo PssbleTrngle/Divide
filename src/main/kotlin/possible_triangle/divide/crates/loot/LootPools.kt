@@ -1,8 +1,8 @@
 package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
+import net.minecraft.item.ItemStack
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.item.ItemStack
 import possible_triangle.divide.logic.makeWeightedDecision
 import kotlin.random.Random
 

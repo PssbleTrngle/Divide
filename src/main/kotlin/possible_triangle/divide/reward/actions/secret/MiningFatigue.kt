@@ -1,24 +1,22 @@
 package possible_triangle.divide.reward.actions.secret
 
-import net.minecraft.server.level.ServerPlayer
-import net.minecraftforge.event.entity.player.PlayerEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import io.github.fabricators_of_create.porting_lib.event.common.PlayerBreakSpeedCallback
+import net.minecraft.server.network.ServerPlayerEntity
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 import possible_triangle.divide.reward.actions.BaseBuff
 
-@Mod.EventBusSubscriber
 object MiningFatigue : BaseBuff() {
 
-    @SubscribeEvent
-    fun miningSpeed(event: PlayerEvent.BreakSpeed) {
-        val player = event.player
-        if (player !is ServerPlayer) return
-        if (isBuffed(player, Reward.MINING_FATIGUE)) event.newSpeed *= 0.7F
+    init {
+        PlayerBreakSpeedCallback.EVENT.register { event ->
+            val player = event.player
+            if (player !is ServerPlayerEntity) return@register
+            if (isBuffed(player, Reward.MINING_FATIGUE)) event.newSpeed *= 0.7F
+        }
     }
 
-    override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer> {
+    override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayerEntity> {
         return ctx.targetPlayers()
     }
 

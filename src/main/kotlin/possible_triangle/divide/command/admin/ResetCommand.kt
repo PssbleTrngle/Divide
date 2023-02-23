@@ -2,28 +2,29 @@ package possible_triangle.divide.command.admin
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.commands.CommandSourceStack
-import net.minecraft.commands.Commands.argument
-import net.minecraft.commands.Commands.literal
-import net.minecraft.commands.arguments.EntityArgument
-import net.minecraft.commands.arguments.TeamArgument
-import net.minecraft.network.chat.TextComponent
+import net.minecraft.command.argument.EntityArgumentType
+import net.minecraft.command.argument.TeamArgumentType
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.scores.Team
+import net.minecraft.server.command.CommandManager.argument
+import net.minecraft.server.command.CommandManager.literal
+import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
 import possible_triangle.divide.logic.Bases
 import possible_triangle.divide.logic.Points
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.participants
+import possible_triangle.divide.logic.Teams.participingTeams
 
 object ResetCommand {
 
-    fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
+    fun register(base: LiteralArgumentBuilder<ServerCommandSource>): LiteralArgumentBuilder<ServerCommandSource> {
         return base.then(
             literal("reset").then(
                 literal("player").then(
-                    argument("players", EntityArgument.players())
+                    argument("players", EntityArgumentType.players())
                         .then(literal("inventory").executes(resetPlayers(::resetInventory)))
                         .then(literal("scores").executes(resetPlayers(::resetScores)))
                         .then(literal("advancements").executes(resetPlayers(::resetAdvancements)))
@@ -32,7 +33,7 @@ object ResetCommand {
                 )
             ).then(
                 literal("team").then(
-                    argument("team", TeamArgument.team())
+                    argument("team", TeamArgumentType.team())
                         .then(literal("inventory").executes(resetTeamPlayers(::resetInventory)))
                         .then(literal("scores").executes(resetTeamPlayers(::resetScores)))
                         .then(literal("advancements").executes(resetTeamPlayers(::resetAdvancements)))
@@ -56,82 +57,82 @@ object ResetCommand {
         )
     }
 
-    private fun resetTeams(consumer: (Team, MinecraftServer) -> Unit): (ctx: CommandContext<CommandSourceStack>) -> Int {
+    private fun resetTeams(consumer: (Team, MinecraftServer) -> Unit): (ctx: CommandContext<ServerCommandSource>) -> Int {
         return { ctx ->
             val teams = try {
-                listOf(TeamArgument.getTeam(ctx, "team"))
+                listOf(TeamArgumentType.getTeam(ctx, "team"))
             } catch (e: IllegalArgumentException) {
-                Teams.teams(ctx.source.server)
+                ctx.source.server.participingTeams()
             }
             teams.forEach { consumer(it, ctx.source.server) }
-            if (teams.isNotEmpty()) ctx.source.sendSuccess(TextComponent("Reset ${teams.size} teams"), true)
-            else ctx.source.sendFailure(TextComponent("No teams found"))
+            if (teams.isNotEmpty()) ctx.source.sendFeedback(Text.literal("Reset ${teams.size} teams"), true)
+            else ctx.source.sendError(Text.literal("No teams found"))
             1
         }
     }
 
-    private fun resetTeamPlayers(consumer: (ServerPlayer) -> Unit): (ctx: CommandContext<CommandSourceStack>) -> Int {
+    private fun resetTeamPlayers(consumer: (ServerPlayerEntity) -> Unit): (ctx: CommandContext<ServerCommandSource>) -> Int {
         return { ctx ->
-            val team = TeamArgument.getTeam(ctx, "team")
-            val players = Teams.players(ctx.source.server, team)
+            val team = TeamArgumentType.getTeam(ctx, "team")
+            val players = team.participants(ctx.source.server)
             players.forEach(consumer)
-            if (players.isNotEmpty()) ctx.source.sendSuccess(TextComponent("Reset ${players.size} players"), true)
-            else ctx.source.sendFailure(TextComponent("No players found"))
+            if (players.isNotEmpty()) ctx.source.sendFeedback(Text.literal("Reset ${players.size} players"), true)
+            else ctx.source.sendError(Text.literal("No players found"))
             players.size
         }
     }
 
-    private fun resetPlayers(consumer: (ServerPlayer) -> Unit): (ctx: CommandContext<CommandSourceStack>) -> Int {
+    private fun resetPlayers(consumer: (ServerPlayerEntity) -> Unit): (ctx: CommandContext<ServerCommandSource>) -> Int {
         return { ctx ->
             val players = try {
-                EntityArgument.getPlayers(ctx, "players")
+                EntityArgumentType.getPlayers(ctx, "players")
             } catch (e: java.lang.IllegalArgumentException) {
-                Teams.players(ctx.source.server)
+                ctx.source.server.participants()
             }
             players.forEach(consumer)
-            if (players.isNotEmpty()) ctx.source.sendSuccess(TextComponent("Reset ${players.size} players"), true)
-            else ctx.source.sendFailure(TextComponent("No players found"))
+            if (players.isNotEmpty()) ctx.source.sendFeedback(Text.literal("Reset ${players.size} players"), true)
+            else ctx.source.sendError(Text.literal("No players found"))
             players.size
         }
     }
 
     private fun resetEverything(team: Team, server: MinecraftServer) {
-        val players = Teams.players(server, team)
+        val players = team.participants(server)
         players.forEach(::resetEverything)
         resetBounties(team, server)
         resetPoints(team, server)
         resetBase(team, server)
     }
 
-    private fun resetEverything(player: ServerPlayer) {
+    private fun resetEverything(player: ServerPlayerEntity) {
         resetInventory(player)
         resetScores(player)
     }
 
-    private fun resetInventory(player: ServerPlayer) {
-        player.inventory.clearContent()
-        player.containerMenu.broadcastChanges()
-        player.inventoryMenu.slotsChanged(player.inventory)
+    private fun resetInventory(player: ServerPlayerEntity) {
+        player.inventory.clear()
+        player.currentScreenHandler.sendContentUpdates()
+        player.playerScreenHandler.onContentChanged(player.inventory)
     }
 
-    private fun resetAdvancements(player: ServerPlayer) {
-        player.server.advancements.allAdvancements.forEach { advancement ->
-            val progress = player.advancements.getOrStartProgress(advancement)
-            if (progress.hasProgress()) progress.completedCriteria.forEach {
-                player.advancements.revoke(advancement, it)
+    private fun resetAdvancements(player: ServerPlayerEntity) {
+        player.server.advancementLoader.advancements.forEach { advancement ->
+            val progress = player.advancementTracker.getProgress(advancement)
+            if (progress.isAnyObtained) progress.obtainedCriteria.forEach {
+                player.advancementTracker.revokeCriterion(advancement, it)
             }
         }
     }
 
-    private fun resetHearts(player: ServerPlayer) {
+    private fun resetHearts(player: ServerPlayerEntity) {
         SellCommand.resetHearts(player)
     }
 
-    private fun resetScores(player: ServerPlayer) {
+    private fun resetScores(player: ServerPlayerEntity) {
         player.server.scoreboard.objectives.filter {
-            player.server.scoreboard.hasPlayerScore(player.scoreboardName, it)
+            player.server.scoreboard.playerHasObjective(player.entityName, it)
         }.forEach {
-            player.server.scoreboard.resetPlayerScore(player.scoreboardName, it)
+            player.server.scoreboard.resetPlayerScore(player.entityName, it)
         }
     }
 

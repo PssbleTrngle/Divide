@@ -1,38 +1,33 @@
 package possible_triangle.divide.command
 
+import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.commands.CommandSourceStack
-import net.minecraft.commands.Commands.literal
-import net.minecraft.network.chat.TextComponent
-import net.minecraftforge.event.RegisterCommandsEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import net.minecraft.server.command.CommandManager.literal
+import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.text.Text
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
-import possible_triangle.divide.hacks.PacketIntercepting
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.teammates
 
-@Mod.EventBusSubscriber
 object GlowCommand {
 
     private const val REASON_ID = "glow_own_team"
 
-    @SubscribeEvent
-    fun register(event: RegisterCommandsEvent) {
-        event.dispatcher.register(
+    fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+        dispatcher.register(
             literal("glow")
-                .requires(Requirements::isPlayerInGame)
+                .requires { it.isActiveParticipant() }
                 .executes(::run)
         )
     }
 
-    private fun run(ctx: CommandContext<CommandSourceStack>): Int {
-        val player = ctx.source.playerOrException
+    private fun run(ctx: CommandContext<ServerCommandSource>): Int {
+        val player = ctx.source.playerOrThrow
         val glowing = DataHacker.removeReason(ctx.source.server) { it.target == player.uuid && it.id == REASON_ID }
-        if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
-        else DataHacker.addReason(GLOWING,player, Teams.teammates(player, false), 60 * 5, id = REASON_ID)
+        //if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
+        if (!glowing) DataHacker.addReason(GLOWING, player, player.teammates(false), 60 * 5, id = REASON_ID)
 
-        ctx.source.sendSuccess(TextComponent("You are${if (glowing) " no longer " else " "}glowing"), false)
+        ctx.source.sendFeedback(Text.literal("You are${if (glowing) " no longer " else " "}glowing"), false)
 
         return 1
     }

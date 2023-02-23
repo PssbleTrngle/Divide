@@ -1,15 +1,15 @@
 package possible_triangle.divide.reward
 
 import kotlinx.serialization.Serializable
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.server.network.ServerPlayerEntity
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import java.util.*
 
 data class RewardContext<Target>(
-    val team: PlayerTeam,
+    val team: Team,
     val server: MinecraftServer,
     internal val rawPlayer: UUID,
     internal val target: Target,
@@ -30,21 +30,21 @@ data class RewardContext<Target>(
     }
 
     val player
-        get() = server.playerList.getPlayer(rawPlayer)
+        get() = server.playerManager.getPlayer(rawPlayer)
 
     fun targetEvent(): EventTarget? {
         return target?.let { targetType.toEvent(it, server) }
     }
 
-    fun targetPlayers(): List<ServerPlayer> {
+    fun targetPlayers(): List<ServerPlayerEntity> {
         return targetType.players(this)
     }
 
-    fun targetTeam(): PlayerTeam? {
+    fun targetTeam(): Team? {
         return targetType.team(this)
     }
 
-    fun targetPlayer(): ServerPlayer? {
+    fun targetPlayer(): ServerPlayerEntity? {
         return targetPlayers().randomOrNull()
     }
 

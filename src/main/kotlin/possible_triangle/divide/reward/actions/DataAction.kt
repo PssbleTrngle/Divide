@@ -1,11 +1,10 @@
 package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.entity.Entity
+import net.minecraft.entity.Entity
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 import possible_triangle.divide.hacks.DataHacker
-import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
@@ -18,11 +17,11 @@ abstract class DataAction(
 
     companion object {
         private val ALREADY_TARGETED =
-            Dynamic2CommandExceptionType { a, b -> TextComponent("$a is already targeted by $b") }
+            Dynamic2CommandExceptionType { a, b -> Text.literal("$a is already targeted by $b") }
     }
 
     abstract fun <T> targets(ctx: RewardContext<T>): List<Entity>
-    abstract fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayer>
+    abstract fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayerEntity>
 
     open fun <T> onStart(ctx: RewardContext<T>) {}
     open fun <T> onStop(ctx: RewardContext<T>) {}
@@ -45,7 +44,7 @@ abstract class DataAction(
     final override fun <T> stop(ctx: RewardContext<T>) {
         onStop(ctx)
         targets(ctx).forEach {
-            PacketIntercepting.updateData(it, ctx.server)
+            //PacketIntercepting.updateData(it, ctx.server)
         }
     }
 

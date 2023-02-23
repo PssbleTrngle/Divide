@@ -1,20 +1,24 @@
 package possible_triangle.divide.data
 
-import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.NbtCompound
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.level.saveddata.SavedData
+import net.minecraft.world.PersistentState
 import possible_triangle.divide.DivideMod
 
 abstract class ModSavedData<T>(private val id: String) {
 
-    abstract fun save(nbt: CompoundTag, value: T)
+    abstract fun save(nbt: NbtCompound, value: T)
 
-    abstract fun load(nbt: CompoundTag, server: MinecraftServer): T
+    abstract fun load(nbt: NbtCompound, server: MinecraftServer): T
 
     abstract fun default(): T
 
     private fun getData(server: MinecraftServer): Data {
-        return server.overworld().dataStorage.computeIfAbsent({ Data(load(it, server)) }, ::Data, "${DivideMod.ID}_$id")
+        return server.overworld.persistentStateManager.getOrCreate(
+            { Data(load(it, server)) },
+            { Data() },
+            "${DivideMod.ID}_$id"
+        )
     }
 
     operator fun get(server: MinecraftServer): T {
@@ -24,17 +28,17 @@ abstract class ModSavedData<T>(private val id: String) {
     operator fun set(server: MinecraftServer, value: T) {
         val data = getData(server)
         data.value = value
-        data.setDirty()
+        data.isDirty = true
     }
 
     fun <V> modify(server: MinecraftServer, consumer: T.() -> V): V {
         val data = getData(server)
         val out = consumer(data.value)
-        data.setDirty()
+        data.isDirty = true
         return out
     }
 
-    inner class Data() : SavedData() {
+    inner class Data() : PersistentState() {
 
         internal var value: T = default()
 
@@ -42,7 +46,7 @@ abstract class ModSavedData<T>(private val id: String) {
             value = initial
         }
 
-        override fun save(nbt: CompoundTag): CompoundTag {
+        override fun writeNbt(nbt: NbtCompound): NbtCompound {
             save(nbt, value)
             return nbt
         }

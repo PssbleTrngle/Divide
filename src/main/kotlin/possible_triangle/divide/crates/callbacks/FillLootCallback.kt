@@ -1,18 +1,18 @@
 package possible_triangle.divide.crates.callbacks
 
 import kotlinx.serialization.Serializable
-import net.minecraft.core.BlockPos
-import net.minecraft.core.particles.ParticleTypes
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.ListTag
+import net.minecraft.item.ItemStack
+import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.NbtHelper
+import net.minecraft.nbt.NbtList
 import net.minecraft.nbt.NbtOps
-import net.minecraft.nbt.NbtUtils
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.particle.ParticleTypes
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.level.timers.TimerCallback
-import net.minecraft.world.level.timers.TimerQueue
-import net.minecraft.world.phys.Vec3
+import net.minecraft.util.Identifier
+import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
+import net.minecraft.world.timer.Timer
+import net.minecraft.world.timer.TimerCallback
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler
@@ -35,23 +35,23 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
 
         private val LOGGER = EventLogger("loot_crate_filled", { Event.serializer() }) { always() }
 
-        override fun serialize(nbt: CompoundTag, callback: FillLootCallback) {
+        override fun serialize(nbt: NbtCompound, callback: FillLootCallback) {
             with(callback) {
-                nbt.put("pos", NbtUtils.writeBlockPos(pos))
+                nbt.put("pos", NbtHelper.fromBlockPos(pos))
                 nbt.putString("table", table.id)
 
-                val list = ListTag()
+                val list = NbtList()
                 orders.forEach {
                     val encoded = ItemStack.CODEC.encodeStart(NbtOps.INSTANCE, it)
                     encoded.get().ifLeft(list::add)
                 }
                 nbt.put("orders", list)
-                nbt.putUUID("uuid", uuid)
+                nbt.putUuid("uuid", uuid)
             }
         }
 
-        override fun deserialize(nbt: CompoundTag): FillLootCallback {
-            val pos = NbtUtils.readBlockPos(nbt.getCompound("pos"))
+        override fun deserialize(nbt: NbtCompound): FillLootCallback {
+            val pos = NbtHelper.toBlockPos(nbt.getCompound("pos"))
             val list = nbt.getList("orders", 10)
             val orders = list
                 .map { ItemStack.CODEC.parse(NbtOps.INSTANCE, it) }
@@ -61,19 +61,19 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
 
             val tableName = nbt.getString("table")
             val table = CrateLoot.getOrThrow(tableName)
-            val uuid = nbt.getUUID("uuid")
+            val uuid = nbt.getUuid("uuid")
 
             return FillLootCallback(pos, table, orders, uuid)
         }
     }
 
-    override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
+    override fun call(server: MinecraftServer, events: Timer<MinecraftServer>, time: Long) {
         val loot = orders + table.generate()
         val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
         val shuffled = if (Config.CONFIG.crate.splitAndShuffle) {
             val grouped = loot.fold(hashMapOf<ItemStack, Int>()) { map, stack ->
-                val match = map.keys.find { stack.sameItem(it) }
+                val match = map.keys.find { ItemStack.canCombine(stack, it) }
                 if (match != null) map[match] = map[match]!! + stack.count
                 else map[stack] = stack.count
                 map
@@ -83,7 +83,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
                 var remaining = total
                 val counts = mutableListOf<Int>()
                 while (remaining > 0) {
-                    val max = min(total, stack.maxStackSize)
+                    val max = min(total, stack.maxCount)
                     val count = if (max == 1) 1
                     else Random.nextInt(max(1, max / 3), max)
                     remaining -= count
@@ -98,26 +98,25 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
         } else loot
 
         CrateScheduler.setLock(crate, null)
-        val slots = (0 until crate.containerSize).toList()
+        val slots = (0 until crate.size()).toList()
         val shuffledSlots = if (Config.CONFIG.crate.splitAndShuffle) slots.shuffled() else slots
-        if (shuffled.size > crate.containerSize) DivideMod.LOGGER.warn("too much loot to fit into barrel")
+        if (shuffled.size > crate.size()) DivideMod.LOGGER.warn("too much loot to fit into barrel")
 
         shuffledSlots.forEachIndexed { i, slot ->
-            crate.setItem(slot, shuffled.getOrElse(i) { ItemStack.EMPTY })
+            crate.setStack(slot, shuffled.getOrElse(i) { ItemStack.EMPTY })
         }
 
         LOGGER.log(server, Event(EventPos.of(pos), table.id, orders.size))
 
-        val vec = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
-        server.playerList.players.forEach {
+        val vec = Vec3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
+        server.playerManager.playerList.forEach {
 
-            Chat.sound(it, ResourceLocation("entity.experience_orb.pickup"), vec, pitch = 0.1F)
-            server.overworld()
-                .sendParticles(
-                    it, ParticleTypes.FIREWORK, false,
-                    vec.x, vec.y, vec.z,
-                    20, 0.5, 0.5, 0.5, 0.1
-                )
+            Chat.sound(it, Identifier("entity.experience_orb.pickup"), vec, pitch = 0.1F)
+            server.overworld.spawnParticles(
+                it, ParticleTypes.FIREWORK, false,
+                vec.x, vec.y, vec.z,
+                20, 0.5, 0.5, 0.5, 0.1
+            )
         }
     }
 

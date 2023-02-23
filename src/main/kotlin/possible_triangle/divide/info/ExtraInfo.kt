@@ -1,15 +1,15 @@
 package possible_triangle.divide.info
 
-import net.minecraft.ChatFormatting.*
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.util.Formatting.*
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.reward.Reward
 
-enum class ExtraInfo(val lines: (MinecraftServer, PlayerTeam?) -> List<String>) {
+enum class ExtraInfo(val lines: (MinecraftServer, Team?) -> List<String>) {
     PRICES({ server, team ->
         Reward.values.filter { Reward.isVisible(it, team, server) }.map { reward ->
             "${reward.display}: ${valueStyle(reward.price)}".let {
@@ -21,7 +21,7 @@ enum class ExtraInfo(val lines: (MinecraftServer, PlayerTeam?) -> List<String>) 
         PlayerBountyEvent.currentBounties(server).map { (target, bounty) ->
             "${
                 Chat.apply(
-                    "Kill ${target.scoreboardName}",
+                    "Kill ${target.entityName}",
                     GOLD
                 )
             }: ${valueStyle(bounty.price)}"
@@ -34,7 +34,7 @@ enum class ExtraInfo(val lines: (MinecraftServer, PlayerTeam?) -> List<String>) 
             .map { "${it.key}: ${valueStyle(it.value)}" }
     }),
     RANKS({ server, _ ->
-        Scores.getRanks(server).map { (team, rank) -> "${Scores.rankString(rank)} ${team.displayName.string}" }
+        Scores.getRanks(server).map { (team, rank) -> "${Scores.rankString(rank)} ${team.name}" }
     }),
     ORDERS({ server, team ->
         Order.values

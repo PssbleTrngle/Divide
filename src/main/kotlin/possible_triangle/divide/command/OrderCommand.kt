@@ -1,24 +1,20 @@
 package possible_triangle.divide.command
 
+import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.commands.CommandSourceStack
-import net.minecraft.commands.Commands.argument
-import net.minecraft.commands.Commands.literal
-import net.minecraftforge.event.RegisterCommandsEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
+import net.minecraft.server.command.CommandManager.argument
+import net.minecraft.server.command.CommandManager.literal
+import net.minecraft.server.command.ServerCommandSource
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.crates.Order
 
-@Mod.EventBusSubscriber
 object OrderCommand {
 
-    @SubscribeEvent
-    fun register(event: RegisterCommandsEvent) {
-        event.dispatcher.register(
+    fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+        dispatcher.register(
             Order.keys.toList().fold(
-                literal("order").requires(Requirements::isPlayerInGame)
+                literal("order").requires { it.isActiveParticipant() }
             ) { node, key ->
                 node.then(literal(key)
                     .executes { orderItem(it) { Order.getOrThrow(key) } }
@@ -30,7 +26,7 @@ object OrderCommand {
         )
     }
 
-    private fun orderItem(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {
+    private fun orderItem(ctx: CommandContext<ServerCommandSource>, supplier: () -> Order): Int {
         val order = supplier()
 
         val amount = try {
@@ -39,7 +35,7 @@ object OrderCommand {
             1
         }
 
-        if (!order.order(ctx.source.playerOrException, amount)) {
+        if (!order.order(ctx.source.playerOrThrow, amount)) {
             throw NOT_ENOUGH.create(amount * order.cost)
         }
 

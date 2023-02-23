@@ -3,15 +3,18 @@
   "minVersion": "0.8",
   "package": "possible_triangle.divide.mixins",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "divide.refmap.json",
   "mixins": [
+    "AbstractBlockMixin",
+    "EntityMixin",
     "HopperBlockEntityMixin",
     "ItemStackMixin",
     "LivingEntityMixin",
     "PlayerMixin",
-    "ServerGamePacketListenerImplMixin",
+    "ResultSlotMixin",
+    "ServerEntityMixin",
     "ServerLevelMixin",
-    "ServerScoreboardMixin"
+    "ServerScoreboardMixin",
+    "TimerAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

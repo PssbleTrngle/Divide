@@ -1,38 +1,36 @@
 package possible_triangle.divide.command
 
-import net.minecraft.commands.CommandSourceStack
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.scoreboard.Team
+import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.server.network.ServerPlayerEntity
 import possible_triangle.divide.GameData
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.isAdmin
+import possible_triangle.divide.logic.Teams.isParticipant
+import possible_triangle.divide.logic.Teams.participantTeam
 
-object Requirements {
-
-    fun isAdmin(source: CommandSourceStack): Boolean {
-        val entity = source.entity
-        if (source.hasPermission(2)) return true
-        return if (entity is ServerPlayer) {
-            Teams.isAdmin(entity)
-        } else {
-            false
-        }
+fun ServerCommandSource.isAdmin(): Boolean {
+    val entity = entity
+    if (hasPermissionLevel(2)) return true
+    return if (entity is ServerPlayerEntity) {
+        entity.isAdmin()
+    } else {
+        false
     }
+}
 
-    fun optionalPlayer(source: CommandSourceStack): ServerPlayer? {
-        return if (source.entity is ServerPlayer) source.playerOrException else null
-    }
+fun ServerCommandSource.optionalPlayer(): ServerPlayerEntity? {
+    return if (entity is ServerPlayerEntity) playerOrThrow else null
+}
 
-    fun optionalTeam(source: CommandSourceStack): PlayerTeam? {
-        return optionalPlayer(source)?.let { Teams.teamOf(it) }
-    }
+fun ServerCommandSource.optionalTeam(): Team? {
+    return player?.participantTeam()
+}
 
-    fun isPlayer(source: CommandSourceStack): Boolean {
-        return Teams.isPlayer(source.playerOrException)
-    }
+fun ServerCommandSource.isParticipant(): Boolean {
+    return playerOrThrow.isParticipant()
+}
 
-    fun isPlayerInGame(source: CommandSourceStack): Boolean {
-        val data = GameData.DATA[source.server]
-        return isPlayer(source) && data.started && !data.paused
-    }
-
+fun ServerCommandSource.isActiveParticipant(): Boolean {
+    val data = GameData.DATA[server]
+    return isParticipant() && data.started && !data.paused
 }

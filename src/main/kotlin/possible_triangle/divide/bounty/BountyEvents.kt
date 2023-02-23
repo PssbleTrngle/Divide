@@ -1,57 +1,54 @@
 package possible_triangle.divide.bounty
 
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.tags.BlockTags
-import net.minecraft.world.level.block.Blocks
-import net.minecraftforge.event.entity.player.AdvancementEvent
-import net.minecraftforge.event.world.BlockEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.common.Mod
-import possible_triangle.divide.DivideMod
-import possible_triangle.divide.logic.Teams
+import io.github.fabricators_of_create.porting_lib.event.common.AdvancementCallback
+import io.github.fabricators_of_create.porting_lib.event.common.BlockEvents
+import net.minecraft.block.Blocks
+import net.minecraft.registry.RegistryKeys
+import net.minecraft.registry.tag.BlockTags
+import net.minecraft.server.network.ServerPlayerEntity
+import possible_triangle.divide.logic.Teams.teammates
 import possible_triangle.divide.missions.Mission
 
-
-@Mod.EventBusSubscriber(modid = DivideMod.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 object BountyEvents {
 
-    @SubscribeEvent
-    fun onAdvancement(event: AdvancementEvent) {
-        val player = event.player
-        if (player !is ServerPlayer) return
+    init {
+        AdvancementCallback.EVENT.register { player, advancement ->
+            if (player !is ServerPlayerEntity) return@register
 
-        if (event.advancement.id.path.startsWith("recipes/")) return
-        if (event.advancement.display?.shouldShowToast() != true) return
-        val announced = event.advancement.display?.shouldAnnounceChat() == true
+            if (advancement.id.path.startsWith("recipes/")) return@register
+            if (advancement.display?.shouldShowToast() != true) return@register
+            val announced = advancement.display?.shouldAnnounceToChat() == true
 
-        val alreadyUnlocked = Teams.teammates(player, false).any {
-            it.advancements.getOrStartProgress(event.advancement).isDone
+            val alreadyUnlocked = player.teammates(false).any {
+                it.advancementTracker.getProgress(advancement).isDone
+            }
+
+            if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(player, if (announced) 1.0 else 0.5)
         }
 
-        if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(event.player, if (announced) 1.0 else 0.5)
-    }
+        BlockEvents.BLOCK_BREAK.register { event ->
+            val player = event.player
+            if (player !is ServerPlayerEntity) return@register
 
-    @SubscribeEvent
-    fun onMined(event: BlockEvent.BreakEvent) {
-        val player = event.player
-        if (player !is ServerPlayer) return
+            val entry = player.server.registryManager.get(RegistryKeys.BLOCK).getEntry(event.state.block)
 
-        val match = listOf(
-            BlockTags.COAL_ORES::contains to Bounty.MINED_COAL,
-            BlockTags.IRON_ORES::contains to Bounty.MINED_IRON,
-            BlockTags.GOLD_ORES::contains to Bounty.MINED_GOLD,
-            BlockTags.DIAMOND_ORES::contains to Bounty.MINED_DIAMOND,
-            BlockTags.EMERALD_ORES::contains to Bounty.MINED_EMERALD,
-            Blocks.ANCIENT_DEBRIS::equals to Bounty.MINED_NETHERITE,
-        ).find { it.first(event.state.block) }
+            val match = when {
+                entry.isIn(BlockTags.COAL_ORES) -> Bounty.MINED_COAL
+                entry.isIn(BlockTags.IRON_ORES) -> Bounty.MINED_IRON
+                entry.isIn(BlockTags.GOLD_ORES) -> Bounty.MINED_GOLD
+                entry.isIn(BlockTags.DIAMOND_ORES) -> Bounty.MINED_DIAMOND
+                entry.isIn(BlockTags.EMERALD_ORES) -> Bounty.MINED_EMERALD
+                Blocks.ANCIENT_DEBRIS == event.state.block -> Bounty.MINED_NETHERITE
+                else -> null
+            }
 
-        Mission.FIND.filterKeys { it(event.state) }
-            .map { it.value.getValue(null, null) }
-            .forEach { it.fulfill(player) }
+            Mission.FIND.filterKeys { it(event.state) }
+                .map { it.value.getValue(null, null) }
+                .forEach { it.fulfill(player) }
 
 
-        match?.second?.gain(player)
-
+            match?.gain(player)
+        }
     }
 
 }

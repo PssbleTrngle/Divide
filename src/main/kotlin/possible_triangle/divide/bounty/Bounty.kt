@@ -2,12 +2,12 @@ package possible_triangle.divide.bounty
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.entity.player.Player
-import net.minecraft.world.scores.Team
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
+import net.minecraft.util.Identifier
 import possible_triangle.divide.bounty.Amount.Type.*
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
@@ -15,7 +15,8 @@ import possible_triangle.divide.data.PerTeamIntData
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
-import possible_triangle.divide.logic.Teams
+import possible_triangle.divide.logic.Teams.participantTeam
+import possible_triangle.divide.logic.Teams.teammates
 
 @Serializable
 data class Bounty(val description: String, val amount: Amount) {
@@ -88,14 +89,14 @@ data class Bounty(val description: String, val amount: Amount) {
         return amount.get(alreadyDone)
     }
 
-    fun gain(player: Player, modifier: Double = 1.0) {
-        val team = Teams.teamOf(player)
+    fun gain(player: PlayerEntity, modifier: Double = 1.0) {
+        val team = player.participantTeam()
 
-        if (player is ServerPlayer && team != null) {
+        if (player is ServerPlayerEntity && team != null) {
             val cashGained = (nextPoints(team, player.server) * modifier).toInt()
 
             if (cashGained > 0) {
-                Points.modify(player.getLevel().server, team, cashGained) { pointsNow ->
+                Points.modify(player.server, team, cashGained) { pointsNow ->
                     LOGGER.log(
                         player.server,
                         Event(
@@ -109,12 +110,12 @@ data class Bounty(val description: String, val amount: Amount) {
                 }
 
 
-                Teams.teammates(player).forEach { teammate ->
-                    Chat.sound(teammate, ResourceLocation("entity.experience_orb.pickup"))
-                    //it.sendMessage(TextComponent("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
+                player.teammates().forEach { teammate ->
+                    Chat.sound(teammate, Identifier("entity.experience_orb.pickup"))
+                    //it.sendMessage(Text.literal("You're team gained $cashGained"), ChatType.GAME_INFO, it.uuid)
                     Chat.subtitle(
                         teammate,
-                        TextComponent(description).withStyle { it.withItalic(true) }
+                        Text.literal(description).styled { it.withItalic(true) }
                     )
                     Chat.title(teammate, "+$cashGained")
                 }
