@@ -1,7 +1,6 @@
 package possible_triangle.divide.logic
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
@@ -99,16 +98,12 @@ object Teams {
         return server.participingTeams().sortedBy { -score(server, it) }
     }
 
-    init {
-        ServerTickEvents.END_SERVER_TICK.register { server ->
-            if (server.overworld.time % 20 != 0L) return@register
-
-            server.gameSpectators().forEach { player ->
-                player.participantTeam().also {
-                    server.overworld.scoreboard.removePlayerFromTeam(player.entityName, it)
-                }
-                player.changeGameMode(GameMode.SPECTATOR)
+    fun updateSpectators(server: MinecraftServer) {
+        server.gameSpectators().forEach { player ->
+            player.participantTeam().also {
+                server.overworld.scoreboard.removePlayerFromTeam(player.entityName, it)
             }
+            player.changeGameMode(GameMode.SPECTATOR)
         }
     }
 

@@ -1,14 +1,13 @@
 package possible_triangle.divide.reward
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtList
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.Text
 import possible_triangle.divide.DivideMod
-import possible_triangle.divide.GameData
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.isPaused
 
 abstract class Action {
 
@@ -56,34 +55,31 @@ abstract class Action {
             return DATA[server].toList()
         }
 
-        init {
-            ServerTickEvents.START_SERVER_TICK.register { server ->
-                if (server.overworld.time % 20 != 0L) return@register
-                if (GameData.DATA[server].paused) return@register
+        fun tickActions(server: MinecraftServer) {
+            if (server.isPaused()) return
 
-                val running = DATA[server]
-                val now = server.overworld.time
-                val due = running.filter { (_, time) -> time < now }
+            val running = DATA[server]
+            val now = server.overworld.time
+            val due = running.filter { (_, time) -> time < now }
 
-                running.forEach { (ctx, _, chargedAt) ->
-                    try {
-                        ctx.tick()
-                        if (chargedAt != null && chargedAt == now) {
-                            ctx.start()
-                        }
-                    } catch (e: Exception) {
-                        DivideMod.LOGGER.error("Exception occurred with action ${ctx.reward.id}: ${e.message}")
+            running.forEach { (ctx, _, chargedAt) ->
+                try {
+                    ctx.tick()
+                    if (chargedAt != null && chargedAt == now) {
+                        ctx.start()
                     }
+                } catch (e: Exception) {
+                    DivideMod.LOGGER.error("Exception occurred with action ${ctx.reward.id}: ${e.message}")
+                }
+            }
+
+            if (due.isNotEmpty()) {
+                due.forEach { (ctx) ->
+                    ctx.stop()
                 }
 
-                if (due.isNotEmpty()) {
-                    due.forEach { (ctx) ->
-                        ctx.stop()
-                    }
-
-                    DATA.modify(server) {
-                        removeAll(due)
-                    }
+                DATA.modify(server) {
+                    removeAll(due)
                 }
             }
         }

@@ -11,8 +11,8 @@
     "LivingEntityMixin",
     "PlayerMixin",
     "ResultSlotMixin",
-    "ServerEntityMixin",
     "ServerLevelMixin",
+    "ServerPlayNetworkHandlerMixin",
     "ServerScoreboardMixin",
     "TimerAccessor"
   ],

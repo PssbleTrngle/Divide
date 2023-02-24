@@ -1,7 +1,5 @@
 package possible_triangle.divide.logic
 
-import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.block.Blocks
 import net.minecraft.block.CropBlock
 import net.minecraft.enchantment.Enchantments
@@ -14,6 +12,7 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -34,36 +33,32 @@ object Bases {
     const val COMPASS_TAG = "${DivideMod.ID}:base_compass"
     private const val IN_BASE_TAG = "${DivideMod.ID}:in_base"
 
-    init {
-        PlayerTickEvents.START.register { player ->
-            if (player !is ServerPlayerEntity) return@register
-
-            val data = player.persistentData()
-            val lastState = data.getBoolean(IN_BASE_TAG)
-            val currentState = player.isInBase()
-            if (lastState != currentState) {
-                data.putBoolean(IN_BASE_TAG, currentState)
-            }
+    fun updateBaseState(player: ServerPlayerEntity) {
+        val data = player.persistentData()
+        val lastState = data.getBoolean(IN_BASE_TAG)
+        val currentState = player.isInBase()
+        if (lastState != currentState) {
+            data.putBoolean(IN_BASE_TAG, currentState)
         }
+    }
 
-        ServerTickEvents.END_WORLD_TICK.register { world ->
-            if (world.time % 200 != 0L) return@register
+    fun boostCrops(world: ServerWorld) {
+        if (world.time % 200 != 0L) return
 
-            Data[world.server]
-                .filterKeys { TeamBuff.isBuffed(world.server, it, Reward.BUFF_CROPS) }
-                .filterValues { (_, dim) -> dim == world.registryKey }
-                .forEach { (_, pos) ->
-                    if (world.isAreaLoaded(pos.first, 1)) {
-                        val blocks = Util.blocksIn(baseBox(pos.first))
-                        blocks.forEach {
-                            val state = world.getBlockState(it)
-                            if (state.block is CropBlock) {
-                                (state.block as CropBlock).randomTick(state, world, it, world.random)
-                            }
+        Data[world.server]
+            .filterKeys { TeamBuff.isBuffed(world.server, it, Reward.BUFF_CROPS) }
+            .filterValues { (_, dim) -> dim == world.registryKey }
+            .forEach { (_, pos) ->
+                if (world.isAreaLoaded(pos.first, 1)) {
+                    val blocks = Util.blocksIn(baseBox(pos.first))
+                    blocks.forEach {
+                        val state = world.getBlockState(it)
+                        if (state.block is CropBlock) {
+                            (state.block as CropBlock).randomTick(state, world, it, world.random)
                         }
                     }
                 }
-        }
+            }
     }
 
     fun removeBase(team: Team, server: MinecraftServer) {

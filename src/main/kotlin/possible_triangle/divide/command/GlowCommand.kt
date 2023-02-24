@@ -7,6 +7,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
+import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.logic.Teams.teammates
 
 object GlowCommand {
@@ -24,7 +25,7 @@ object GlowCommand {
     private fun run(ctx: CommandContext<ServerCommandSource>): Int {
         val player = ctx.source.playerOrThrow
         val glowing = DataHacker.removeReason(ctx.source.server) { it.target == player.uuid && it.id == REASON_ID }
-        //if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
+        if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
         if (!glowing) DataHacker.addReason(GLOWING, player, player.teammates(false), 60 * 5, id = REASON_ID)
 
         ctx.source.sendFeedback(Text.literal("You are${if (glowing) " no longer " else " "}glowing"), false)

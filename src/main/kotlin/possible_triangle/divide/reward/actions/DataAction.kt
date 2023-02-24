@@ -5,6 +5,7 @@ import net.minecraft.entity.Entity
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import possible_triangle.divide.hacks.DataHacker
+import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
@@ -44,7 +45,7 @@ abstract class DataAction(
     final override fun <T> stop(ctx: RewardContext<T>) {
         onStop(ctx)
         targets(ctx).forEach {
-            //PacketIntercepting.updateData(it, ctx.server)
+            PacketIntercepting.updateData(it, ctx.server)
         }
     }
 

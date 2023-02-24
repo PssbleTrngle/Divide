@@ -2,9 +2,7 @@ package possible_triangle.divide.logging
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.WorldSavePath
@@ -71,8 +69,6 @@ class EventLogger<T>(
         it.build()
     }
 
-    private val events = arrayListOf<LoggedEvent<T>>()
-
     companion object {
         private val LOGGERS = arrayListOf<EventLogger<*>>()
 
@@ -116,44 +112,11 @@ class EventLogger<T>(
 
             return files.size
         }
-
-        fun lines(player: ServerPlayerEntity?, ignorePermission: Boolean = false, type: String? = null): List<String> {
-            return LOGGERS
-                .asSequence()
-                .filter { type == null || it.name == type }
-                .map { it.lines(player, ignorePermission) }
-                .flatten()
-                .sortedBy { -it.first }
-                .map { it.second }
-                .toList()
-        }
-    }
-
-    private fun clear() {
-        events.clear()
-    }
-
-    private fun read(server: MinecraftServer) {
-        val deserializer = LoggedEvent.serializer(serializer())
-        logFile(server, name).forEachLine {
-            try {
-                events.add(JSON.decodeFromString(deserializer, it))
-            } catch (e: SerializationException) {
-            }
-        }
-    }
-
-    private fun lines(player: ServerPlayerEntity?, ignorePermission: Boolean = false): List<Pair<Long, String>> {
-        val serializer = LoggedEvent.serializer(serializer())
-        return events
-            .filter { visibleTo(it.event, player, ignorePermission) }
-            .map { it.realTime to JSON.encodeToString(serializer, it) }
     }
 
     init {
         LOGGERS.add(this)
         DivideMod.LOGGER.info("Registered event logger $name")
-        ServerLifecycleEvents.SERVER_STOPPED.register { clear() }
     }
 
     fun log(server: MinecraftServer, event: T) {

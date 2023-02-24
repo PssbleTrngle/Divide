@@ -1,7 +1,6 @@
 package possible_triangle.divide.info
 
 import kotlinx.serialization.Serializable
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket
 import net.minecraft.scoreboard.ScoreboardPlayerScore
 import net.minecraft.scoreboard.ServerScoreboard.UpdateMode.CHANGE
@@ -73,13 +72,11 @@ object Scores {
         }
     }
 
-    init {
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
-            LAST_LINES.remove(handler.player.uuid)
-        }
-    }
-
     private val LAST_LINES = hashMapOf<UUID, List<String>>()
+
+    fun resetSpoof(player: ServerPlayerEntity) {
+        LAST_LINES.remove(player.uuid)
+    }
 
     private fun spoof(player: ServerPlayerEntity, lines: List<String>) {
         val formatted = lines.mapIndexed { i, line ->

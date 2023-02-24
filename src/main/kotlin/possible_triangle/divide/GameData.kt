@@ -1,8 +1,6 @@
 package possible_triangle.divide
 
-import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
 import kotlinx.serialization.Serializable
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.entity.effect.StatusEffectInstance
 import net.minecraft.entity.effect.StatusEffects
 import net.minecraft.nbt.NbtCompound
@@ -21,6 +19,8 @@ import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
 import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.reward.SecretRewards
+
+fun MinecraftServer.isPaused() = GameData.DATA[this].paused
 
 data class GameData(val paused: Boolean, val started: Boolean) {
 
@@ -91,19 +91,17 @@ data class GameData(val paused: Boolean, val started: Boolean) {
         private val LOBBY_EFFECTS = listOf(StatusEffects.SATURATION, StatusEffects.RESISTANCE)
             .map { StatusEffectInstance(it, 20 * 5, 100, false, false) }
 
-        init {
-            PlayerTickEvents.START.register { player ->
-                if(player !is ServerPlayerEntity) return@register
-                if (!DATA[player.server].started) {
-                    LOBBY_EFFECTS.forEach(player::addStatusEffect)
-                }
+        fun tickLobbyPlayer(player: ServerPlayerEntity) {
+            if(player !is ServerPlayerEntity) return
+            if (!DATA[player.server].started) {
+                LOBBY_EFFECTS.forEach(player::addStatusEffect)
             }
+        }
 
-            ServerPlayConnectionEvents.JOIN.register { handler, _, server ->
-                handler.player.unlockRecipes(server.recipeManager.values())
-                handler.player.changeGameMode(if (DATA[server].started) GameMode.SURVIVAL else GameMode.ADVENTURE)
-                handler.player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 20, 5))
-            }
+        fun onPlayerJoin(player: ServerPlayerEntity, server: MinecraftServer) {
+            player.unlockRecipes(server.recipeManager.values())
+            player.changeGameMode(if (DATA[server].started) GameMode.SURVIVAL else GameMode.ADVENTURE)
+            player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 20, 5))
         }
     }
 }

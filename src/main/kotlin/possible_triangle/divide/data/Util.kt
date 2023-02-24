@@ -2,6 +2,7 @@ package possible_triangle.divide.data
 
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
+import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.scoreboard.AbstractTeam.CollisionRule
@@ -15,6 +16,7 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import net.minecraft.util.math.Vec3d
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.hacks.PacketIntercepting
 import java.util.stream.Collectors
 
 object Util {
@@ -81,10 +83,10 @@ object Util {
         level.spawnEntity(marker)
 
 
-        //if (marker is LivingEntity) {
-        //    marker.scoreboardTags.add("invisible")
-        //    PacketIntercepting.updateData(marker, level.server)
-        //}
+        if (marker is LivingEntity) {
+            marker.scoreboardTags.add("invisible")
+            PacketIntercepting.updateData(marker, level.server)
+        }
 
         withoutCollision(marker, level.server)
 

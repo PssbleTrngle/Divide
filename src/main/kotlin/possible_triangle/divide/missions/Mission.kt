@@ -2,8 +2,6 @@ package possible_triangle.divide.missions
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.fabricmc.fabric.api.entity.event.v1.EntitySleepEvents
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.minecraft.block.BlockState
 import net.minecraft.block.Blocks
 import net.minecraft.entity.LivingEntity
@@ -88,10 +86,8 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
             entry.id = id
         }
 
-        init {
-            EntitySleepEvents.STOP_SLEEPING.register { entity, _ ->
-                if (entity is PlayerEntity) SLEEP.fulfill(entity)
-            }
+        fun onSleep(player: ServerPlayerEntity) {
+            SLEEP.fulfill(player)
         }
 
         fun onEat(entity: LivingEntity, stack: ItemStack) {
@@ -108,21 +104,18 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
                 .forEach { it.fulfill(player) }
         }
 
-        init {
-            ServerLivingEntityEvents.AFTER_DEATH.register { entity, source ->
-                val killer = source.attacker
+        fun onDeath(entity: LivingEntity, source: DamageSource) {
+            val killer = source.attacker
 
-                if (entity is ServerPlayerEntity) {
-                    if (source.isExplosive) EXPLODE.fulfill(entity)
-                    if (source.isFire) BURN.fulfill(entity)
-                    if (source == DamageSource.DROWN) DROWN.fulfill(entity)
-                    if (source == DamageSource.FALL) FALL.fulfill(entity)
-                }
+            if (entity is ServerPlayerEntity) {
+                if (source.isExplosive) EXPLODE.fulfill(entity)
+                if (source.isFire) BURN.fulfill(entity)
+                if (source == DamageSource.DROWN) DROWN.fulfill(entity)
+                if (source == DamageSource.FALL) FALL.fulfill(entity)
+            }
 
-                if (entity is MobEntity && killer is ServerPlayerEntity) {
-                    SLAY_MONSTER.fulfill(killer)
-                }
-
+            if (entity is MobEntity && killer is ServerPlayerEntity) {
+                SLAY_MONSTER.fulfill(killer)
             }
         }
     }

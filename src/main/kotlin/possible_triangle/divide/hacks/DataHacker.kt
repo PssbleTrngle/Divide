@@ -1,6 +1,5 @@
 package possible_triangle.divide.hacks
 
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.minecraft.entity.Entity
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtList
@@ -23,11 +22,9 @@ object DataHacker {
         val id: String?,
     )
 
-    init {
-        ServerPlayerEvents.AFTER_RESPAWN.register { player, _, _ ->
-            Data[player.server].removeIf {
-                it.clearOnDeath && it.target == player.uuid
-            }
+    fun clearReasons(player: ServerPlayerEntity) {
+        Data[player.server].removeIf {
+            it.clearOnDeath && it.target == player.uuid
         }
     }
 
@@ -44,7 +41,7 @@ object DataHacker {
     fun removeReason(server: MinecraftServer, predicate: (Reason) -> Boolean): Boolean {
         return Data.modify(server) {
             val removed = filter(predicate)
-            //removed.forEach { PacketIntercepting.updateData(it.target, server) }
+            removed.forEach { PacketIntercepting.updateData(it.target, server) }
             removeAll(removed)
             removed.isNotEmpty()
         }
@@ -74,7 +71,7 @@ object DataHacker {
                 )
             )
         }
-        //PacketIntercepting.updateData(target, server)
+        PacketIntercepting.updateData(target, server)
     }
 
     val Data = object : ModSavedData<MutableList<Reason>>("entity_data_hacks") {

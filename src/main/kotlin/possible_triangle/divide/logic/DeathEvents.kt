@@ -190,38 +190,36 @@ object DeathEvents {
         cloned.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)?.addPersistentModifier(modifier)
     }
 
-    init {
-        ServerLivingEntityEvents.AFTER_DEATH.register { target, source ->
-            val (player, killer) = playerAndKiller(target, source) ?: return@register
+    fun onDeath(target: LivingEntity, source: DamageSource) {
+        val (player, killer) = playerAndKiller(target, source) ?: return
 
-            LOGGER.log(
-                player.server,
-                Event(
-                    EventTarget.of(player),
-                    EventTarget.optional(killer as ServerPlayerEntity?),
-                    EventPos.of(player.blockPos),
-                    source.name
-                )
+        LOGGER.log(
+            player.server,
+            Event(
+                EventTarget.of(player),
+                EventTarget.optional(killer as ServerPlayerEntity?),
+                EventPos.of(player.blockPos),
+                source.name
             )
+        )
 
-            val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
-            if (killer != null && !wasBounty) {
-                val livedFor = timeSinceDeath(player)
-                val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
+        val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
+        if (killer != null && !wasBounty) {
+            val livedFor = timeSinceDeath(player)
+            val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
 
-                Mission.KILL_PLAYER.fulfill(killer)
+            Mission.KILL_PLAYER.fulfill(killer)
 
-                val bounty = if (source.isExplosive)
-                    Bounty.BLOWN_UP
-                else
-                    Bounty.PLAYER_KILL
+            val bounty = if (source.isExplosive)
+                Bounty.BLOWN_UP
+            else
+                Bounty.PLAYER_KILL
 
-                bounty.gain(killer, modifier)
-            }
-
-            val pos = listOf(player.blockPos.x, player.blockPos.y, player.blockPos.z)
-            player.persistentData().putIntArray(DEATH_POS_TAG, pos)
+            bounty.gain(killer, modifier)
         }
+
+        val pos = listOf(player.blockPos.x, player.blockPos.y, player.blockPos.z)
+        player.persistentData().putIntArray(DEATH_POS_TAG, pos)
     }
 
     fun modifyPlayerDrops(target: LivingEntity, source: DamageSource): Boolean {
