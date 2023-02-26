@@ -1,8 +1,6 @@
 package possible_triangle.divide.crates.loot
 
 import net.minecraft.ChatFormatting
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.StringTag
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.util.RandomSource
@@ -15,6 +13,7 @@ import net.minecraft.world.item.alchemy.PotionUtils
 import net.minecraft.world.item.enchantment.EnchantmentHelper
 import net.minecraft.world.item.enchantment.Enchantments
 import possible_triangle.divide.extensions.noItalic
+import possible_triangle.divide.extensions.setLore
 import kotlin.random.Random
 
 enum class LootFunction(private val consumer: (ItemStack) -> Unit, val canApply: (ItemStack) -> Boolean = { true }) {
@@ -48,13 +47,9 @@ enum class LootFunction(private val consumer: (ItemStack) -> Unit, val canApply:
             .onEach { it.curativeItems = emptyList() }
 
         stack.orCreateTag.putInt("HideFlags", 32)
-        stack.setHoverName(Component.literal("Random Potion").noItalic())
+        stack.hoverName = Component.literal("Random Potion").noItalic()
 
-        val lore = effects.map { fakePotionLine(it) }
-            .map { Component.Serializer.toJson(it) }
-            .mapTo(ListTag()) { StringTag.valueOf(it) }
-
-        stack.orCreateTag.getCompound("display").put("Lore", lore)
+        stack.setLore(effects.map { fakePotionLine(it) })
         PotionUtils.setCustomEffects(stack, effects)
     });
 

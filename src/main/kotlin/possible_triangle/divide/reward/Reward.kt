@@ -85,7 +85,9 @@ data class Reward(
 
         val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 10.m) }
 
-        val HIDE_NAMES by register("hide_names", HideNametags) { Reward("Hide Nametags", 100, duration = 20) }
+        val HIDE_FROM_MONSTERS by register("hide_from_monsters", HideFromMonster) { Reward("Hide from monsters", 200, duration = 5.m) }
+
+        val SHOW_NAMES by register("show_names", ShowNametags) { Reward("Show Nametags", 100, duration = 20, targetType = ActionTarget.TEAM.id) }
 
         val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 1.m) }
 

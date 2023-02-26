@@ -10,6 +10,7 @@ import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.events.CycleEvent
 import possible_triangle.divide.extensions.mainWorld
+import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams.participingTeams
 import kotlin.random.Random
 
@@ -43,13 +44,13 @@ object CrateEvent : CycleEvent("loot_crates") {
 
             if (lootTable != null) {
                 if (spawnAt != null) CrateScheduler.schedule(server, Config.CONFIG.crate.lockedFor, spawnAt, lootTable)
-                else DivideMod.LOGGER.warn("Could not find a crate position around $x/$y/$z")
+                else Chat.warn(server, "Could not find a crate position around $x/$y/$z")
             } else {
-                DivideMod.LOGGER.warn("No loot tables defined")
+                Chat.warn(server, "No loot tables defined")
             }
 
         } catch (e: IllegalArgumentException) {
-            DivideMod.LOGGER.warn("Could not find a crate position because the border is too small")
+            Chat.warn(server, "Could not find a crate position because the border is too small")
         }
 
         return Config.CONFIG.crate.pause.value

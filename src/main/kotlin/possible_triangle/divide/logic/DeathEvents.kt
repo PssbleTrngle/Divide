@@ -177,6 +177,14 @@ object DeathEvents {
     }
 
     fun copyHeartModifier(original: ServerPlayer, cloned: ServerPlayer) {
+        cloned.setRespawnPosition(
+            original.respawnDimension,
+            original.respawnPosition,
+            original.respawnAngle,
+            original.isRespawnForced,
+            false
+        )
+
         val attribute = original.getAttribute(MAX_HEALTH) ?: return
         val modifier = attribute.getModifier(SellCommand.HEARTS_UUID) ?: return
         cloned.getAttribute(MAX_HEALTH)?.addPermanentModifier(modifier)

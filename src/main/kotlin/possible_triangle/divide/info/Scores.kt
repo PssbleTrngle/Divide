@@ -34,6 +34,7 @@ object Scores {
     private data class Event(val player: EventTarget, val score: Int, val objective: String)
 
     private val LOGGER = EventLogger("score", { Event.serializer() }) { isPlayer { it.player } }
+    private val IGNORED = setOf("custom:jump", "health")
 
     private const val SPOOFED = "${DivideMod.ID}_per_player_info"
 
@@ -58,7 +59,10 @@ object Scores {
     fun scoreUpdate(score: Score, server: MinecraftServer) {
         val player = server.playerList.getPlayerByName(score.owner) ?: return
         val objective = score.objective ?: return
-        if (objective.criteria.isReadOnly) return
+
+        if (!objective.name.startsWith("${DivideMod.ID}_")) return
+        if (IGNORED.contains(objective.criteria.name)) return
+
         val name = objective.displayName.contents.let {
             if (it is LiteralContents) it.text else objective.name
         }

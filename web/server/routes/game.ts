@@ -1,7 +1,7 @@
-import { Router, Status, Bson, RouterMiddleware } from "../deps.ts"
-import Games from "../models/games.ts"
-import { isAdmin } from "../middleware/permissions.ts"
 import { Event, EventType, ScoreEvent } from "models/events.d.ts"
+import { Bson, Router, RouterMiddleware, Status } from "../deps.ts"
+import { isAdmin } from "../middleware/permissions.ts"
+import Games from "../models/games.ts"
 import { exists } from "../util.ts"
 import eventsRouter from "./events.ts"
 import playerRouter from "./player.ts"
@@ -107,7 +107,6 @@ const uploadLog: RouterMiddleware<string> = async (ctx, next) => {
 router.put("/:game", isAdmin(), uploadLog, async ({ params, response, request }) => {
    const body = await request.body({ type: "json" }).value
 
-   console.log(body)
    await Games.updateOne({ _id: new Bson.ObjectId(params.game) }, { $set: body })
 
    response.status = Status.OK

@@ -71,7 +71,7 @@ class FillLootCallback(val pos: BlockPos, val table: CrateLoot, val orders: List
     }
 
     override fun handle(server: MinecraftServer, events: TimerQueue<MinecraftServer>, time: Long) {
-        val loot = orders + table.generate()
+        val loot = orders + table.generate(Random(server.mainWorld().random.nextLong()))
         val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
         val shuffled = if (Config.CONFIG.crate.splitAndShuffle) {

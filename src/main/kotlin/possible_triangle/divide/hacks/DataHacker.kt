@@ -24,9 +24,12 @@ object DataHacker {
     )
 
     fun clearReasons(player: ServerPlayer) {
-        Data[player.server].removeIf {
-            it.clearOnDeath && it.target == player.uuid
+        val affected = Data.modify(player.server) {
+            removeIf {
+                it.clearOnDeath && it.target == player.uuid
+            }
         }
+        if (affected) PacketIntercepting.updateData(player, player.server)
     }
 
     fun hasReason(type: Type, target: UUID, player: ServerPlayer): Boolean {
@@ -82,6 +85,8 @@ object DataHacker {
                 val tag = CompoundTag()
                 tag.putUUID("target", reason.target)
                 tag.putLong("until", reason.until)
+                tag.putBoolean("clearOnDeath", reason.clearOnDeath)
+                tag.putBoolean("clearInBase", reason.clearInBase)
                 tag.putString("type", reason.type.name)
                 tag.put("appliedTo", reason.appliedTo.mapTo(ListTag()) {
                     CompoundTag().apply {

@@ -6,6 +6,8 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
+import possible_triangle.divide.logic.Chat
+import possible_triangle.divide.logic.Teams.participants
 import java.util.*
 
 data class RewardContext<Target>(
@@ -86,6 +88,16 @@ data class RewardContext<Target>(
             )
         )
         reward.action.stop(this)
+    }
+
+    fun notify(playerMsg: String? = null, targetMsg: String? = null) {
+        if (targetMsg != null) targetPlayers().forEach {
+            Chat.subtitle(it, targetMsg)
+        }
+
+        if (playerMsg != null) team.participants(server).forEach {
+            Chat.subtitle(it, playerMsg)
+        }
     }
 
 }

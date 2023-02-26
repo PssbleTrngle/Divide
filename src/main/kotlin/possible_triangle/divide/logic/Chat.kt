@@ -1,6 +1,7 @@
 package possible_triangle.divide.logic
 
 import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.core.Holder
 import net.minecraft.network.chat.Component
@@ -9,11 +10,15 @@ import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.phys.Vec3
+import possible_triangle.divide.DivideMod
+import possible_triangle.divide.extensions.players
 import possible_triangle.divide.extensions.time
+import possible_triangle.divide.logic.Teams.isAdmin
 import java.util.*
 
 object Chat {
@@ -66,6 +71,11 @@ object Chat {
         SUBTITLE.send(player, message)
     }
 
+    fun warn(server: MinecraftServer, message: String) {
+        DivideMod.LOGGER.warn(message)
+        server.players().filter { it.isAdmin() }.forEach { message(it, message, log = true) }
+    }
+
     class QueuedChat(private val consumer: (ServerPlayer, Component) -> Unit) {
 
         private val queue = hashMapOf<UUID, Queue<Component>>()
@@ -78,6 +88,10 @@ object Chat {
                     val message = queue[player.uuid]?.poll()
                     if (message != null) consumer(player, message)
                 }
+            }
+
+            ServerLifecycleEvents.SERVER_STOPPED.register {
+                queue.clear()
             }
         }
 

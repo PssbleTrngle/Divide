@@ -9,6 +9,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.extensions.time
+import possible_triangle.divide.logic.Chat
 import java.io.File
 import java.nio.file.*
 import java.nio.file.StandardWatchEventKinds.*
@@ -47,7 +48,7 @@ abstract class ReloadedResource<Entry>(
                 }
 
                 if (!key.reset()) {
-                    DivideMod.LOGGER.warn("Closing ${resource.dir}")
+                    Chat.warn(server, "Closing ${resource.dir}")
                     key.cancel()
                     watcher.close()
                     true

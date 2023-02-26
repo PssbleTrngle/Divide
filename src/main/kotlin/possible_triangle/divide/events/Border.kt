@@ -13,6 +13,7 @@ import possible_triangle.divide.extensions.players
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams.participants
+import kotlin.math.abs
 
 object Border : CycleEvent("border") {
 
@@ -71,7 +72,11 @@ object Border : CycleEvent("border") {
         val grow = index % 2 == 0
         val size = if (grow) Config.CONFIG.border.bigBorder else Config.CONFIG.border.smallBorder
         val pause = if (grow) Config.CONFIG.border.stayBigFor else Config.CONFIG.border.staySmallFor
-        val moveTime = if (index > 0) Config.CONFIG.border.moveTime else 60
+
+        val diff = abs(server.overworld().worldBorder.size - size).toInt()
+        val moveTime = if (index > 0)
+            (Config.CONFIG.border.secondsPerBlock * diff)
+        else Config.CONFIG.border.firstGrowTime
 
         server.mainWorld().worldBorder.apply {
             damagePerBlock = Config.CONFIG.border.damagePerBlock

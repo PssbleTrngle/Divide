@@ -1,9 +1,9 @@
 package possible_triangle.divide.reward.actions
 
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType
-import net.minecraft.world.entity.Entity
-import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.reward.Action
@@ -12,7 +12,7 @@ import possible_triangle.divide.reward.RewardContext
 abstract class DataAction(
     private val type: DataHacker.Type,
     private val clearOnDeath: Boolean = true,
-    private val clearInBase: Boolean = true,
+    private val clearInBase: Boolean = false,
 ) :
     Action() {
 

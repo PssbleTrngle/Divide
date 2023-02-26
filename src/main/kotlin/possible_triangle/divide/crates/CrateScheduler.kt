@@ -7,7 +7,6 @@ import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
-import net.minecraft.nbt.StringTag
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.BossEvent
@@ -30,10 +29,7 @@ import possible_triangle.divide.data.PerTeamData
 import possible_triangle.divide.data.Util.blocksIn
 import possible_triangle.divide.data.Util.spawnMarker
 import possible_triangle.divide.events.Countdown
-import possible_triangle.divide.extensions.isAir
-import possible_triangle.divide.extensions.mainWorld
-import possible_triangle.divide.extensions.tileData
-import possible_triangle.divide.extensions.time
+import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logic.Teams
 import java.util.*
 import kotlin.random.Random
@@ -108,13 +104,7 @@ object CrateScheduler {
     }
 
     fun saveItem(server: MinecraftServer, stack: ItemStack) {
-
-        val lore =
-            listOf(Component.literal("Saved").withStyle(ChatFormatting.GREEN)).map { Component.Serializer.toJson(it) }
-                .mapTo(ListTag()) { StringTag.valueOf(it) }
-
-        stack.orCreateTag.getCompound("display").put("Lore", lore)
-
+        stack.setLore(Component.literal("Saved").withStyle(ChatFormatting.GREEN))
         var chance = Config.CONFIG.crate.itemSaveChance
         if (!stack.isStackable) chance *= 4
         if (Random.nextDouble() <= chance) addOrder(server, stack = stack)

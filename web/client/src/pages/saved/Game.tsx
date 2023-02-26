@@ -18,11 +18,12 @@ const GameView: VFC = () => {
    const { data } = useApi<Game<string>>(`game/${params.game}`)
 
    if (!data) return <LoadingPage />
+   const date = DateTime.fromISO(data.startedAt).toLocaleString()
 
    return (
       <Page>
          <Title>
-            {data.name ?? data._id} - {DateTime.fromISO(data.startedAt).toLocaleString()}
+            {data.name ?? data._id} - {date}
          </Title>
          <PlayerList center size='60px'>
             {data.players.map(player => (
