@@ -1,19 +1,20 @@
 package possible_triangle.divide.crates.callbacks
 
 import kotlinx.serialization.Serializable
-import net.minecraft.block.Blocks
-import net.minecraft.entity.Entity
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtHelper
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.timer.Timer
-import net.minecraft.world.timer.TimerCallback
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.timers.TimerCallback
+import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateEvents.UNBREAKABLE_TAG
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.events.CallbackHandler
+import possible_triangle.divide.extensions.putBlockPos
+import possible_triangle.divide.extensions.readBlockPos
 import possible_triangle.divide.extensions.tileData
 import possible_triangle.divide.logging.EventLogger
 import java.util.*
@@ -26,14 +27,14 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
 
         private val LOGGER = EventLogger("loot_crate_cleaned", { Event.serializer() }) { isAdmin() }
 
-        override fun serialize(nbt: NbtCompound, callback: CleanCallback) {
-            nbt.put("pos", NbtHelper.fromBlockPos(callback.pos))
-            nbt.putUuid("uuid", callback.uuid)
+        override fun serialize(nbt: CompoundTag, callback: CleanCallback) {
+            nbt.putBlockPos("pos", callback.pos)
+            nbt.putUUID("uuid", callback.uuid)
         }
 
-        override fun deserialize(nbt: NbtCompound): CleanCallback {
-            val pos = NbtHelper.toBlockPos(nbt.getCompound("pos"))
-            val uuid = nbt.getUuid("uuid")
+        override fun deserialize(nbt: CompoundTag): CleanCallback {
+            val pos = nbt.readBlockPos("pos")
+            val uuid = nbt.getUUID("uuid")
             return CleanCallback(pos, uuid)
         }
 
@@ -44,7 +45,7 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
         }
     }
 
-    override fun call(server: MinecraftServer, queue: Timer<MinecraftServer>, time: Long) {
+    override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
         val crate = CrateScheduler.crateAt(server, pos, uuid = uuid) ?: return
 
         LOGGER.log(server, Event(EventPos.of(pos)))
@@ -53,8 +54,8 @@ class CleanCallback(val pos: BlockPos, val uuid: UUID) : TimerCallback<Minecraft
 
         crate.tileData().putBoolean(UNBREAKABLE_TAG, false)
         if (Config.CONFIG.crate.cleanNonEmpty || crate.isEmpty) {
-            if (Config.CONFIG.crate.clearOnCleanup) crate.clear()
-            crate.world?.setBlockState(pos, Blocks.AIR.defaultState, 2)
+            if (Config.CONFIG.crate.clearOnCleanup) crate.clearContent()
+            crate.level?.setBlock(pos, Blocks.AIR.defaultBlockState(), 2)
         }
 
     }

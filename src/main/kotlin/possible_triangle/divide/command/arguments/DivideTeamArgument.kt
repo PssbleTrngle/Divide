@@ -5,11 +5,11 @@ import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import net.minecraft.command.CommandSource
-import net.minecraft.scoreboard.Team
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.SharedSuggestionProvider
+import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.command.optionalTeam
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.logic.Teams.isParticipantTeam
@@ -17,15 +17,15 @@ import possible_triangle.divide.logic.Teams.participantTeam
 
 object DivideTeamArgument {
 
-    private val NOT_FOUND = DynamicCommandExceptionType { Text.translatable("team.notFound", it) }
-    private val SAME_TEAM = SimpleCommandExceptionType(Text.literal("That's you own team"))
+    private val NOT_FOUND = DynamicCommandExceptionType { Component.translatable("team.notFound", it) }
+    private val SAME_TEAM = SimpleCommandExceptionType(Component.literal("That's you own team"))
 
-    fun validate(team: Team?, user: ServerPlayerEntity?, otherTeam: Boolean = false) {
+    fun validate(team: PlayerTeam?, user: ServerPlayer?, otherTeam: Boolean = false) {
         if(team == null) throw NOT_FOUND.create("???")
         if (otherTeam && user?.participantTeam() == team) throw SAME_TEAM.create()
     }
 
-    fun getTeam(ctx: CommandContext<ServerCommandSource>, name: String): Team {
+    fun getTeam(ctx: CommandContext<CommandSourceStack>, name: String): PlayerTeam {
         val baseName = ctx.getArgument(name, String::class.java)
         val scoreboard = ctx.source.server.scoreboard
         return scoreboard.getPlayerTeam(Teams.TEAM_PREFIX + baseName)
@@ -34,11 +34,11 @@ object DivideTeamArgument {
     }
 
 
-    fun suggestions(otherTeam: Boolean = false): SuggestionProvider<ServerCommandSource> {
-        return SuggestionProvider { ctx: CommandContext<ServerCommandSource>, suggestions: SuggestionsBuilder ->
+    fun suggestions(otherTeam: Boolean = false): SuggestionProvider<CommandSourceStack> {
+        return SuggestionProvider { ctx: CommandContext<CommandSourceStack>, suggestions: SuggestionsBuilder ->
             val team = ctx.source.optionalTeam()
-            CommandSource.suggestMatching(
-                ctx.source.teamNames
+            SharedSuggestionProvider.suggest(
+                ctx.source.allTeams
                     .filter { isParticipantTeam(it) }
                     .filterNot { otherTeam && it == team?.name }
                     .map { it.substringAfterLast('_') },

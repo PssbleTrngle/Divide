@@ -1,12 +1,12 @@
 package possible_triangle.divide.data
 
 import kotlinx.serialization.Serializable
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.registry.RegistryKey
-import net.minecraft.scoreboard.Team
-import net.minecraft.text.LiteralTextContent
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.contents.LiteralContents
+import net.minecraft.resources.ResourceKey
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.level.Level
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.logic.Teams.participantTeam
 
 @Serializable
@@ -18,21 +18,21 @@ data class EventTarget(
     val color: Int? = null,
 ) {
     companion object {
-        fun of(player: PlayerEntity): EventTarget {
+        fun of(player: ServerPlayer): EventTarget {
             return EventTarget(
-                name = player.entityName,
-                uuid = player.uuidAsString,
+                name = player.scoreboardName,
+                uuid = player.stringUUID,
                 team = player.participantTeam()?.let { of(it) }
             )
         }
 
-        fun of(team: Team): EventTarget {
-            val name = team.displayName.content
-            val color = team.color.takeIf { it.isColor }?.colorValue
-            return EventTarget(if (name is LiteralTextContent) name.string else team.name, id = team.name, color = color)
+        fun of(team: PlayerTeam): EventTarget {
+            val name = team.displayName.contents
+            val color = team.color.takeIf { it.isColor }?.color
+            return EventTarget(if (name is LiteralContents) name.text else team.name, id = team.name, color = color)
         }
 
-        fun optional(player: PlayerEntity?): EventTarget? {
+        fun optional(player: ServerPlayer?): EventTarget? {
             return if (player == null) null else of(player)
         }
     }
@@ -41,8 +41,8 @@ data class EventTarget(
 @Serializable
 data class EventPos(val x: Int, val y: Int, val z: Int, val dimension: String) {
     companion object {
-        fun of(pos: BlockPos, dimension: RegistryKey<World>? = null): EventPos {
-            return EventPos(pos.x, pos.y, pos.z, dimension?.value?.path ?: "overworld")
+        fun of(pos: BlockPos, dimension: ResourceKey<Level>? = null): EventPos {
+            return EventPos(pos.x, pos.y, pos.z, dimension?.location()?.path ?: "overworld")
         }
     }
 }

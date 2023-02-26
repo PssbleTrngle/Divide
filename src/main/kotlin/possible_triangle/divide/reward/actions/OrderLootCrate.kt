@@ -11,7 +11,7 @@ import possible_triangle.divide.reward.RewardContext
 object OrderLootCrate : Action() {
 
     override fun <T> prepare(ctx: RewardContext<T>) {
-        val center = ctx.targetPlayer()?.blockPos ?: return
+        val center = ctx.targetPlayer()?.blockPosition() ?: return
         val table = CrateLoot.random() ?: throw NO_LOOT_DEFINED.create()
         val pos = CrateScheduler.findInRange(ctx.server, center, 10.0) ?: throw NO_CRATE_POS.create(center)
 

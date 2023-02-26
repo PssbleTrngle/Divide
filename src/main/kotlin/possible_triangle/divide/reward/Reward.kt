@@ -3,10 +3,10 @@ package possible_triangle.divide.reward
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
@@ -51,7 +51,7 @@ data class Reward(
 
         private val ACTIONS = hashMapOf<String, Action>()
 
-        override fun isVisible(entry: Reward, team: Team?, server: MinecraftServer): Boolean {
+        override fun isVisible(entry: Reward, team: PlayerTeam?, server: MinecraftServer): Boolean {
             return !entry.secret || SecretRewards.isVisible(server, team ?: return false, entry)
         }
 
@@ -143,9 +143,9 @@ data class Reward(
 
                         player.teammates().forEach {
                             Chat.message(
-                                it, Text.literal("Bought ${ctx.reward.display} for ").append(
-                                    Text.literal("${ctx.reward.price}").formatted(
-                                        Formatting.LIGHT_PURPLE
+                                it, Component.literal("Bought ${ctx.reward.display} for ").append(
+                                    Component.literal("${ctx.reward.price}").withStyle(
+                                        ChatFormatting.LIGHT_PURPLE
                                     )
                                 )
                             )

@@ -5,9 +5,10 @@ import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.extensions.time
 import java.io.File
 import java.nio.file.*
 import java.nio.file.StandardWatchEventKinds.*
@@ -36,7 +37,7 @@ abstract class ReloadedResource<Entry>(
         private var IS_LOADING = false
 
         fun tickWatchers(server: MinecraftServer) {
-            if (server.overworld.time % 10 != 0L) return
+            if (server.time() % 10 != 0L) return
 
             WATCHERS.removeIf { (resource, watcher) ->
                 val key = watcher.poll() ?: return@removeIf false
@@ -120,7 +121,7 @@ abstract class ReloadedResource<Entry>(
     val entries
         get() = registry.toMap()
 
-    open fun isVisible(entry: Entry, team: Team?, server: MinecraftServer): Boolean {
+    open fun isVisible(entry: Entry, team: PlayerTeam?, server: MinecraftServer): Boolean {
         return true
     }
 

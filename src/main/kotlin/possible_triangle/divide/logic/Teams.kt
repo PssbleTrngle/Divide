@@ -1,33 +1,34 @@
 package possible_triangle.divide.logic
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.world.GameMode
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.level.GameType
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.extensions.getScore
+import possible_triangle.divide.extensions.isTeammate
+import possible_triangle.divide.extensions.players
 import java.util.*
 import kotlin.math.max
 
 object Teams {
 
-    private val NOT_PLAYING = SimpleCommandExceptionType(Text.literal("You are not playing"))
+    private val NOT_PLAYING = SimpleCommandExceptionType(Component.literal("You are not playing"))
     const val TEAM_PREFIX = "${DivideMod.ID}_team_"
     private const val ADMIN_TAG = "${DivideMod.ID}_admin"
 
-    fun score(server: MinecraftServer, team: Team): Int {
+    fun score(server: MinecraftServer, team: PlayerTeam): Int {
         val total = Points.getTotal(server, team)
         val players = team.participants(server)
         val killObjective = server.scoreboard.getObjective("playerKills") ?: return 0
         val deathObjective = server.scoreboard.getObjective("deaths") ?: return 0
-        val kills = players.map { server.scoreboard.getPlayerScore(it.entityName, killObjective) }
-            .sumOf { it.score }
-        val deaths = players.map { server.scoreboard.getPlayerScore(it.entityName, deathObjective) }
-            .sumOf { it.score }
+        val kills = players.map { it.getScore(killObjective) }.sumOf { it.score }
+        val deaths = players.map { it.getScore(deathObjective) }.sumOf { it.score }
         return max(0, total - deaths * 10 + kills * 50)
     }
 
@@ -35,75 +36,72 @@ object Teams {
         return team.startsWith(TEAM_PREFIX)
     }
 
-    fun Team.isParticipantTeam(): Boolean {
-        return color != Formatting.RESET && isParticipantTeam(name)
+    fun PlayerTeam.isParticipantTeam(): Boolean {
+        return color != ChatFormatting.RESET && isParticipantTeam(name)
     }
 
-    fun PlayerEntity.participantTeam(): Team? {
-        if (!this.isParticipant()) return null
-        val team = scoreboardTeam
-        return if (team is Team) team
-        else null
+    fun Player.participantTeam(): PlayerTeam? {
+        return team?.takeIf { it is PlayerTeam && it.isParticipantTeam() } as PlayerTeam?
     }
 
-    fun PlayerEntity.teamOrThrow(): Team {
+    fun Player.teamOrThrow(): PlayerTeam {
         return participantTeam() ?: throw NOT_PLAYING.create()
     }
 
-    fun ServerPlayerEntity.teammates(includeSelf: Boolean = true): List<ServerPlayerEntity> {
+    fun Player.teammates(includeSelf: Boolean = true): List<ServerPlayer> {
         if (!isParticipant()) return emptyList()
-        return world.players
-            .filterIsInstance<ServerPlayerEntity>()
+        return level.players()
+            .filterIsInstance<ServerPlayer>()
             .filter { it.isTeammate(this) }
             .filter { includeSelf || it.uuid != uuid }
     }
 
-    fun ServerPlayerEntity.isAdmin(): Boolean {
+    fun Player.isAdmin(): Boolean {
         return Config.CONFIG.admins.any {
             try {
                 UUID.fromString(it) == uuid
             } catch (e: IllegalArgumentException) {
                 false
             }
-        } || Config.CONFIG.admins.contains(entityName)
-                || scoreboardTags.contains(ADMIN_TAG)
-                || hasPermissionLevel(2)
+        } || Config.CONFIG.admins.contains(scoreboardName)
+                || tags.contains(ADMIN_TAG)
+                || hasPermissions(2)
     }
 
-    fun PlayerEntity.isGameSpectator(): Boolean {
-        return scoreboardTags.contains("spectator")
+    fun Player.isGameSpectator(): Boolean {
+        return tags.contains("spectator")
     }
 
-    fun PlayerEntity.isParticipant(): Boolean {
+    fun Player.isParticipant(): Boolean {
         return !isGameSpectator()
     }
 
-    fun MinecraftServer.gameSpectators(): List<ServerPlayerEntity> {
-        return this.playerManager.playerList.filter { it.isGameSpectator() }
+    fun MinecraftServer.gameSpectators(): List<ServerPlayer> {
+        return this.players().filter { it.isGameSpectator() }
     }
 
-    fun MinecraftServer.participants(): List<ServerPlayerEntity> {
-        return this.playerManager.playerList.filter { it.isParticipant() }
+    fun MinecraftServer.participants(): List<ServerPlayer> {
+        return this.players().filter { it.isParticipant() }
     }
 
-    fun Team.participants(server: MinecraftServer): List<ServerPlayerEntity> {
-        return server.participants().filter { it.scoreboardTeam == this }
+    fun PlayerTeam.participants(server: MinecraftServer): List<ServerPlayer> {
+        return server.participants().filter { it.team == this }
     }
 
-    fun MinecraftServer.participingTeams(): List<Team> {
-        return scoreboard.teams.filter { it.isParticipantTeam() }
+    fun MinecraftServer.participingTeams(): List<PlayerTeam> {
+        return scoreboard.playerTeams.filter { it.isParticipantTeam() }
     }
 
-    fun ranked(server: MinecraftServer): List<Team> {
+    fun ranked(server: MinecraftServer): List<PlayerTeam> {
         return server.participingTeams().sortedBy { -score(server, it) }
     }
 
     fun updateSpectators(server: MinecraftServer) {
         server.gameSpectators().forEach { player ->
             player.participantTeam().also {
-                server.overworld.scoreboard.removePlayerFromTeam(player.entityName, it)
+                server.scoreboard.removePlayerFromTeam(player.scoreboardName, it)
             }
-            player.changeGameMode(GameMode.SPECTATOR)
+            player.setGameMode(GameType.SPECTATOR)
         }
     }
 

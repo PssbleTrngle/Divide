@@ -1,32 +1,33 @@
 package possible_triangle.divide.events
 
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.Identifier
-import net.minecraft.world.timer.TimerCallback
-import net.minecraft.world.timer.TimerCallbackSerializer
+import net.minecraft.world.level.timers.TimerCallback
+import net.minecraft.world.level.timers.TimerCallbacks
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.mixins.TimerAccessor
 
 abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val id: String, clazz: Class<T>) :
     TimerCallback.Serializer<MinecraftServer, T>(
-        Identifier(DivideMod.ID, id),
+        ResourceLocation(DivideMod.ID, id),
         clazz,
     ) {
 
-    fun MinecraftServer.scheduledEvents() = saveProperties.mainWorldProperties.scheduledEvents!!
+    fun MinecraftServer.scheduledEvents() = worldData.overworldData().scheduledEvents!!
 
     init {
         @Suppress("LeakingThis")
-        TimerCallbackSerializer.INSTANCE.registerSerializer(this)
+        TimerCallbacks.SERVER_CALLBACKS.register(this)
     }
 
     private fun callbackId(suffix: String = ""): String {
-        return Identifier(DivideMod.ID, id + if (suffix.isEmpty()) "" else "_${suffix}").toString()
+        return ResourceLocation(DivideMod.ID, id + if (suffix.isEmpty()) "" else "_${suffix}").toString()
     }
 
     fun isRunning(server: MinecraftServer, suffix: String = ""): Boolean {
         val accessor = server.scheduledEvents() as TimerAccessor<*>
-        return accessor.eventsByName.containsRow(callbackId(suffix))
+        return accessor.events.containsRow(callbackId(suffix))
     }
 
     fun cancel(server: MinecraftServer, suffix: String = ""): Boolean {
@@ -43,9 +44,9 @@ abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val i
         clearPrevious: Boolean = false
     ) {
         if (clearPrevious) cancel(server)
-        server.scheduledEvents().setEvent(
+        server.scheduledEvents().schedule(
             callbackId(suffix),
-            server.overworld.time + seconds * 20,
+            server.time() + seconds * 20,
             callback,
         )
     }

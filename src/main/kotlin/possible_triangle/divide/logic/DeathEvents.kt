@@ -1,21 +1,19 @@
 package possible_triangle.divide.logic
 
 import kotlinx.serialization.Serializable
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
-import net.minecraft.block.Blocks
-import net.minecraft.enchantment.EnchantmentHelper
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.attribute.EntityAttributes
-import net.minecraft.entity.damage.DamageSource
-import net.minecraft.item.Item
-import net.minecraft.item.ItemConvertible
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Formatting
-import net.minecraft.util.Formatting.*
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.GameRules
+import net.minecraft.ChatFormatting
+import net.minecraft.ChatFormatting.*
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.item.enchantment.EnchantmentHelper
+import net.minecraft.world.level.GameRules
+import net.minecraft.world.level.ItemLike
+import net.minecraft.world.level.block.Blocks
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.bounty.Bounty
@@ -24,7 +22,7 @@ import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util.persistentData
 import possible_triangle.divide.events.PlayerBountyEvent
-import possible_triangle.divide.extensions.items
+import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Teams.isParticipant
 import possible_triangle.divide.missions.Mission
@@ -50,7 +48,7 @@ object DeathEvents {
     private const val DEATH_POS_TAG = "${DivideMod.ID}_death_pos"
     private const val DEATH_TIME_TAG = "${DivideMod.ID}_last_death"
 
-    private fun bed(color: Formatting?): ItemConvertible {
+    private fun bed(color: ChatFormatting?): ItemLike {
         return when (color) {
             WHITE -> Blocks.WHITE_BED
             RED -> Blocks.RED_BED
@@ -72,26 +70,20 @@ object DeathEvents {
         }
     }
 
-    fun getDeathPos(player: ServerPlayerEntity): BlockPos? {
-        val persistent = player.persistentData()
-        val i = persistent.getIntArray(DEATH_POS_TAG)
-        return if (i.size == 3)
-            BlockPos(i[0], i[1], i[2])
-        else null
-    }
+    fun ServerPlayer.getDeathPos() = persistentData().readBlockPos(DEATH_POS_TAG)
 
-    fun timeSinceDeath(player: ServerPlayerEntity): Long {
+    fun timeSinceDeath(player: ServerPlayer): Long {
         val persistent = player.persistentData()
         if (!persistent.contains(DEATH_TIME_TAG)) return 0L
         val lastDeath = persistent.getLong(DEATH_TIME_TAG)
-        return player.world.time - lastDeath
+        return player.level.time() - lastDeath
     }
 
-    fun startedGear(player: ServerPlayerEntity): List<ItemStack> {
-        return respawnGear(player, false) + ItemStack(bed(player.scoreboardTeam?.color))
+    fun startedGear(player: ServerPlayer): List<ItemStack> {
+        return respawnGear(player, false) + ItemStack(bed(player.team?.color))
     }
 
-    private fun respawnGear(player: ServerPlayerEntity, checkPause: Boolean = true): List<ItemStack> {
+    private fun respawnGear(player: ServerPlayer, checkPause: Boolean = true): List<ItemStack> {
         val compass = listOfNotNull(Bases.createCompass(player))
 
         if (checkPause) {
@@ -99,7 +91,7 @@ object DeathEvents {
             if (timeSince < (Config.CONFIG.deaths.starterGearBreak * 20)) return compass
         }
 
-        player.persistentData().putLong(DEATH_TIME_TAG, player.world.time)
+        player.persistentData().putLong(DEATH_TIME_TAG, player.level.time())
 
         return listOf(
             ItemStack(Items.JUNGLE_PLANKS, 10),
@@ -161,33 +153,33 @@ object DeathEvents {
         return if (tier != null) {
             val lower = tier.take(tier.indexOf(item)).last()
             val downgraded = ItemStack(lower, stack.count)
-            downgraded.nbt = stack.nbt
+            downgraded.tag = stack.tag
             return downgraded
         } else
             stack
     }
 
-    private fun playerAndKiller(target: LivingEntity, source: DamageSource): Pair<ServerPlayerEntity, ServerPlayerEntity?>? {
-        if (target !is ServerPlayerEntity) return null
+    private fun playerAndKiller(target: LivingEntity, source: DamageSource): Pair<ServerPlayer, ServerPlayer?>? {
+        if (target !is ServerPlayer) return null
         if (!target.isParticipant()) return null
-        if (target.server.gameRules.getBoolean(GameRules.KEEP_INVENTORY)) return null
+        if (target.server.gameRules.getBoolean(GameRules.RULE_KEEPINVENTORY)) return null
 
         val killer =
-            source.attacker.takeIf { it is ServerPlayerEntity && !it.isTeammate(target) } as ServerPlayerEntity?
+            source.entity.takeIf { it is ServerPlayer && !it.isTeammate(target) } as ServerPlayer?
         return target to killer
     }
 
-    fun restoreItems(player: ServerPlayerEntity) {
+    fun restoreItems(player: ServerPlayer) {
         val stacks = STORED[player.uuid]
         stacks?.map(::degrade)
-            ?.filterNot { player.giveItemStack(it) }
-            ?.forEach { player.dropItem(it, false) }
+            ?.filterNot { player.addItem(it) }
+            ?.forEach { player.drop(it, false) }
     }
 
-    fun copyHeartModifier(original: ServerPlayerEntity, cloned: ServerPlayerEntity) {
-        val attribute = original.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH) ?: return
+    fun copyHeartModifier(original: ServerPlayer, cloned: ServerPlayer) {
+        val attribute = original.getAttribute(MAX_HEALTH) ?: return
         val modifier = attribute.getModifier(SellCommand.HEARTS_UUID) ?: return
-        cloned.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)?.addPersistentModifier(modifier)
+        cloned.getAttribute(MAX_HEALTH)?.addPermanentModifier(modifier)
     }
 
     fun onDeath(target: LivingEntity, source: DamageSource) {
@@ -197,9 +189,9 @@ object DeathEvents {
             player.server,
             Event(
                 EventTarget.of(player),
-                EventTarget.optional(killer as ServerPlayerEntity?),
-                EventPos.of(player.blockPos),
-                source.name
+                EventTarget.optional(killer),
+                EventPos.of(player.blockPosition()),
+                source.msgId
             )
         )
 
@@ -210,7 +202,7 @@ object DeathEvents {
 
             Mission.KILL_PLAYER.fulfill(killer)
 
-            val bounty = if (source.isExplosive)
+            val bounty = if (source.isExplosion)
                 Bounty.BLOWN_UP
             else
                 Bounty.PLAYER_KILL
@@ -218,8 +210,7 @@ object DeathEvents {
             bounty.gain(killer, modifier)
         }
 
-        val pos = listOf(player.blockPos.x, player.blockPos.y, player.blockPos.z)
-        player.persistentData().putIntArray(DEATH_POS_TAG, pos)
+        player.persistentData().putBlockPos(DEATH_POS_TAG, player.blockPosition())
     }
 
     fun modifyPlayerDrops(target: LivingEntity, source: DamageSource): Boolean {
@@ -230,8 +221,8 @@ object DeathEvents {
 
         val items = player.inventory.items()
             .filterNot { EnchantmentHelper.hasVanishingCurse(it) }
-            .filterNot { it.nbt?.getBoolean("starter_gear") == true }
-            .filterNot { it.nbt?.getBoolean(Bases.COMPASS_TAG) == true }
+            .filterNot { it.tag?.getBoolean("starter_gear") == true }
+            .filterNot { it.tag?.getBoolean(Bases.COMPASS_TAG) == true }
 
         val keepAmount = (items.size * keepPercent).toInt()
         val keep = items.shuffled().take(keepAmount)
@@ -248,7 +239,7 @@ object DeathEvents {
         }
 
         items.filterNot { keep.contains(it) }.forEach {
-            player.dropItem(it, true, false)
+            player.drop(it, true, false)
         }
 
         return true

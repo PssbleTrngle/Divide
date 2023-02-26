@@ -3,9 +3,9 @@ package possible_triangle.divide.command
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.command.arguments.RewardArgument
 import possible_triangle.divide.command.arguments.TargetArgument
@@ -16,7 +16,7 @@ import possible_triangle.divide.reward.RewardContext
 
 object BuyCommand {
 
-    fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+    fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
             literal("buy").requires { it.isActiveParticipant() }
                 .then(
@@ -29,15 +29,15 @@ object BuyCommand {
         )
     }
 
-    private fun buyReward(ctx: CommandContext<ServerCommandSource>): Int {
+    private fun buyReward(ctx: CommandContext<CommandSourceStack>): Int {
         val reward = RewardArgument.getReward(ctx, "reward")
 
         fun <T> parseFor(targetType: ActionTarget<T>): RewardContext<T> {
             val target = TargetArgument.getTarget(ctx, "target", targetType)
             return RewardContext(
-                ctx.source.playerOrThrow.teamOrThrow(),
+                ctx.source.playerOrException.teamOrThrow(),
                 ctx.source.server,
-                ctx.source.playerOrThrow.uuid,
+                ctx.source.playerOrException.uuid,
                 target,
                 reward,
                 targetType,

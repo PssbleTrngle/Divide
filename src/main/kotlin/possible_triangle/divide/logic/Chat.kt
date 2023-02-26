@@ -1,85 +1,87 @@
 package possible_triangle.divide.logic
 
 import io.github.fabricators_of_create.porting_lib.event.common.PlayerTickEvents
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket
-import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket
-import net.minecraft.registry.entry.RegistryEntry
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.sound.SoundCategory
-import net.minecraft.sound.SoundEvent
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.Vec3d
+import net.minecraft.ChatFormatting
+import net.minecraft.core.Holder
+import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
+import net.minecraft.network.protocol.game.ClientboundSoundPacket
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundSource
+import net.minecraft.world.phys.Vec3
+import possible_triangle.divide.extensions.time
 import java.util.*
 
 object Chat {
 
-    private val MESSAGES = QueuedChat { player, msg -> player.sendMessage(msg, false) }
-    private val ACTIONBAR = QueuedChat { player, msg -> player.sendMessage(msg, true) }
-    private val TITLE = QueuedChat { player, msg -> player.networkHandler.sendPacket(TitleS2CPacket(msg)) }
-    private val SUBTITLE = QueuedChat { player, msg -> player.networkHandler.sendPacket(SubtitleS2CPacket(msg)) }
+    private val MESSAGES = QueuedChat { player, msg -> player.sendSystemMessage(msg, false) }
+    private val ACTIONBAR = QueuedChat { player, msg -> player.connection.send(ClientboundSetActionBarTextPacket(msg)) }
+    private val TITLE = QueuedChat { player, msg -> player.connection.send(ClientboundSetTitleTextPacket(msg)) }
+    private val SUBTITLE = QueuedChat { player, msg -> player.connection.send(ClientboundSetSubtitleTextPacket(msg)) }
 
-    fun apply(string: Any, vararg styles: Formatting): String {
-        return "${styles.joinToString(separator = "") { "§${it.code}" }}$string§r"
+    fun apply(string: Any, vararg styles: ChatFormatting): String {
+        return "${styles.joinToString(separator = "") { "§${it.char}" }}$string§r"
     }
 
     fun sound(
-        player: ServerPlayerEntity,
-        sound: Identifier,
-        at: Vec3d = player.pos,
+        player: ServerPlayer,
+        sound: ResourceLocation,
+        at: Vec3 = player.position(),
         volume: Float = 1F,
         pitch: Float = 1F,
     ) {
-        val entry = RegistryEntry.of<SoundEvent>(SoundEvent.of(sound))
+        val entry = Holder.direct(SoundEvent.createVariableRangeEvent(sound))
         val packet =
-            PlaySoundS2CPacket(entry, SoundCategory.MASTER, at.x, at.y, at.z, volume, pitch, player.random.nextLong())
-        player.networkHandler.sendPacket(packet)
+            ClientboundSoundPacket(entry, SoundSource.MASTER, at.x, at.y, at.z, volume, pitch, player.random.nextLong())
+        player.connection.send(packet)
     }
 
-    fun message(player: ServerPlayerEntity, message: String, log: Boolean = false) {
-        message(player, Text.literal(message), log)
+    fun message(player: ServerPlayer, message: String, log: Boolean = false) {
+        message(player, Component.literal(message), log)
     }
 
-    fun message(player: ServerPlayerEntity, message: Text, log: Boolean = false) {
+    fun message(player: ServerPlayer, message: Component, log: Boolean = false) {
         ACTIONBAR.send(player, message)
         if (log) MESSAGES.send(player, message)
     }
 
-    fun title(player: ServerPlayerEntity, message: String) {
-        title(player, Text.literal(message))
+    fun title(player: ServerPlayer, message: String) {
+        title(player, Component.literal(message))
     }
 
-    fun title(player: ServerPlayerEntity, message: Text) {
+    fun title(player: ServerPlayer, message: Component) {
         TITLE.send(player, message)
     }
 
-    fun subtitle(player: ServerPlayerEntity, message: String, setTitle: Boolean = true) {
-        subtitle(player, Text.literal(message), setTitle)
+    fun subtitle(player: ServerPlayer, message: String, setTitle: Boolean = true) {
+        subtitle(player, Component.literal(message), setTitle)
     }
 
-    fun subtitle(player: ServerPlayerEntity, message: Text, setTitle: Boolean = true) {
-        if (setTitle) TITLE.send(player, Text.literal(""))
+    fun subtitle(player: ServerPlayer, message: Component, setTitle: Boolean = true) {
+        if (setTitle) TITLE.send(player, Component.literal(""))
         SUBTITLE.send(player, message)
     }
 
-    class QueuedChat(private val consumer: (ServerPlayerEntity, Text) -> Unit) {
+    class QueuedChat(private val consumer: (ServerPlayer, Component) -> Unit) {
 
-        private val queue = hashMapOf<UUID, Queue<Text>>()
+        private val queue = hashMapOf<UUID, Queue<Component>>()
 
         init {
             PlayerTickEvents.END.register { player ->
-                if (player.world.time % 10 != 0L) return@register
+                if (player.level.time() % 10 != 0L) return@register
 
-                if (player is ServerPlayerEntity) {
+                if (player is ServerPlayer) {
                     val message = queue[player.uuid]?.poll()
                     if (message != null) consumer(player, message)
                 }
             }
         }
 
-        fun send(to: ServerPlayerEntity, message: Text) {
+        fun send(to: ServerPlayer, message: Component) {
             queue.getOrPut(to.uuid) { LinkedList() }.offer(message)
         }
     }

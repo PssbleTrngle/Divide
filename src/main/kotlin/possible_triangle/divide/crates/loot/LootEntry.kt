@@ -3,11 +3,12 @@ package possible_triangle.divide.crates.loot
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.item.ItemConvertible
-import net.minecraft.item.ItemStack
-import net.minecraft.registry.RegistryKeys
+import net.minecraft.core.registries.Registries
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.Identifier
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.ItemLike
+import possible_triangle.divide.extensions.id
 import kotlin.random.Random
 
 @Serializable
@@ -19,23 +20,20 @@ data class LootEntry(
 ) {
 
     fun populate(server: MinecraftServer) {
-        val items = server.registryManager.get(RegistryKeys.ITEM)
-        item = items[Identifier(id)]
+        val items = server.registryAccess().registryOrThrow(Registries.ITEM)
+        item = items[ResourceLocation(id)]
             ?: throw IllegalArgumentException("Item $id does not exists")
     }
 
     constructor(
-        item: ItemConvertible, weight: Double  = 1.0, amounts: List<Int>? = null,
+        item: ItemLike, weight: Double = 1.0, amounts: List<Int>? = null,
         functions: List<LootFunction>? = null,
-    ) : this(
-        item.asItem().registryEntry.registryKey().value?.path ?: throw NullPointerException(),
-        weight, amounts, functions?.filter { it.canApply(ItemStack(item)) },
-    ) {
+    ) : this(item.id().path, weight, amounts, functions?.filter { it.canApply(ItemStack(item)) }) {
         this.item = item
     }
 
     @Transient
-    lateinit var item: ItemConvertible
+    lateinit var item: ItemLike
 
     fun createStack(): ItemStack {
         val stack = ItemStack(item, amount)

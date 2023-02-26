@@ -1,9 +1,9 @@
 package possible_triangle.divide.events
 
 import kotlinx.serialization.Serializable
-import net.minecraft.entity.boss.BossBar
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.text.Text
+import net.minecraft.world.BossEvent
 import possible_triangle.divide.Config
 import possible_triangle.divide.GameData
 import possible_triangle.divide.extensions.players
@@ -43,8 +43,8 @@ object Eras : CycleEvent("eras") {
         }
 
         val bar = bar(server)
-        bar.name = Text.literal("Peace Era")
-        bar.color = BossBar.Color.GREEN
+        bar.name = Component.literal("Peace Era")
+        bar.color = BossEvent.BossBarColor.GREEN
         bar.isVisible = Config.CONFIG.eras.showPeaceBar
     }
 
@@ -57,8 +57,8 @@ object Eras : CycleEvent("eras") {
         }
 
         val bar = bar(server)
-        bar.name = Text.literal("War Era")
-        bar.color = BossBar.Color.RED
+        bar.name = Component.literal("War Era")
+        bar.color = BossEvent.BossBarColor.RED
         bar.isVisible = Config.CONFIG.eras.showWarBar
     }
 

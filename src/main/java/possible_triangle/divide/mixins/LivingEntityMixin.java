@@ -1,9 +1,9 @@
 package possible_triangle.divide.mixins;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,13 +15,13 @@ import possible_triangle.divide.missions.Mission;
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
 
-    @Inject(at = @At("HEAD"), method = "eatFood(Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;")
-    public void eat(World world, ItemStack stack, CallbackInfoReturnable<ItemStack> cir) {
+    @Inject(at = @At("HEAD"), method = "eat")
+    public void eat(Level level, ItemStack stack, CallbackInfoReturnable<ItemStack> cir) {
         var self = (LivingEntity) (Object) this;
         Mission.Companion.onEat(self, stack);
     }
 
-    @Inject(at = @At("HEAD"), method = "drop(Lnet/minecraft/entity/damage/DamageSource;)V", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "dropAllDeathLoot", cancellable = true)
     public void drop(DamageSource source, CallbackInfo ci) {
         var self = (LivingEntity) (Object) this;
         if (DeathEvents.INSTANCE.modifyPlayerDrops(self, source)) {

@@ -1,6 +1,6 @@
 package possible_triangle.divide.logic
 
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.GameData
 import java.util.*
 
@@ -14,7 +14,7 @@ object LoginShield {
             .filterValues { it > 0 }
     }
 
-    fun isProtected(player: ServerPlayerEntity): Boolean {
+    fun isProtected(player: ServerPlayer): Boolean {
         return if (GameData.DATA[player.server].paused) true
         else players.containsKey(player.uuid)
     }

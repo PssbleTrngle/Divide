@@ -1,17 +1,17 @@
 package possible_triangle.divide.reward.actions
 
-import net.minecraft.scoreboard.AbstractTeam.VisibilityRule
+import net.minecraft.world.scores.Team
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
 object HideNametags : Action() {
 
    override fun <T> start(ctx: RewardContext<T>) {
-        ctx.targetTeam()?.nameTagVisibilityRule = VisibilityRule.HIDE_FOR_OTHER_TEAMS
+        ctx.targetTeam()?.nameTagVisibility = Team.Visibility.HIDE_FOR_OTHER_TEAMS
     }
 
    override fun <T> stop(ctx: RewardContext<T>) {
-       ctx.targetTeam()?.nameTagVisibilityRule = VisibilityRule.ALWAYS
+       ctx.targetTeam()?.nameTagVisibility = Team.Visibility.ALWAYS
     }
 
 }

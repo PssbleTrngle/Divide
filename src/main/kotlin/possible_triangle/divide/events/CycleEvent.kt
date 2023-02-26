@@ -1,14 +1,16 @@
 package possible_triangle.divide.events
 
 import kotlinx.serialization.Serializable
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.timer.Timer
-import net.minecraft.world.timer.TimerCallback
+import net.minecraft.world.level.timers.TimerCallback
+import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Teams.isParticipant
+import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.mixins.TimerAccessor
 
 @Suppress("LeakingThis")
@@ -31,12 +33,12 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         val EVENTS
             get() = REGISTRY.values.toList()
 
-        override fun serialize(nbt: NbtCompound, callback: Callback) {
+        override fun serialize(nbt: CompoundTag, callback: Callback) {
             nbt.putInt("index", callback.index)
             nbt.putString("id", callback.id)
         }
 
-        override fun deserialize(nbt: NbtCompound): Callback {
+        override fun deserialize(nbt: CompoundTag): Callback {
             return Callback(nbt.getInt("index"), nbt.getString("id"))
         }
     }
@@ -81,14 +83,14 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
     fun skip(server: MinecraftServer) {
         val queue = server.scheduledEvents()
         val accessor = queue as TimerAccessor<MinecraftServer>
-        val event = accessor.eventsByName.row(callbackId).values.toList()
+        val event = accessor.events.row(callbackId).values.toList()
         cancel(server)
         onStop(server)
 
         logger.log(server, Event(id, "skipped"))
 
         event.forEach {
-            it.callback.call(server, queue, server.overworld.time)
+            it.callback.handle(server, queue, server.time())
         }
     }
 
@@ -99,8 +101,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
             bar.clearPlayers()
         } else {
             countdown(server, seconds)
-            bar.clearPlayers()
-            bar.addPlayers(server.playerManager.playerList.filter { it.isParticipant() })
+            bar.players = server.participants()
         }
         schedule(server, seconds, Callback(index, id), suffix = id)
     }
@@ -109,7 +110,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
 
     class Callback(val index: Int, val id: String) : TimerCallback<MinecraftServer> {
 
-        override fun call(server: MinecraftServer, queue: Timer<MinecraftServer>, time: Long) {
+        override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
             val event = REGISTRY[id] ?: return
             if (event.enabled) {
                 val pause = event.handle(server, index)
@@ -124,12 +125,12 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
     }
 
     val data = object : ModSavedData<Int?>("current_$id") {
-        override fun save(nbt: NbtCompound, value: Int?) {
+        override fun save(nbt: CompoundTag, value: Int?) {
             nbt.putBoolean("running", value != null)
             if (value != null) nbt.putInt("index", value)
         }
 
-        override fun load(nbt: NbtCompound, server: MinecraftServer): Int? {
+        override fun load(nbt: CompoundTag, server: MinecraftServer): Int? {
             return if (nbt.getBoolean("running")) nbt.getInt("index") else null
         }
 

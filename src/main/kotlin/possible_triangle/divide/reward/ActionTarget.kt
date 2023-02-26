@@ -8,11 +8,11 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.scoreboard.Team
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.command.arguments.DividePlayerArgument
 import possible_triangle.divide.command.arguments.DivideTeamArgument
 import possible_triangle.divide.data.EventTarget
@@ -22,15 +22,15 @@ import java.util.*
 
 class ActionTarget<Target> private constructor(
     val id: String,
-    val suggestions: () -> SuggestionProvider<ServerCommandSource>?,
-    val fromContext: (CommandContext<ServerCommandSource>, String) -> Target,
-    val validate: (Target, ServerPlayerEntity) -> Unit,
+    val suggestions: () -> SuggestionProvider<CommandSourceStack>?,
+    val fromContext: (CommandContext<CommandSourceStack>, String) -> Target,
+    val validate: (Target, ServerPlayer) -> Unit,
     val fromString: (String) -> Target,
-    val deserialize: (NbtCompound) -> Target?,
-    val serialize: (NbtCompound, Target) -> Unit,
+    val deserialize: (CompoundTag) -> Target?,
+    val serialize: (CompoundTag, Target) -> Unit,
     val toEvent: (Target, MinecraftServer) -> EventTarget?,
-    val team: (RewardContext<Target>) -> Team? = { _ -> null },
-    val players: (RewardContext<Target>) -> List<ServerPlayerEntity> = { ctx ->
+    val team: (RewardContext<Target>) -> PlayerTeam? = { _ -> null },
+    val players: (RewardContext<Target>) -> List<ServerPlayer> = { ctx ->
         team(ctx)?.participants(ctx.server) ?: emptyList()
     },
 ) {
@@ -82,12 +82,12 @@ class ActionTarget<Target> private constructor(
             id = "player",
             suggestions = { DividePlayerArgument.suggestions(otherTeam = true) },
             fromContext = { it, name -> DividePlayerArgument.getPlayer(it, name).uuid },
-            validate = { uuid, user -> DividePlayerArgument.validate(user.server.playerManager.getPlayer(uuid), user) },
-            deserialize = { it.getUuid("player") },
-            serialize = { nbt, uuid -> nbt.putUuid("player", uuid) },
-            toEvent = { it, server -> server.playerManager.getPlayer(it)?.let { EventTarget.of(it) } },
+            validate = { uuid, user -> DividePlayerArgument.validate(user.server.playerList.getPlayer(uuid), user) },
+            deserialize = { it.getUUID("player") },
+            serialize = { nbt, uuid -> nbt.putUUID("player", uuid) },
+            toEvent = { it, server -> server.playerList.getPlayer(it)?.let { EventTarget.of(it) } },
             fromString = { UUID.fromString(it) },
-            players = { ctx -> listOfNotNull(ctx.server.playerManager.getPlayer(ctx.target)) },
+            players = { ctx -> listOfNotNull(ctx.server.playerList.getPlayer(ctx.target)) },
         )
 
         val TEAM = ActionTarget(
@@ -106,8 +106,8 @@ class ActionTarget<Target> private constructor(
             team = { ctx -> ctx.server.scoreboard.getPlayerTeam(ctx.target)?.takeIf { it.isParticipantTeam() } },
         )
 
-        fun <T> serialize(ctx: RewardContext<T>, nbt: NbtCompound) {
-            nbt.put("target", NbtCompound().apply {
+        fun <T> serialize(ctx: RewardContext<T>, nbt: CompoundTag) {
+            nbt.put("target", CompoundTag().apply {
                 ctx.targetType.serialize(this, ctx.target)
                 putString("type", ctx.targetType.id)
             })

@@ -1,18 +1,19 @@
 package possible_triangle.divide.info
 
 import kotlinx.serialization.Serializable
-import net.minecraft.network.packet.s2c.play.ScoreboardPlayerUpdateS2CPacket
-import net.minecraft.scoreboard.ScoreboardPlayerScore
-import net.minecraft.scoreboard.ServerScoreboard.UpdateMode.CHANGE
-import net.minecraft.scoreboard.ServerScoreboard.UpdateMode.REMOVE
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting.*
+import net.minecraft.network.chat.contents.LiteralContents
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.LiteralTextContent
-import net.minecraft.util.Formatting.*
+import net.minecraft.server.ServerScoreboard.Method.CHANGE
+import net.minecraft.server.ServerScoreboard.Method.REMOVE
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.world.scores.Score
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.events.PlayerBountyEvent
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Bases.isInBase
 import possible_triangle.divide.logic.Chat.apply
@@ -39,7 +40,7 @@ object Scores {
     private val RANK_COLORS = listOf(GOLD, GRAY, DARK_RED)
     private val EXTRAS = hashMapOf<UUID, ExtraInfo>()
 
-    fun show(player: ServerPlayerEntity, extra: ExtraInfo) {
+    fun show(player: ServerPlayer, extra: ExtraInfo) {
         EXTRAS[player.uuid] = extra
     }
 
@@ -48,18 +49,18 @@ object Scores {
         return apply("#${rank}", UNDERLINE, color)
     }
 
-    fun getRanks(server: MinecraftServer): Map<Team, Int> {
+    fun getRanks(server: MinecraftServer): Map<PlayerTeam, Int> {
         return Teams.ranked(server).mapIndexed { index, team ->
             team to (index + 1)
         }.associate { it }
     }
 
-    fun scoreUpdate(score: ScoreboardPlayerScore, server: MinecraftServer) {
-        val player = server.playerManager.getPlayer(score.playerName) ?: return
+    fun scoreUpdate(score: Score, server: MinecraftServer) {
+        val player = server.playerList.getPlayerByName(score.owner) ?: return
         val objective = score.objective ?: return
-        if (objective.criterion.isReadOnly) return
-        val name = objective.displayName.content.let {
-            if (it is LiteralTextContent) it.string else objective.name
+        if (objective.criteria.isReadOnly) return
+        val name = objective.displayName.contents.let {
+            if (it is LiteralContents) it.text else objective.name
         }
         LOGGER.log(server, Event(EventTarget.of(player), score.score, name))
     }
@@ -74,11 +75,11 @@ object Scores {
 
     private val LAST_LINES = hashMapOf<UUID, List<String>>()
 
-    fun resetSpoof(player: ServerPlayerEntity) {
+    fun resetSpoof(player: ServerPlayer) {
         LAST_LINES.remove(player.uuid)
     }
 
-    private fun spoof(player: ServerPlayerEntity, lines: List<String>) {
+    private fun spoof(player: ServerPlayer, lines: List<String>) {
         val formatted = lines.mapIndexed { i, line ->
             line.ifBlank {
                 val before = lines.filterIndexed { i2, it -> i2 < i && it.isBlank() }.size
@@ -90,24 +91,24 @@ object Scores {
 
         formatted.forEachIndexed { index, it ->
             if (LAST_LINES[player.uuid]?.getOrNull(index) != it) {
-                player.networkHandler.sendPacket(ScoreboardPlayerUpdateS2CPacket(CHANGE, SPOOFED, it, index))
+                player.connection.send(ClientboundSetScorePacket(CHANGE, SPOOFED, it, index))
             }
         }
 
         removed?.forEach {
-            player.networkHandler.sendPacket(ScoreboardPlayerUpdateS2CPacket(REMOVE, SPOOFED, it, 0))
+            player.connection.send(ClientboundSetScorePacket(REMOVE, SPOOFED, it, 0))
         }
 
         LAST_LINES[player.uuid] = formatted
     }
 
-    private fun updateForPlayer(player: ServerPlayerEntity, rank: Int) {
+    private fun updateForPlayer(player: ServerPlayer, rank: Int) {
 
         val lines = mutableListOf<List<String>>()
 
         val team = player.participantTeam()
         val extra = EXTRAS[player.uuid]
-        val now = player.world.time
+        val now = player.level.time()
 
         if (team != null) {
 

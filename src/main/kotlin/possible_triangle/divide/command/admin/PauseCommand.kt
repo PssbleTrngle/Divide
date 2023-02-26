@@ -2,19 +2,20 @@ package possible_triangle.divide.command.admin
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.entity.boss.BossBar
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.literal
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.world.BossEvent
 import possible_triangle.divide.GameData
 import possible_triangle.divide.events.Countdown
+import possible_triangle.divide.extensions.players
 
 object PauseCommand {
 
     private val DISPLAY = Countdown("pause", "Paused")
 
-    fun register(node: LiteralArgumentBuilder<ServerCommandSource>): LiteralArgumentBuilder<ServerCommandSource> {
+    fun register(node: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
         return node.then(
             literal("pause").requires { !GameData.DATA[it.server].paused }.executes(::pause)
         ).then(
@@ -25,23 +26,23 @@ object PauseCommand {
     fun showDisplay(server: MinecraftServer) {
         val bar = DISPLAY.bar(server)
         bar.isVisible = true
-        bar.addPlayers(server.playerManager.playerList)
-        bar.maxValue = 1
+        bar.players = server.players()
+        bar.max = 1
         bar.value = 1
-        bar.color = BossBar.Color.RED
-        bar.style = BossBar.Style.NOTCHED_20
-        bar.setThickenFog(true)
+        bar.color = BossEvent.BossBarColor.RED
+        bar.overlay = BossEvent.BossBarOverlay.NOTCHED_20
+        bar.setCreateWorldFog(true)
     }
 
-    private fun pause(ctx: CommandContext<ServerCommandSource>): Int {
+    private fun pause(ctx: CommandContext<CommandSourceStack>): Int {
         GameData.setPaused(ctx.source.server, true)
-        ctx.source.sendFeedback(Text.literal("Paused the game"), true)
+        ctx.source.sendSuccess(Component.literal("Paused the game"), true)
         return 1
     }
 
-    private fun resume(ctx: CommandContext<ServerCommandSource>): Int {
+    private fun resume(ctx: CommandContext<CommandSourceStack>): Int {
         GameData.setPaused(ctx.source.server, false)
-        ctx.source.sendFeedback(Text.literal("Resumed the game"), true)
+        ctx.source.sendSuccess(Component.literal("Resumed the game"), true)
         DISPLAY.bar(ctx.source.server).isVisible = false
         return 1
     }

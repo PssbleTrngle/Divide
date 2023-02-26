@@ -2,19 +2,21 @@ package possible_triangle.divide.missions
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.block.BlockState
-import net.minecraft.block.Blocks
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.damage.DamageSource
-import net.minecraft.entity.mob.MobEntity
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.HoeItem
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.registry.tag.BlockTags
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.tags.BlockTags
+import net.minecraft.world.damagesource.DamageSource
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.monster.Enemy
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.HoeItem
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.extensions.isIn
+import possible_triangle.divide.extensions.isOf
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.m
 import possible_triangle.divide.missions.Mission.Type.FAIL
@@ -86,15 +88,15 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
             entry.id = id
         }
 
-        fun onSleep(player: ServerPlayerEntity) {
+        fun onSleep(player: ServerPlayer) {
             SLEEP.fulfill(player)
         }
 
         fun onEat(entity: LivingEntity, stack: ItemStack) {
-            if (stack.isFood && entity is ServerPlayerEntity) FOOD.fulfill(entity)
+            if (stack.isEdible && entity is ServerPlayer) FOOD.fulfill(entity)
         }
 
-        fun onCrafted(player: PlayerEntity, stack: ItemStack) {
+        fun onCrafted(player: Player, stack: ItemStack) {
             if (stack.isEmpty) return
 
             CRAFTING.fulfill(player)
@@ -105,23 +107,23 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
         }
 
         fun onDeath(entity: LivingEntity, source: DamageSource) {
-            val killer = source.attacker
+            val killer = source.entity
 
-            if (entity is ServerPlayerEntity) {
-                if (source.isExplosive) EXPLODE.fulfill(entity)
+            if (entity is ServerPlayer) {
+                if (source.isExplosion) EXPLODE.fulfill(entity)
                 if (source.isFire) BURN.fulfill(entity)
                 if (source == DamageSource.DROWN) DROWN.fulfill(entity)
                 if (source == DamageSource.FALL) FALL.fulfill(entity)
             }
 
-            if (entity is MobEntity && killer is ServerPlayerEntity) {
+            if (entity is Enemy && killer is ServerPlayer) {
                 SLAY_MONSTER.fulfill(killer)
             }
         }
     }
 
-    fun fulfill(by: PlayerEntity) {
-        if (by !is ServerPlayerEntity) return
+    fun fulfill(by: Player) {
+        if (by !is ServerPlayer) return
         MissionEvent.fulfill(by.server, by.participantTeam() ?: return, this)
     }
 

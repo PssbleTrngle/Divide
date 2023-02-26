@@ -1,11 +1,12 @@
 package possible_triangle.divide.hacks
 
-import net.minecraft.entity.Entity
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtList
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.extensions.time
 import java.util.*
 
 object DataHacker {
@@ -22,14 +23,14 @@ object DataHacker {
         val id: String?,
     )
 
-    fun clearReasons(player: ServerPlayerEntity) {
+    fun clearReasons(player: ServerPlayer) {
         Data[player.server].removeIf {
             it.clearOnDeath && it.target == player.uuid
         }
     }
 
-    fun hasReason(type: Type, target: UUID, player: ServerPlayerEntity): Boolean {
-        val now = player.world.time
+    fun hasReason(type: Type, target: UUID, player: ServerPlayer): Boolean {
+        val now = player.server.time()
         return Data[player.server].any { reason ->
             reason.type == type
                     && reason.until >= now
@@ -50,7 +51,7 @@ object DataHacker {
     fun addReason(
         type: Type,
         target: Entity,
-        appliedTo: List<ServerPlayerEntity>,
+        appliedTo: List<ServerPlayer>,
         duration: Int,
         clearOnDeath: Boolean = false,
         clearInBase: Boolean = false,
@@ -64,7 +65,7 @@ object DataHacker {
                     type,
                     target.uuid,
                     appliedTo.map { it.uuid },
-                    server.overworld.time + duration * 20,
+                    server.time() + duration * 20,
                     clearOnDeath,
                     clearInBase,
                     id
@@ -75,16 +76,16 @@ object DataHacker {
     }
 
     val Data = object : ModSavedData<MutableList<Reason>>("entity_data_hacks") {
-        override fun save(nbt: NbtCompound, value: MutableList<Reason>) {
-            val list = NbtList()
+        override fun save(nbt: CompoundTag, value: MutableList<Reason>) {
+            val list = ListTag()
             value.forEach { reason ->
-                val tag = NbtCompound()
-                tag.putUuid("target", reason.target)
+                val tag = CompoundTag()
+                tag.putUUID("target", reason.target)
                 tag.putLong("until", reason.until)
                 tag.putString("type", reason.type.name)
-                tag.put("appliedTo", reason.appliedTo.mapTo(NbtList()) {
-                    NbtCompound().apply {
-                        putUuid("uuid", it)
+                tag.put("appliedTo", reason.appliedTo.mapTo(ListTag()) {
+                    CompoundTag().apply {
+                        putUUID("uuid", it)
                     }
                 })
                 list.add(tag)
@@ -92,13 +93,13 @@ object DataHacker {
             nbt.put("reasons", list)
         }
 
-        override fun load(nbt: NbtCompound, server: MinecraftServer): MutableList<Reason> {
-            val now = server.overworld.time
-            return nbt.getList("reasons", 10).map { it as NbtCompound }.map { tag ->
-                val target = tag.getUuid("target")
+        override fun load(nbt: CompoundTag, server: MinecraftServer): MutableList<Reason> {
+            val now = server.time()
+            return nbt.getList("reasons", 10).map { it as CompoundTag }.map { tag ->
+                val target = tag.getUUID("target")
                 val appliedTo = tag.getList("appliedTo", 10)
-                    .map { it as NbtCompound }
-                    .map { it.getUuid("uuid") }
+                    .map { it as CompoundTag }
+                    .map { it.getUUID("uuid") }
                 val until = tag.getLong("until")
                 val id = if (tag.contains("id")) tag.getString("id") else null
                 val type = Type.valueOf(tag.getString("type"))

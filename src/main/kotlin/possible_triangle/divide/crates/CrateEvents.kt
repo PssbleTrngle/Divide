@@ -1,9 +1,9 @@
 package possible_triangle.divide.crates
 
-import net.minecraft.block.entity.Hopper
+import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.entity.Hopper
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.CrateScheduler.crateAt
 import possible_triangle.divide.extensions.tileData
@@ -22,9 +22,9 @@ object CrateEvents {
         blocks.removeIf { isUnbreakable(server, it) }
     }
 
-    fun preventsSucking(world: World, hopper: Hopper): Boolean {
+    fun preventsSucking(world: Level, hopper: Hopper): Boolean {
         val server = world.server ?: return false
-        return isUnbreakable(server, BlockPos(hopper.hopperX, hopper.hopperY + 1, hopper.hopperZ))
+        return isUnbreakable(server, BlockPos(hopper.levelX, hopper.levelY + 1, hopper.levelZ))
     }
 
 }

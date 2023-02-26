@@ -1,12 +1,13 @@
 package possible_triangle.divide.reward
 
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtList
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.text.Text
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.isPaused
 
 abstract class Action {
@@ -21,7 +22,7 @@ abstract class Action {
 
     companion object {
 
-        val NOT_ONLINE = SimpleCommandExceptionType(Text.literal("Target is not online"))
+        val NOT_ONLINE = SimpleCommandExceptionType(Component.literal("Target is not online"))
 
         fun <T> run(ctx: RewardContext<T>, duration: Int? = ctx.reward.duration, charge: Int? = ctx.reward.charge) {
             ctx.prepare()
@@ -29,7 +30,7 @@ abstract class Action {
 
             val realDuration = (duration ?: 0) + (charge ?: 0)
             if (realDuration > 0) {
-                val now = ctx.server.overworld.time
+                val now = ctx.server.time()
                 val until = now + (realDuration * 20)
                 val chargedAt = charge?.times(20)?.plus(now)
                 DATA.modify(ctx.server) {
@@ -47,7 +48,7 @@ abstract class Action {
             return DATA[server].any {
                 it.ctx.reward == reward
                         && predicate(it.ctx)
-                        && (!ifCharged || (it.chargedAt ?: 0) <= server.overworld.time)
+                        && (!ifCharged || (it.chargedAt ?: 0) <= server.time())
             }
         }
 
@@ -59,7 +60,7 @@ abstract class Action {
             if (server.isPaused()) return
 
             val running = DATA[server]
-            val now = server.overworld.time
+            val now = server.time()
             val due = running.filter { (_, time) -> time < now }
 
             running.forEach { (ctx, _, chargedAt) ->
@@ -87,21 +88,21 @@ abstract class Action {
         data class ActionContext<T>(val ctx: RewardContext<T>, val until: Long, val chargedAt: Long?)
 
         private val DATA = object : ModSavedData<MutableList<ActionContext<*>>>("actions") {
-            override fun save(nbt: NbtCompound, value: MutableList<ActionContext<*>>) {
-                nbt.put("values", value.mapTo(NbtList()) { (ctx, time, chargedAt) ->
-                    NbtCompound().apply {
+            override fun save(nbt: CompoundTag, value: MutableList<ActionContext<*>>) {
+                nbt.put("values", value.mapTo(ListTag()) { (ctx, time, chargedAt) ->
+                    CompoundTag().apply {
                         putLong("time", time)
                         ActionTarget.serialize(ctx, this)
                         if (chargedAt != null) putLong("chargedAt", chargedAt)
                         putString("team", ctx.team.name)
-                        putUuid("player", ctx.rawPlayer)
+                        putUUID("player", ctx.rawPlayer)
                         putString("reward", ctx.reward.id)
                     }
                 })
             }
 
             private fun load(
-                nbt: NbtCompound,
+                nbt: CompoundTag,
                 server: MinecraftServer,
                 reward: Reward,
             ): ActionContext<*>? {
@@ -112,7 +113,7 @@ abstract class Action {
 
                     fun <T> createContext(type: ActionTarget<T>): RewardContext<T>? {
                         val target = type.deserialize(tag) ?: return null
-                        return RewardContext(team, server, nbt.getUuid("player"), target, reward, type)
+                        return RewardContext(team, server, nbt.getUUID("player"), target, reward, type)
                     }
 
                     createContext(type)
@@ -123,9 +124,9 @@ abstract class Action {
                 return ActionContext(ctx, nbt.getLong("time"), chargedAt)
             }
 
-            override fun load(nbt: NbtCompound, server: MinecraftServer): MutableList<ActionContext<*>> {
+            override fun load(nbt: CompoundTag, server: MinecraftServer): MutableList<ActionContext<*>> {
                 val list = nbt.getList("values", 10)
-                return list.filterIsInstance<NbtCompound>().mapNotNull {
+                return list.filterIsInstance<CompoundTag>().mapNotNull {
                     val reward = Reward.getOrThrow(it.getString("reward"))
                     load(it, server, reward)
                 }.toMutableList()

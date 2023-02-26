@@ -1,15 +1,15 @@
 package possible_triangle.divide.info
 
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting.*
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.Formatting.*
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.crates.Order
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.reward.Reward
 
-enum class ExtraInfo(val lines: (MinecraftServer, Team?) -> List<String>) {
+enum class ExtraInfo(val lines: (MinecraftServer, PlayerTeam?) -> List<String>) {
     PRICES({ server, team ->
         Reward.values.filter { Reward.isVisible(it, team, server) }.map { reward ->
             "${reward.display}: ${valueStyle(reward.price)}".let {
@@ -21,7 +21,7 @@ enum class ExtraInfo(val lines: (MinecraftServer, Team?) -> List<String>) {
         PlayerBountyEvent.currentBounties(server).map { (target, bounty) ->
             "${
                 Chat.apply(
-                    "Kill ${target.entityName}",
+                    "Kill ${target.scoreboardName}",
                     GOLD
                 )
             }: ${valueStyle(bounty.price)}"

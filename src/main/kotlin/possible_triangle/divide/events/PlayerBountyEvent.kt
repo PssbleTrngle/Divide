@@ -1,13 +1,15 @@
 package possible_triangle.divide.events
 
 import kotlinx.serialization.Serializable
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.Util.persistentData
+import possible_triangle.divide.extensions.isTeammate
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents
@@ -45,34 +47,34 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
 
             opponents.forEach {
                 Chat.title(it, "☠ Wanted Dead ☠")
-                Chat.subtitle(it, Text.literal("").append(target.displayName).append(" - $price points"), false)
+                Chat.subtitle(it, Component.literal("").append(target.displayName).append(" - $price points"), false)
             }
 
-            setBounty(target, PlayerBounty(price, target.world.time + Config.CONFIG.bounties.bountyTime * 20))
+            setBounty(target, PlayerBounty(price, target.level.time() + Config.CONFIG.bounties.bountyTime * 20))
         }
 
         return Config.CONFIG.bounties.pause.value
     }
 
-    fun currentBounties(server: MinecraftServer): Map<ServerPlayerEntity, PlayerBounty> {
+    fun currentBounties(server: MinecraftServer): Map<ServerPlayer, PlayerBounty> {
         return server.participants()
             .associateWith { getBounty(it) }
             .filterValues { it != null }
             .mapValues { it.value as PlayerBounty }
     }
 
-    private fun setBounty(player: ServerPlayerEntity, bounty: PlayerBounty?) {
+    private fun setBounty(player: ServerPlayer, bounty: PlayerBounty?) {
         val data = player.persistentData()
         if (bounty != null) data.put("bounty", bounty.serialize())
         else data.remove("bounty")
     }
 
-    fun checkBounty(target: ServerPlayerEntity, killer: ServerPlayerEntity?): Boolean {
+    fun checkBounty(target: ServerPlayer, killer: ServerPlayer?): Boolean {
         val bounty = getBounty(target) ?: return false
 
         val title = when {
-            killer != null -> Text.literal("Bounty fulfilled by ").append(killer.displayName)
-            Config.CONFIG.bounties.clearOnDeath -> Text.literal("Bounty cleared")
+            killer != null -> Component.literal("Bounty fulfilled by ").append(killer.displayName)
+            Config.CONFIG.bounties.clearOnDeath -> Component.literal("Bounty cleared")
             else -> null
         }
 
@@ -82,7 +84,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
                 Chat.subtitle(it, title, setTitle = false)
                 Chat.title(
                     it,
-                    Text.literal("☠ ").append(target.displayName).append(Text.literal(" ☠"))
+                    Component.literal("☠ ").append(target.displayName).append(Component.literal(" ☠"))
                 )
             }
 
@@ -105,11 +107,11 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
         }
     }
 
-    fun getBounty(player: ServerPlayerEntity): PlayerBounty? {
+    fun getBounty(player: ServerPlayer): PlayerBounty? {
         val nbt = player.persistentData()
         return if (nbt.contains("bounty", 10)) {
             val bounty = PlayerBounty.deserialize(nbt.getCompound("bounty"))
-            if (bounty != null && bounty.until > player.world.time) bounty
+            if (bounty != null && bounty.until > player.level.time()) bounty
             else null
         } else {
             null
@@ -117,15 +119,15 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
     }
 
     data class PlayerBounty(val price: Int, val until: Long) {
-        fun serialize(): NbtCompound {
-            val nbt = NbtCompound()
+        fun serialize(): CompoundTag {
+            val nbt = CompoundTag()
             nbt.putInt("price", price)
             nbt.putLong("until", until)
             return nbt
         }
 
         companion object {
-            fun deserialize(nbt: NbtCompound): PlayerBounty? {
+            fun deserialize(nbt: CompoundTag): PlayerBounty? {
                 val until = nbt.getLong("until")
                 val price = nbt.getInt("price")
                 return if (price > 0) PlayerBounty(price, until) else null

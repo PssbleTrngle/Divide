@@ -1,9 +1,9 @@
 package possible_triangle.divide.missions
 
-import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
-import net.minecraft.world.timer.Timer
-import net.minecraft.world.timer.TimerCallback
+import net.minecraft.world.level.timers.TimerCallback
+import net.minecraft.world.level.timers.TimerQueue
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.events.CallbackHandler
@@ -14,7 +14,7 @@ import possible_triangle.divide.logic.Teams.participingTeams
 
 class MissionCallback : TimerCallback<MinecraftServer> {
 
-    override fun call(server: MinecraftServer, queue: Timer<MinecraftServer>, time: Long) {
+    override fun handle(server: MinecraftServer, queue: TimerQueue<MinecraftServer>, time: Long) {
         val (mission, teams) = MissionEvent.active(server) ?: return
 
         val succeededTeams = server.participingTeams().filter {
@@ -39,11 +39,11 @@ class MissionCallback : TimerCallback<MinecraftServer> {
     }
 
     companion object : CallbackHandler<MissionCallback>("mission_check", MissionCallback::class.java) {
-        override fun serialize(nbt: NbtCompound, callback: MissionCallback) {
+        override fun serialize(nbt: CompoundTag, callback: MissionCallback) {
             DivideMod.LOGGER.info("encoding $id")
         }
 
-        override fun deserialize(nbt: NbtCompound): MissionCallback {
+        override fun deserialize(nbt: CompoundTag): MissionCallback {
             DivideMod.LOGGER.info("decoding $id")
             return MissionCallback()
         }

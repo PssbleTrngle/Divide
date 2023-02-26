@@ -2,9 +2,9 @@ package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import possible_triangle.divide.crates.loot.LootFunction.*
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.logic.makeWeightedDecision

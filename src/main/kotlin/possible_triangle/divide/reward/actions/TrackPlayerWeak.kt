@@ -1,8 +1,8 @@
 package possible_triangle.divide.reward.actions
 
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.Util
 import possible_triangle.divide.data.Util.persistentData
@@ -17,16 +17,16 @@ object TrackPlayerWeak : DataAction(GLOWING) {
 
     private const val TARGET_TAG = "${DivideMod.ID}:tracking"
 
-    private fun getMarker(target: ServerPlayerEntity): Entity? {
+    private fun getMarker(target: ServerPlayer): Entity? {
         val id = target.persistentData().getInt(TARGET_TAG)
-        return target.world.getEntityById(id)
+        return target.level.getEntity(id)
     }
 
     override fun <T> targets(ctx: RewardContext<T>): List<Entity> {
         return ctx.targetPlayers().mapNotNull { getMarker(it) }
     }
 
-    override fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayerEntity> {
+    override fun <T> visibleTo(ctx: RewardContext<T>, target: Entity): List<ServerPlayer> {
         return (ctx.player ?: return emptyList()).teammates()
     }
 
@@ -41,10 +41,10 @@ object TrackPlayerWeak : DataAction(GLOWING) {
 
         val target = ctx.targetPlayer() ?: return
 
-        val pos = target.blockPos.up()
-        val marker = Util.spawnMarker(EntityType.SLIME, target.getWorld(), pos) {
+        val pos = target.blockPosition().above()
+        val marker = Util.spawnMarker(EntityType.SLIME, target.getLevel(), pos) {
             it.putInt("Size", 0)
-            it.putUuid(TARGET_TAG, target.uuid)
+            it.putUUID(TARGET_TAG, target.uuid)
         }
 
         Util.withoutCollision(marker, ctx.server, target.participantTeam())

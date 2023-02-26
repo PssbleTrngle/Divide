@@ -1,7 +1,7 @@
 package possible_triangle.divide.crates
 
+import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.math.BlockPos
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.callbacks.CleanCallback
@@ -9,6 +9,7 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.events.CycleEvent
+import possible_triangle.divide.extensions.mainWorld
 import possible_triangle.divide.logic.Teams.participingTeams
 import kotlin.random.Random
 
@@ -29,13 +30,12 @@ object CrateEvent : CycleEvent("loot_crates") {
     }
 
     override fun handle(server: MinecraftServer, index: Int): Int {
-
-        val border = server.overworld.worldBorder
+        val border = server.mainWorld().worldBorder
 
         try {
             val y = Config.CONFIG.crate.levels.random()
-            val z = Random.nextInt(border.boundNorth.toInt() + 15, border.boundSouth.toInt() - 15)
-            val x = Random.nextInt(border.boundWest.toInt() + 15, border.boundEast.toInt() - 15)
+            val z = Random.nextInt(border.minZ.toInt() + 15, border.maxZ.toInt() - 15)
+            val x = Random.nextInt(border.minX.toInt() + 15, border.maxX.toInt() - 15)
 
             val spawnAt = CrateScheduler.findInRange(server, BlockPos(x, y, z), 20.0)
 

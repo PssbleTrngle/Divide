@@ -4,17 +4,18 @@ import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.block.Blocks
-import net.minecraft.item.ItemConvertible
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.registry.RegistryKeys
+import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.level.ItemLike
+import net.minecraft.world.level.block.Blocks
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
+import possible_triangle.divide.extensions.id
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams.teamOrThrow
@@ -29,7 +30,7 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
     companion object : DefaultedResource<Order>("orders", { Order.serializer() }) {
 
         private val TOO_MUCH =
-            Dynamic2CommandExceptionType { id, max -> Text.literal("You can only order up to $max of $id") }
+            Dynamic2CommandExceptionType { id, max -> Component.literal("You can only order up to $max of $id") }
 
         @Serializable
         private data class Event(
@@ -45,8 +46,8 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
         override fun populate(entry: Order, server: MinecraftServer?, id: String) {
             entry.id = id
             if (server != null) {
-                val items = server.registryManager.get(RegistryKeys.ITEM)
-                entry.item = items[Identifier(entry.itemId)]
+                val items = server.registryAccess().registryOrThrow(Registries.ITEM)
+                entry.item = items[ResourceLocation(entry.itemId)]
                     ?: throw IllegalArgumentException("Item ${entry.itemId} does not exists")
             }
         }
@@ -66,12 +67,9 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
     }
 
-    constructor(item: ItemConvertible, cost: Int, max: Int?) : this(
-        item.asItem().registryEntry.registryKey().value.path ?: throw NullPointerException(),
-        cost, max,
-    )
+    constructor(item: ItemLike, cost: Int, max: Int?) : this(item.id().path, cost, max)
 
-    fun order(player: ServerPlayerEntity, amount: Int): Boolean {
+    fun order(player: ServerPlayer, amount: Int): Boolean {
         if (max != null && amount > max) throw TOO_MUCH.create(itemId, max)
 
         val price = amount * cost
@@ -85,6 +83,6 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
     }
 
     @Transient
-    lateinit var item: ItemConvertible
+    lateinit var item: ItemLike
 
 }

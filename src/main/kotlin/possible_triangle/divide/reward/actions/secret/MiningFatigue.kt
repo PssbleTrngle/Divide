@@ -1,18 +1,14 @@
 package possible_triangle.divide.reward.actions.secret
 
-import net.minecraft.server.network.ServerPlayerEntity
-import possible_triangle.divide.reward.Reward
+import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.reward.RewardContext
 import possible_triangle.divide.reward.actions.BaseBuff
 
 object MiningFatigue : BaseBuff() {
 
-    fun modifyBreakSpeed(player: ServerPlayerEntity, original: Float): Float {
-        return if (isBuffed(player, Reward.MINING_FATIGUE)) original * 0.7F
-        else original
-    }
+    const val MODIFIER = 0.7F
 
-    override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayerEntity> {
+    override fun <T> buffs(ctx: RewardContext<T>): List<ServerPlayer> {
         return ctx.targetPlayers()
     }
 

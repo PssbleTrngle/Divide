@@ -1,8 +1,8 @@
 package possible_triangle.divide.logic
 
 import kotlinx.serialization.Serializable
-import net.minecraft.scoreboard.Team
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.data.PerTeamIntData
@@ -18,17 +18,17 @@ object Points {
     private val CASH = PerTeamIntData("cash", Config.CONFIG.starterCash)
     private val TOTAL = PerTeamIntData("total_cash", Config.CONFIG.starterCash)
 
-    fun getTotal(server: MinecraftServer, team: Team): Int {
+    fun getTotal(server: MinecraftServer, team: PlayerTeam): Int {
         return TOTAL[server][team]
     }
 
-    fun get(server: MinecraftServer, team: Team): Int {
+    fun get(server: MinecraftServer, team: PlayerTeam): Int {
         return CASH[server][team]
     }
 
     fun modify(
         server: MinecraftServer,
-        team: Team,
+        team: PlayerTeam,
         amount: Int,
         runnable: (pointsAfter: Int) -> Unit = {}
     ): Boolean {
@@ -52,7 +52,7 @@ object Points {
             false
     }
 
-    fun set(server: MinecraftServer, team: Team, amount: Int) {
+    fun set(server: MinecraftServer, team: PlayerTeam, amount: Int) {
         if (amount < 0) throw IllegalArgumentException("Amount must be >= 0")
         val total = TOTAL[server][team]
 
@@ -68,7 +68,7 @@ object Points {
         }
     }
 
-    fun reset(server: MinecraftServer, team: Team) {
+    fun reset(server: MinecraftServer, team: PlayerTeam) {
         CASH[server][team] = Config.CONFIG.starterCash
         TOTAL[server][team] = Config.CONFIG.starterCash
     }

@@ -16,7 +16,7 @@
     "main": [
       {
         "adapter": "kotlin",
-        "value": "com.possible_triangle.divide.DivideMod"
+        "value": "possible_triangle.divide.DivideMod"
       }
     ]
   },

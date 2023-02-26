@@ -1,15 +1,15 @@
 package possible_triangle.divide.missions
 
 import kotlinx.serialization.Serializable
-import net.minecraft.entity.boss.BossBar
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.nbt.NbtList
-import net.minecraft.nbt.NbtString
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.StringTag
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
-import net.minecraft.util.Formatting
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.BossEvent
+import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.GameData
@@ -39,13 +39,13 @@ object MissionEvent : CycleEvent("missions") {
     @Serializable
     data class MissionStatus(val mission: Mission, val secondsLeft: Int, val done: Boolean = false)
 
-    internal data class ActiveMission(val mission: Mission, val teams: MutableList<Team>)
+    internal data class ActiveMission(val mission: Mission, val teams: MutableList<PlayerTeam>)
 
     private val COUNTDOWN = Countdown("mission", "Mission")
 
     private val LOGGER = EventLogger("mission", { Event.serializer() }) { always() }
 
-    fun status(server: MinecraftServer, player: ServerPlayerEntity? = null): MissionStatus? {
+    fun status(server: MinecraftServer, player: ServerPlayer? = null): MissionStatus? {
         return ACTIVE[server]?.let { active ->
             MissionStatus(
                 mission = active.mission,
@@ -71,30 +71,30 @@ object MissionEvent : CycleEvent("missions") {
         MissionCallback.cancel(server)
     }
 
-    internal fun succeed(server: MinecraftServer, team: Team, mission: Mission) {
+    internal fun succeed(server: MinecraftServer, team: PlayerTeam, mission: Mission) {
         LOGGER.log(server, Event(mission, "fulfilled", team = EventTarget.of(team)))
         team.participants(server).forEach {
-            Chat.subtitle(it, Chat.apply("Mission fulfilled", Formatting.GREEN))
+            Chat.subtitle(it, Chat.apply("Mission fulfilled", ChatFormatting.GREEN))
         }
     }
 
-    internal fun fail(server: MinecraftServer, team: Team, mission: Mission) {
+    internal fun fail(server: MinecraftServer, team: PlayerTeam, mission: Mission) {
         LOGGER.log(server, Event(mission, "failed", team = EventTarget.of(team)))
         val subtract = min(mission.fine, Points.get(server, team))
 
         Points.modify(server, team, -subtract) { _ ->
             team.participants(server).forEach {
-                Chat.title(it, Chat.apply("Mission Failed", Formatting.GRAY))
+                Chat.title(it, Chat.apply("Mission Failed", ChatFormatting.GRAY))
                 Chat.subtitle(
                     it,
-                    Chat.apply("-${subtract} points", Formatting.RED),
+                    Chat.apply("-${subtract} points", ChatFormatting.RED),
                     setTitle = false
                 )
             }
         }
     }
 
-    fun fulfill(server: MinecraftServer, team: Team, mission: Mission) {
+    fun fulfill(server: MinecraftServer, team: PlayerTeam, mission: Mission) {
         val active = ACTIVE[server]
         if (active == null || active.mission.id != mission.id) return
         val canFail = mission.type == Mission.Type.FAIL
@@ -142,10 +142,10 @@ object MissionEvent : CycleEvent("missions") {
             }
 
             COUNTDOWN.countdown(server, mission.time) {
-                addPlayers(teamPlayers)
+                players = teamPlayers
                 isVisible = true
-                name = Text.literal("Mission: ${mission.description}")
-                color = BossBar.Color.YELLOW
+                name = Component.literal("Mission: ${mission.description}")
+                color = BossEvent.BossBarColor.YELLOW
             }
 
             MissionCallback.schedule(server, mission.time, MissionCallback())
@@ -158,16 +158,16 @@ object MissionEvent : CycleEvent("missions") {
     }
 
     private val ACTIVE = object : ModSavedData<ActiveMission?>("active_mission") {
-        override fun save(nbt: NbtCompound, value: ActiveMission?) {
+        override fun save(nbt: CompoundTag, value: ActiveMission?) {
             if (value == null) return
             nbt.putString("mission", value.mission.id)
-            nbt.put("teams", value.teams.mapTo(NbtList()) { NbtString.of(it.name) })
+            nbt.put("teams", value.teams.mapTo(ListTag()) { StringTag.valueOf(it.name) })
         }
 
-        override fun load(nbt: NbtCompound, server: MinecraftServer): ActiveMission? {
+        override fun load(nbt: CompoundTag, server: MinecraftServer): ActiveMission? {
             val mission = Mission[nbt.getString("mission")] ?: return null
             val teams = nbt.getList("teams", 8)
-                .mapNotNull { server.scoreboard.getPlayerTeam(it.asString()) }
+                .mapNotNull { server.scoreboard.getPlayerTeam(it.asString) }
                 .toMutableList()
             return ActiveMission(mission, teams)
         }
@@ -178,12 +178,12 @@ object MissionEvent : CycleEvent("missions") {
     }
 
     private val OCCURRED_MISSIONS = object : ModSavedData<MutableList<String>>("occurred_missions") {
-        override fun save(nbt: NbtCompound, value: MutableList<String>) {
-            nbt.put("values", value.mapTo(NbtList()) { NbtString.of(it) })
+        override fun save(nbt: CompoundTag, value: MutableList<String>) {
+            nbt.put("values", value.mapTo(ListTag()) { StringTag.valueOf(it) })
         }
 
-        override fun load(nbt: NbtCompound, server: MinecraftServer): MutableList<String> {
-            return nbt.getList("values", 8).map { it.asString() }.toMutableList()
+        override fun load(nbt: CompoundTag, server: MinecraftServer): MutableList<String> {
+            return nbt.getList("values", 8).map { it.asString }.toMutableList()
         }
 
         override fun default(): MutableList<String> {

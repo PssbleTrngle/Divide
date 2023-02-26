@@ -4,10 +4,11 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.WorldSavePath
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.level.storage.LevelResource
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.EventTarget
+import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logic.Teams.isAdmin
 import possible_triangle.divide.logic.Teams.participantTeam
 import java.io.File
@@ -28,14 +29,14 @@ data class LoggedEvent<T>(
 )
 
 class EventPredicate<T> internal constructor() {
-    private val predicates = mutableListOf<(ServerPlayerEntity?, T, Boolean) -> Boolean>()
+    private val predicates = mutableListOf<(ServerPlayer?, T, Boolean) -> Boolean>()
 
-    private fun ifRequired(predicate: (ServerPlayerEntity?, T) -> Boolean) {
+    private fun ifRequired(predicate: (ServerPlayer?, T) -> Boolean) {
         predicates.add { p, e, i -> i || predicate(p, e) }
     }
 
     fun isPlayer(player: (T) -> EventTarget) {
-        ifRequired { p, e -> p?.let { it.uuidAsString == player(e).uuid } ?: false }
+        ifRequired { p, e -> p?.let { it.stringUUID == player(e).uuid } ?: false }
     }
 
     fun inTeam(team: (T) -> EventTarget?) {
@@ -50,9 +51,9 @@ class EventPredicate<T> internal constructor() {
         predicates.add { _, _, _ -> true }
     }
 
-    fun build(): (T, ServerPlayerEntity?, Boolean) -> Boolean {
+    fun build(): (T, ServerPlayer?, Boolean) -> Boolean {
         val copied = predicates.toList()
-        return { event: T, player: ServerPlayerEntity?, ignorePermission: Boolean ->
+        return { event: T, player: ServerPlayer?, ignorePermission: Boolean ->
             copied.all { it(player, event, ignorePermission) }
         }
     }
@@ -77,7 +78,7 @@ class EventLogger<T>(
         }
 
         private fun logFile(server: MinecraftServer, name: String, createIfMissing: Boolean = true): File {
-            val logs = File(server.getSavePath(WorldSavePath.ROOT).toFile(), "logs")
+            val logs = File(server.getWorldPath(LevelResource.ROOT).toFile(), "logs")
             logs.mkdirs()
             val logFile = File(logs, "$name.log")
             if (createIfMissing && !logFile.exists()) logFile.createNewFile()
@@ -121,7 +122,7 @@ class EventLogger<T>(
 
     fun log(server: MinecraftServer, event: T) {
         val line = LoggedEvent(
-            server.overworld.time,
+            server.time(),
             System.currentTimeMillis(),
             name,
             event,

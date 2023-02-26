@@ -1,8 +1,8 @@
 plugins {
     id 'fabric-loom' version '1.1-SNAPSHOT'
     id 'maven-publish'
-    id "org.jetbrains.kotlin.jvm" version "1.8.20-Beta"
-    id "org.jetbrains.kotlin.plugin.serialization" version "1.8.20-Beta"
+    id "org.jetbrains.kotlin.jvm" version "1.8.10"
+    id "org.jetbrains.kotlin.plugin.serialization" version "1.8.10"
 }
 
 version = project.version
@@ -73,7 +73,7 @@ dependencies {
 
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation include("com.charleskorn.kaml:kaml:0.38.0")
+    implementation include("com.charleskorn.kaml:kaml:${project.kaml_version}")
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}")

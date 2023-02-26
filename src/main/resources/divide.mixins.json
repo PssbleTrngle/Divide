@@ -4,13 +4,10 @@
   "package": "possible_triangle.divide.mixins",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "AbstractBlockMixin",
-    "EntityMixin",
     "HopperBlockEntityMixin",
     "ItemStackMixin",
     "LivingEntityMixin",
     "PlayerMixin",
-    "ResultSlotMixin",
     "ServerLevelMixin",
     "ServerPlayNetworkHandlerMixin",
     "ServerScoreboardMixin",

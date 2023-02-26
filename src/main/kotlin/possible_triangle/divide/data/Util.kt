@@ -1,75 +1,75 @@
 package possible_triangle.divide.data
 
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityType
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.nbt.NbtCompound
-import net.minecraft.scoreboard.AbstractTeam.CollisionRule
-import net.minecraft.scoreboard.Team
+import net.minecraft.ChatFormatting
+import net.minecraft.core.BlockPos
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.chat.*
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.*
-import net.minecraft.util.Formatting
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Vec3d
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.EntityType
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
+import net.minecraft.world.scores.PlayerTeam
+import net.minecraft.world.scores.Team.CollisionRule
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.hacks.PacketIntercepting
 import java.util.stream.Collectors
 
 object Util {
 
-    fun PlayerEntity.persistentData(): NbtCompound {
+    fun Player.persistentData(): CompoundTag {
         return extraCustomData
     }
 
-    fun blocksIn(aabb: Box): List<BlockPos> {
-        return BlockPos.stream(aabb)
+    fun blocksIn(aabb: AABB): List<BlockPos> {
+        return BlockPos.betweenClosedStream(aabb)
             .map { BlockPos(it) }
             .collect(Collectors.toList())
     }
 
-    fun encodePos(pos: BlockPos, player: ServerPlayerEntity?): MutableText? {
-        return Texts.bracketed(
-            Text.translatable("chat.coordinates", pos.x, pos.y, pos.z)
-        ).styled { it.withColor(Formatting.GOLD) }.styled {
-            if (player?.hasPermissionLevel(2) == true)
-                it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("teleport to position")))
-                    .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tp ${pos.x} ${pos.y} ${pos.z}"))
+    fun BlockPos.toComponent(player: ServerPlayer?): MutableComponent {
+        return ComponentUtils.wrapInSquareBrackets(
+            Component.translatable("chat.coordinates", x, y, z)
+        ).withStyle(ChatFormatting.GOLD).withStyle {
+            if (player?.hasPermissions(2) == true)
+                it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("teleport to position")))
+                    .withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tp $x $y $z"))
             else it
         }
     }
 
-    fun withoutCollision(entity: Entity, server: MinecraftServer, team: Team? = null) {
+    fun withoutCollision(entity: Entity, server: MinecraftServer, team: PlayerTeam? = null) {
         var teamName = "${DivideMod.ID}_nocollision"
-        val color = team?.color.takeIf { it != Formatting.RESET }
+        val color = team?.color.takeIf { it != ChatFormatting.RESET }
         if (color != null) teamName += "_${color.name.lowercase()}"
 
-        val markerTeam = server.scoreboard.getPlayerTeam(teamName) ?: server.scoreboard.addTeam(teamName)
+        val markerTeam = server.scoreboard.getPlayerTeam(teamName) ?: server.scoreboard.addPlayerTeam(teamName)
         markerTeam.collisionRule = CollisionRule.NEVER
         if (color != null) markerTeam.color = color
-        server.scoreboard.addPlayerToTeam(entity.entityName, markerTeam)
+        server.scoreboard.addPlayerToTeam(entity.scoreboardName, markerTeam)
     }
 
     fun <T : Entity> spawnMarker(
         type: EntityType<T>,
-        level: ServerWorld,
+        level: ServerLevel,
         pos: BlockPos,
-        additionalData: (NbtCompound) -> Unit = {},
+        additionalData: (CompoundTag) -> Unit = {},
     ): T {
-        return spawnMarker(type, level, Vec3d(pos.x + 0.5, pos.y + 0.25, pos.z + 0.5), additionalData)
+        return spawnMarker(type, level, Vec3(pos.x + 0.5, pos.y + 0.25, pos.z + 0.5), additionalData)
     }
 
     fun <T : Entity> spawnMarker(
         type: EntityType<T>,
-        level: ServerWorld,
-        pos: Vec3d,
-        additionalData: (NbtCompound) -> Unit = {},
+        level: ServerLevel,
+        pos: Vec3,
+        additionalData: (CompoundTag) -> Unit = {},
     ): T {
         val marker = type.create(level) ?: throw NullPointerException()
-        val nbt = NbtCompound()
+        val nbt = CompoundTag()
         nbt.putBoolean("NoAI", true)
         nbt.putBoolean("NoGravity", true)
         nbt.putBoolean("Invulnerable", true)
@@ -77,14 +77,14 @@ object Util {
 
         additionalData(nbt)
 
-        marker.readNbt(nbt)
-        marker.setPosition(pos)
+        marker.load(nbt)
+        marker.moveTo(pos)
         marker.isInvisible = true
-        level.spawnEntity(marker)
+        level.addFreshEntity(marker)
 
 
         if (marker is LivingEntity) {
-            marker.scoreboardTags.add("invisible")
+            marker.tags.add("invisible")
             PacketIntercepting.updateData(marker, level.server)
         }
 

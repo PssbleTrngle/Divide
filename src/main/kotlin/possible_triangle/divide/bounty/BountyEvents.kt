@@ -1,30 +1,32 @@
 package possible_triangle.divide.bounty
 
-import net.minecraft.advancement.Advancement
-import net.minecraft.block.BlockState
-import net.minecraft.block.Blocks
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.registry.tag.BlockTags
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.advancements.Advancement
+import net.minecraft.core.registries.Registries
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.tags.BlockTags
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
+import possible_triangle.divide.extensions.getHolderOrThrow
+import possible_triangle.divide.extensions.isIn
 import possible_triangle.divide.logic.Teams.teammates
 import possible_triangle.divide.missions.Mission
 
 object BountyEvents {
 
-    fun onAdvancement(player: ServerPlayerEntity, advancement: Advancement) {
+    fun onAdvancement(player: ServerPlayer, advancement: Advancement) {
         if (advancement.id.path.startsWith("recipes/")) return
         if (advancement.display?.shouldShowToast() != true) return
-        val announced = advancement.display?.shouldAnnounceToChat() == true
+        val announced = advancement.display?.shouldAnnounceChat() == true
 
         val alreadyUnlocked = player.teammates(false).any {
-            it.advancementTracker.getProgress(advancement).isDone
+            it.advancements.getOrStartProgress(advancement).isDone
         }
 
         if (!alreadyUnlocked) Bounty.ADVANCEMENT.gain(player, if (announced) 1.0 else 0.5)
     }
 
-    fun onBlockBreak(player: ServerPlayerEntity, state: BlockState) {
-        val entry = player.server.registryManager.get(RegistryKeys.BLOCK).getEntry(state.block)
+    fun onBlockBreak(player: ServerPlayer, state: BlockState) {
+        val entry = player.server.registryAccess().registryOrThrow(Registries.BLOCK).getHolderOrThrow(state.block)
 
         val match = when {
             entry.isIn(BlockTags.COAL_ORES) -> Bounty.MINED_COAL

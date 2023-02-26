@@ -5,27 +5,27 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType
-import net.minecraft.command.argument.BlockPosArgumentType
-import net.minecraft.command.argument.TimeArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.arguments.TimeArgument
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument
+import net.minecraft.network.chat.Component
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
 
 object CrateCommand {
 
-    val NO_CRATE_POS = DynamicCommandExceptionType { Text.literal("Could no find a valid pos around $it") }
-    val NO_LOOT_DEFINED = SimpleCommandExceptionType(Text.literal("No crate loot defined"))
+    val NO_CRATE_POS = DynamicCommandExceptionType { Component.literal("Could no find a valid pos around $it") }
+    val NO_LOOT_DEFINED = SimpleCommandExceptionType(Component.literal("No crate loot defined"))
 
-    fun register(base: LiteralArgumentBuilder<ServerCommandSource>): LiteralArgumentBuilder<ServerCommandSource>? {
+    fun register(base: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack>? {
         return base.then(
             literal("crate").then(
                 literal("spawn").then(
-                    argument("pos", BlockPosArgumentType.blockPos())
+                    argument("pos", BlockPosArgument.blockPos())
                         .then(
-                            CrateLoot.keys.fold(argument("in", TimeArgumentType.time()).executes(::spawnCrate))
+                            CrateLoot.keys.fold(argument("in", TimeArgument.time()).executes(::spawnCrate))
                             { node, key -> node.then(literal(key).executes { spawnCrate(it) { CrateLoot.getOrThrow(key) } }) })
                         .executes(::spawnCrate)
                 )
@@ -34,11 +34,11 @@ object CrateCommand {
     }
 
     private fun spawnCrate(
-        ctx: CommandContext<ServerCommandSource>,
+        ctx: CommandContext<CommandSourceStack>,
         type: () -> CrateLoot? = { CrateLoot.random() }
     ): Int {
 
-        val center = BlockPosArgumentType.getBlockPos(ctx, "pos")
+        val center = BlockPosArgument.getSpawnablePos(ctx, "pos")
         val pos = CrateScheduler.findInRange(ctx.source.server, center, 10.0) ?: throw NO_CRATE_POS.create(center)
 
         val timeTicks = try {
@@ -50,8 +50,8 @@ object CrateCommand {
         val seconds = timeTicks / 20
         CrateScheduler.schedule(ctx.source.server, seconds, pos, type() ?: throw NO_LOOT_DEFINED.create())
 
-        ctx.source.sendFeedback(
-            Text.literal(
+        ctx.source.sendSuccess(
+            Component.literal(
                 if (seconds == 0) "Crate delivered to $pos"
                 else "Crate will be delivered to $pos in $seconds seconds"
             ), false

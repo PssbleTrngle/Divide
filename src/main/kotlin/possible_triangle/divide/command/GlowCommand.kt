@@ -2,9 +2,9 @@ package possible_triangle.divide.command
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.chat.Component
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.hacks.PacketIntercepting
@@ -14,7 +14,7 @@ object GlowCommand {
 
     private const val REASON_ID = "glow_own_team"
 
-    fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+    fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
             literal("glow")
                 .requires { it.isActiveParticipant() }
@@ -22,13 +22,13 @@ object GlowCommand {
         )
     }
 
-    private fun run(ctx: CommandContext<ServerCommandSource>): Int {
-        val player = ctx.source.playerOrThrow
+    private fun run(ctx: CommandContext<CommandSourceStack>): Int {
+        val player = ctx.source.playerOrException
         val glowing = DataHacker.removeReason(ctx.source.server) { it.target == player.uuid && it.id == REASON_ID }
         if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
         if (!glowing) DataHacker.addReason(GLOWING, player, player.teammates(false), 60 * 5, id = REASON_ID)
 
-        ctx.source.sendFeedback(Text.literal("You are${if (glowing) " no longer " else " "}glowing"), false)
+        ctx.source.sendSuccess(Component.literal("You are${if (glowing) " no longer " else " "}glowing"), false)
 
         return 1
     }

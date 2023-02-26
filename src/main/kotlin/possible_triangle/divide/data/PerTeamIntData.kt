@@ -1,9 +1,9 @@
 package possible_triangle.divide.data
 
-import net.minecraft.nbt.AbstractNbtNumber
-import net.minecraft.nbt.NbtInt
+import net.minecraft.nbt.IntTag
+import net.minecraft.nbt.NumericTag
 
 class PerTeamIntData(
     key: String,
     initial: Int = 0,
-) : PerTeamData<Int, AbstractNbtNumber>(key, initial, NbtInt::of, { it.intValue() })
+) : PerTeamData<Int, NumericTag>(key, initial, IntTag::valueOf, { it.asInt })
