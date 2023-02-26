@@ -9,6 +9,7 @@ import net.minecraft.commands.Commands.literal
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.command.arguments.RewardArgument
 import possible_triangle.divide.command.arguments.TargetArgument
+import possible_triangle.divide.gui.openRewardGui
 import possible_triangle.divide.logic.Teams.teamOrThrow
 import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.Reward
@@ -25,8 +26,13 @@ object BuyCommand {
                             argument("target", StringArgumentType.string()).suggests(TargetArgument.suggestions())
                                 .executes(::buyReward)
                         ).executes(::buyReward)
-                )
+                ).executes(::openGui)
         )
+    }
+
+    private fun openGui(ctx: CommandContext<CommandSourceStack>): Int {
+        ctx.source.playerOrException.openRewardGui()
+        return 1
     }
 
     private fun buyReward(ctx: CommandContext<CommandSourceStack>): Int {

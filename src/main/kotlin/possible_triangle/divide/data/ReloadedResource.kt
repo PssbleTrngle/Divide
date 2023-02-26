@@ -90,6 +90,7 @@ abstract class ReloadedResource<Entry>(
     protected val folder
         get() = File("config/divide/$dir")
 
+    @Deprecated("use contextual")
     open fun populate(entry: Entry, server: MinecraftServer?, id: String) {}
 
     private fun registerRecursive(root: Path, watchService: WatchService) {
@@ -145,6 +146,8 @@ abstract class ReloadedResource<Entry>(
         preloadedKeys = files().keys.toList()
     }
 
+    protected fun createYaml(server: MinecraftServer? = null) = Yaml(createContext(server), config())
+
     private fun load(server: MinecraftServer) {
         IS_LOADING = true
 
@@ -154,7 +157,7 @@ abstract class ReloadedResource<Entry>(
             val stream = file.inputStream()
 
             val parsed = try {
-                Yaml(configuration = CONFIG).decodeFromStream(serializer, stream)
+                createYaml(server).decodeFromStream(serializer, stream)
             } catch (e: SerializationException) {
                 DivideMod.LOGGER.warn("an error occurred loading $resourceID '$id'")
                 null

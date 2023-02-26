@@ -1,11 +1,14 @@
 package possible_triangle.divide.reward
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.item.Items
+import net.minecraft.world.level.ItemLike
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
@@ -22,6 +25,7 @@ import possible_triangle.divide.reward.actions.secret.ScarePlayer
 @Serializable
 data class Reward(
     val display: String,
+    @Contextual val icon: ItemLike,
     val price: Int,
     val duration: Int? = null,
     val charge: Int? = null,
@@ -67,6 +71,7 @@ data class Reward(
         val TRACK_PLAYER by register("track_player", TrackPlayer) {
             Reward(
                 "Track Player",
+                Items.COMPASS,
                 1000,
                 duration = 2.m,
                 charge = 1.m,
@@ -76,6 +81,7 @@ data class Reward(
         val TRACK_PLAYER_WEAK by register("track_player_weak", TrackPlayerWeak) {
             Reward(
                 "Track Player (Weak)",
+                Items.COMPASS,
                 500,
                 duration = 5.m,
                 charge = 30,
@@ -83,21 +89,65 @@ data class Reward(
             )
         }
 
-        val FIND_GRAVE by register("find_grave", FindGrave) { Reward("Find Grave", 50, duration = 10.m) }
+        val FIND_GRAVE by register("find_grave", FindGrave) {
+            Reward(
+                "Find Grave",
+                Items.RECOVERY_COMPASS,
+                50,
+                duration = 10.m
+            )
+        }
 
-        val HIDE_FROM_MONSTERS by register("hide_from_monsters", HideFromMonster) { Reward("Hide from monsters", 200, duration = 5.m) }
+        val HIDE_FROM_MONSTERS by register("hide_from_monsters", HideFromMonster) {
+            Reward(
+                "Hide from monsters",
+                Items.ZOMBIE_HEAD,
+                200,
+                duration = 5.m
+            )
+        }
 
-        val SHOW_NAMES by register("show_names", ShowNametags) { Reward("Show Nametags", 100, duration = 20, targetType = ActionTarget.TEAM.id) }
+        val SHOW_NAMES by register("show_names", ShowNametags) {
+            Reward(
+                "Show Nametags",
+                Items.NAME_TAG,
+                100,
+                duration = 20,
+                targetType = ActionTarget.TEAM.id
+            )
+        }
 
-        val BUFF_LOOT by register("buff_loot", PlayerBuff) { Reward("Buff Loot-Chance", 100, duration = 1.m) }
+        val BUFF_LOOT by register("buff_loot", PlayerBuff) {
+            Reward(
+                "Buff Loot-Chance",
+                Items.DIAMOND_SWORD,
+                100,
+                duration = 1.m
+            )
+        }
 
-        val BUFF_CROPS by register("boost_crops", TeamBuff) { Reward("Boost Crop-Growth", 200, duration = 10.m) }
+        val BUFF_CROPS by register("boost_crops", TeamBuff) {
+            Reward(
+                "Boost Crop-Growth",
+                Items.WHEAT,
+                200,
+                duration = 10.m
+            )
+        }
 
-        val LOOT_CRATE by register("loot_crate", OrderLootCrate) { Reward("Order a Loot-Crate", 800, charge = 5.m) }
+        val LOOT_CRATE by register("loot_crate", OrderLootCrate) {
+            Reward(
+                "Order a Loot-Crate",
+                Items.BARREL,
+                800,
+                charge = 5.m
+            )
+        }
 
         val BLIND_TEAM by register("blind_team", BlindTeam) {
             Reward(
                 "Blind a Team",
+                Items.INK_SAC,
                 200,
                 duration = 1.m,
                 secret = true,
@@ -108,6 +158,7 @@ data class Reward(
         val MINING_FATIGUE by register("slow_minespeed", MiningFatigue) {
             Reward(
                 "Give a Team Mining-Fatigue",
+                Items.WOODEN_PICKAXE,
                 300,
                 duration = 4.m,
                 secret = true,
@@ -118,6 +169,7 @@ data class Reward(
         val SCARE_PLAYER by register("scare_player", ScarePlayer) {
             Reward(
                 "Scares a player by playing sounds near him",
+                Items.SKELETON_SKULL,
                 100,
                 duration = 1.m,
                 secret = true,

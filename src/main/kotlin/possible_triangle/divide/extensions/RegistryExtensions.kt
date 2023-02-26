@@ -14,7 +14,11 @@ fun <T : Any> Registry<T>.getHolderOrThrow(value: T): Holder.Reference<T> {
     return getHolderOrThrow(getResourceKey(value).orElseThrow())
 }
 
+@Deprecated("use RegistryAccess instead")
 fun ItemLike.id() = BuiltInRegistries.ITEM.getKey(asItem())
+
+@Deprecated("use RegistryAccess instead")
+fun ItemLike.stringId() = id().toString()
 
 fun <T : Any> Holder<T>.isIn(tag: TagKey<T>) = `is`(tag)
 fun <T : Any> Holder<T>.isOf(value: T) = value == this

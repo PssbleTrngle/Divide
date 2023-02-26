@@ -1,6 +1,5 @@
 package possible_triangle.divide.data
 
-import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.KSerializer
 import net.minecraft.server.MinecraftServer
 import java.io.File
@@ -32,7 +31,7 @@ abstract class DefaultedResource<Entry>(
     }
 
     fun save(id: String, entry: Entry, overwrite: Boolean = true) {
-        val encoded = Yaml(configuration = config()).encodeToString(serializer(), entry)
+        val encoded = createYaml().encodeToString(serializer(), entry)
         val file = File(folder, "$id.yml")
         folder.mkdirs()
         if (!file.exists()) file.createNewFile()

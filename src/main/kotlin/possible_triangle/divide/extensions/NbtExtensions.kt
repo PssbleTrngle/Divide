@@ -21,7 +21,6 @@ fun CompoundTag.toBlockPos() = NbtUtils.readBlockPos(this)
 
 fun CompoundTag.readBlockPos(key: String) = getCompound(key).toBlockPos()
 
-
 fun Iterable<Component>.toLoreTag(): ListTag {
     return map { Component.Serializer.toJson(it) }
         .mapTo(ListTag()) { StringTag.valueOf(it) }

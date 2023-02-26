@@ -79,6 +79,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}")
 
     modImplementation include("eu.pb4:polymer-core:${project.polymer_version}")
+    modImplementation include("eu.pb4:sgui:${project.sgui_version}")
 
     modImplementation include("io.github.fabricators_of_create.Porting-Lib:porting-lib:${project.porting_lib_version}")
 
