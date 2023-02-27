@@ -20,7 +20,7 @@ import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.data.Util.persistentData
+import possible_triangle.divide.extensions.persistentData
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logging.EventLogger

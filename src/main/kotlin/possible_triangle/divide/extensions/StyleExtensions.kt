@@ -3,13 +3,14 @@ package possible_triangle.divide.extensions
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
+import net.minecraft.world.item.Item
 import net.minecraft.world.item.Items
 
 fun MutableComponent.noItalic() = withStyle { it.noItalic() }
 
 fun Style.noItalic() = withItalic(false)
 
-fun ChatFormatting.toIcon() = when(this) {
+fun ChatFormatting.toIcon(): Item = when(this) {
     ChatFormatting.BLACK -> Items.BLACK_DYE
     ChatFormatting.DARK_BLUE -> Items.BLUE_DYE
     ChatFormatting.DARK_GREEN -> Items.GREEN_DYE

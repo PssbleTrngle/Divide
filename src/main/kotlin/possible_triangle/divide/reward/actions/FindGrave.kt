@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.phys.AABB
-import possible_triangle.divide.data.Util.toComponent
+import possible_triangle.divide.extensions.toComponent
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.DeathEvents

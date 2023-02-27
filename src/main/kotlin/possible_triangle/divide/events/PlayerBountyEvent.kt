@@ -7,7 +7,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.data.Util.persistentData
+import possible_triangle.divide.extensions.persistentData
 import possible_triangle.divide.extensions.isTeammate
 import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger

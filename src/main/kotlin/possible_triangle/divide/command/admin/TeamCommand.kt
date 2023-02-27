@@ -11,6 +11,7 @@ import net.minecraft.commands.arguments.ColorArgument
 import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.commands.arguments.TeamArgument
 import net.minecraft.network.chat.Component
+import net.minecraft.world.scores.Team
 import possible_triangle.divide.command.arguments.DivideTeamArgument
 import possible_triangle.divide.logic.Teams
 import possible_triangle.divide.logic.Teams.participingTeams
@@ -82,6 +83,7 @@ object TeamCommand {
         val team = scoreboard.addPlayerTeam(id)
         team.displayName = Component.literal(name)
         team.isAllowFriendlyFire = false
+        team.nameTagVisibility = Team.Visibility.HIDE_FOR_OTHER_TEAMS
         team.setSeeFriendlyInvisibles(true)
         team.color = color
 

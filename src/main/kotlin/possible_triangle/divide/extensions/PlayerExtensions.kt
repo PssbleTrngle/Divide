@@ -1,5 +1,6 @@
 package possible_triangle.divide.extensions
 
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
@@ -17,4 +18,8 @@ fun Player.isTeammate(other: Player): Boolean {
 
 fun ServerPlayer.getScore(objective: Objective): Score {
     return server.scoreboard.getOrCreatePlayerScore(scoreboardName, objective)
+}
+
+fun Player.persistentData(): CompoundTag {
+    return extraCustomData
 }

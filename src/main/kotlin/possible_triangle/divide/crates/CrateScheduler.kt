@@ -26,8 +26,8 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
-import possible_triangle.divide.data.Util.blocksIn
-import possible_triangle.divide.data.Util.spawnMarker
+import possible_triangle.divide.extensions.blocksIn
+import possible_triangle.divide.data.spawnMarker
 import possible_triangle.divide.events.Countdown
 import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logic.Teams
@@ -123,7 +123,7 @@ object CrateScheduler {
 
     fun findInRange(server: MinecraftServer, center: BlockPos, range: Double): BlockPos? {
         val world = server.mainWorld()
-        return blocksIn(AABB(center).inflate(range, 10.0, range)).asSequence()
+        return AABB(center).inflate(range, 10.0, range).blocksIn().asSequence()
             .filter { world.worldBorder.isWithinBounds(it) }
             .filter {
                 val below = it.below()
@@ -132,7 +132,7 @@ object CrateScheduler {
                 val column = (0..3).map { pos.above(it) }
                 column.all { world.isAir(it) }
             }.filter { pos ->
-                val surrounding = blocksIn(AABB(pos).inflate(7.0, 4.0, 7.0))
+                val surrounding = AABB(pos).inflate(7.0, 4.0, 7.0).blocksIn()
                 surrounding.count { world.isAir(it) } >= 15
             }.sortedBy { it.distManhattan(center) }.firstOrNull()
     }

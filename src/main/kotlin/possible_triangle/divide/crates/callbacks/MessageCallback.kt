@@ -11,7 +11,7 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.data.Util.toComponent
+import possible_triangle.divide.extensions.toComponent
 import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.extensions.putBlockPos
 import possible_triangle.divide.extensions.readBlockPos

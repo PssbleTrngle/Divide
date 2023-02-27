@@ -29,7 +29,8 @@ abstract class DataAction(
     open fun <T> onPrepare(ctx: RewardContext<T>) {}
 
     final override fun <T> prepare(ctx: RewardContext<T>) {
-        if (isRunning(ctx.server, ctx.reward) { it.target == ctx.target }) {
+        val worthless = targets(ctx).all { target -> isRunning(ctx.server, ctx.reward) { it.target == target } }
+        if (worthless) {
             throw ALREADY_TARGETED.create(ctx.targetEvent()?.name, ctx.reward.display)
         }
         onPrepare(ctx)

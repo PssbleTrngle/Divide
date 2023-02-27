@@ -19,8 +19,6 @@ import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.Config
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
-import possible_triangle.divide.data.Util
-import possible_triangle.divide.data.Util.persistentData
 import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.teammates
@@ -49,7 +47,7 @@ object Bases {
             .filterValues { (_, dim) -> dim == world.dimension() }
             .forEach { (_, pos) ->
                 if (world.isAreaLoaded(pos.first, 1)) {
-                    val blocks = Util.blocksIn(baseBox(pos.first))
+                    val blocks = baseBox(pos.first).blocksIn()
                     blocks.forEach {
                         val state = world.getBlockState(it)
                         if (state.block is CropBlock) {

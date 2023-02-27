@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import possible_triangle.divide.events.Eras
 import possible_triangle.divide.extensions.id
+import possible_triangle.divide.extensions.toDuration
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Bases.isInBase
 import possible_triangle.divide.logic.Chat
@@ -41,14 +42,10 @@ object TrackPlayer : DataAction(GLOWING) {
     override fun <T> onPrepare(ctx: RewardContext<T>) {
         checkRequirements(ctx)
 
-        ctx.targetPlayers().forEach {
-            Chat.subtitle(it, "You will be tracked in ${ctx.reward.charge}s")
-        }
-
-        ctx.team.participants(ctx.server).forEach {
-            Chat.subtitle(it, "Tracking in ${ctx.reward.charge}s")
-        }
-
+        ctx.notify(
+            playerMsg = "Tracking ${ctx.reward.charge.toDuration()}",
+            targetMsg = "You will be tracked ${ctx.reward.charge.toDuration()}"
+        )
     }
 
     override fun <T> onStart(ctx: RewardContext<T>) {
@@ -75,13 +72,10 @@ object TrackPlayer : DataAction(GLOWING) {
     override fun <T> onStop(ctx: RewardContext<T>) {
         val target = ctx.targetPlayer() ?: return
 
-        ctx.team.participants(ctx.server).forEach {
-            Chat.subtitle(it, Component.literal("No longer tracking ").append(target.name))
-        }
-
-        ctx.targetPlayers().forEach {
-            Chat.subtitle(it, "You are no longer being tracked")
-        }
+        ctx.notify(
+            playerMsg = "No longer tracking ${target.scoreboardName}",
+            targetMsg = "You are no longer being tracked"
+        )
     }
 
 }
