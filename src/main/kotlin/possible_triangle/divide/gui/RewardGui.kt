@@ -1,8 +1,6 @@
 package possible_triangle.divide.gui
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException
 import eu.pb4.sgui.api.elements.GuiElementInterface
-import eu.pb4.sgui.api.gui.SimpleGui
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
@@ -10,13 +8,9 @@ import net.minecraft.world.inventory.MenuType
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.world.scores.PlayerTeam
-import possible_triangle.divide.extensions.isTeammate
-import possible_triangle.divide.extensions.noItalic
-import possible_triangle.divide.extensions.setLore
-import possible_triangle.divide.extensions.toIcon
+import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
-import possible_triangle.divide.logic.Teams.isAdmin
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.logic.Teams.participingTeams
@@ -25,25 +19,20 @@ import possible_triangle.divide.reward.ActionTarget
 import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.RewardContext
 
-class RewardGui(player: ServerPlayer) : SimpleGui(MenuType.GENERIC_9x4, player, false) {
+class RewardGui(player: ServerPlayer) : ClearableGui(MenuType.GENERIC_9x4, player) {
 
     companion object {
-        private val NOT_ENOUGH_POINTS = Component.literal("Not enough points :/").withStyle(ChatFormatting.RED)
+        private val NOT_ENOUGH_POINTS = Component.literal("Not enough points :/").withStyle(ChatFormatting.RED).noItalic()
     }
 
-    private fun withCleared(block: () -> Unit) {
-        (0 until size).forEach {
-            clearSlot(it)
-        }
-        block()
-    }
+    val team get() = player.participantTeam()
 
-    val points get() = player.participantTeam()?.let { Points.get(player.server, it) } ?: 0
+    val points get() = team?.let { Points.get(player.server, it) } ?: 0
 
     fun showRewards() = withCleared {
-        title = Component.literal("Trade points for rewards ")
+        title = Component.literal("Trade points ")
             .append(Component.literal("[$points points]").withStyle(ChatFormatting.GOLD))
-        Reward.values.forEachIndexed { i, reward ->
+        Reward.values.filter { Reward.isVisible(it, team, player.server) }.forEachIndexed { i, reward ->
             setSlot(i, RewardElement(reward))
         }
     }
@@ -62,25 +51,21 @@ class RewardGui(player: ServerPlayer) : SimpleGui(MenuType.GENERIC_9x4, player, 
         }
     }
 
-    fun <T> buy(reward: Reward, targetType: ActionTarget<T>, target: T) {
-        try {
-            val success = Reward.buy(
-                RewardContext(
-                    player.teamOrThrow(),
-                    player.server,
-                    player.uuid,
-                    target,
-                    reward,
-                    targetType,
-                )
+    fun <T> buy(reward: Reward, targetType: ActionTarget<T>, target: T) = runCatching {
+        val success = Reward.buy(
+            RewardContext(
+                player.teamOrThrow(),
+                player.server,
+                player.uuid,
+                target,
+                reward,
+                targetType,
             )
-            if (success) {
-                close()
-            } else {
-                title = NOT_ENOUGH_POINTS
-            }
-        } catch(ex: CommandSyntaxException) {
-            title = Component.literal(ex.message?.takeIf { player.isAdmin() } ?: "An error occurred :/").withStyle(ChatFormatting.RED)
+        )
+        if (success) {
+            close()
+        } else {
+            title = NOT_ENOUGH_POINTS
         }
     }
 
@@ -117,23 +102,25 @@ class RewardGui(player: ServerPlayer) : SimpleGui(MenuType.GENERIC_9x4, player, 
 
     inner class RewardElement(private val reward: Reward) : GuiElementInterface {
 
-        private val canBuy get() = points <= reward.price
+        private val canBuy get() = points >= reward.price
 
         private val icon = ItemStack(reward.icon).apply {
             hoverName = Component.literal(reward.display).noItalic()
-            setLore(listOfNotNull(
-                "Not enough points".takeUnless { canBuy },
-                "costs ${reward.price} points",
-                reward.charge?.let { "takes ${it / 2} minutes to charge up" },
-                reward.duration?.let { "lasts ${it / 2} minutes" },
-            ).map { Component.literal(it) })
+            setLore(
+                listOfNotNull(
+                    NOT_ENOUGH_POINTS.takeUnless { canBuy },
+                    lore("costs ${reward.price} points"),
+                    reward.charge?.let { lore("takes ${it / 2} minutes to charge up") },
+                    reward.duration?.let { lore("lasts ${it / 2} minutes") },
+                )
+            )
         }
 
         override fun getItemStack() = icon
 
         override fun getGuiCallback(): GuiElementInterface.ClickCallback {
             return GuiElementInterface.ClickCallback { _, _, _, _ ->
-                when (reward.target) {
+                if (canBuy) when (reward.target) {
                     ActionTarget.TEAM -> showTeams(reward)
                     ActionTarget.PLAYER -> showPlayers(reward)
                     ActionTarget.NONE -> buy(reward, ActionTarget.NONE, Unit)

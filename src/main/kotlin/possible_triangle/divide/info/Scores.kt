@@ -133,7 +133,7 @@ object Scores {
                 listOfNotNull(
                     player.isInBase(useTag = true).takeIf { it }?.let { apply("In Base", GREEN) },
                     PlayerBountyEvent.getBounty(player)?.takeIf { it.until >= now }
-                        ?.let { apply("Bounty on your Head until", RED) },
+                        ?.let { apply("Bounty on your Head", RED) },
                     Action.isRunning(player.server, Reward.TRACK_PLAYER, ifCharged = true) {
                         it.targetPlayers().contains(player)
                     }

@@ -1,6 +1,7 @@
 package possible_triangle.divide.extensions
 
 import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.world.item.Item
@@ -9,6 +10,10 @@ import net.minecraft.world.item.Items
 fun MutableComponent.noItalic() = withStyle { it.noItalic() }
 
 fun Style.noItalic() = withItalic(false)
+
+fun MutableComponent.loreStyle() = noItalic().withStyle(ChatFormatting.GRAY)
+
+fun lore(text: String) = Component.literal(text).loreStyle()
 
 fun ChatFormatting.toIcon(): Item = when(this) {
     ChatFormatting.BLACK -> Items.BLACK_DYE

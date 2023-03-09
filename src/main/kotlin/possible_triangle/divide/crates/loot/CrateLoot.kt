@@ -55,6 +55,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
 
         init {
             val resources = normalized(
+                LootEntry(Items.ARROW, 5.0, listOf(7, 24)),
                 LootEntry(Items.JUNGLE_PLANKS, 30.0, listOf(5, 20)),
                 LootEntry(Items.RAW_IRON, 30.0, listOf(2, 6)),
                 LootEntry(Items.RAW_GOLD, 20.0, listOf(2, 6)),
@@ -73,12 +74,9 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             )
 
             val rarities = normalized(
-                LootEntry(Items.DIAMOND, 10.0, listOf(1, 3)),
                 LootEntry(Items.ENDER_PEARL, 5.0, listOf(1, 2)),
                 LootEntry(Items.SCUTE, 5.0, listOf(1, 2)),
                 LootEntry(Items.EXPERIENCE_BOTTLE, 10.0, listOf(2, 6)),
-                LootEntry(Items.MUSIC_DISC_13),
-                LootEntry(Items.MUSIC_DISC_STAL),
                 LootEntry(Items.CHORUS_FRUIT, 5.0, listOf(3, 5)),
             )
 
@@ -112,7 +110,6 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
 
             val tools = normalized(
                 listOf(
-                    LootEntry(Items.ARROW, 5.0, listOf(3, 7)),
                     LootEntry(Items.POWDER_SNOW_BUCKET, 5.0),
                     LootEntry(Items.PUFFERFISH_BUCKET, 5.0),
                     LootEntry(Items.SADDLE, 5.0),
@@ -188,7 +185,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                         LootPools(rolls = 2, food),
                         LootPools(rolls = 2, potions),
                         LootPools(
-                            rolls = 2,
+                            rolls = 3,
                             matrix(diamondStuff, enchanted) + applyWeight(ironTools + tools, 2.0) + LootEntry(
                                 Items.ELYTRA,
                                 20.0,

@@ -24,7 +24,7 @@ data class LootPools(val rolls: Int, val entries: List<LootEntry>, val functions
         return makeWeightedDecision(rolls, entries.associateWith { it.weight }, random).mapIndexed { i, entry ->
             val stack = entry.createStack()
             functions?.forEach { it.apply(stack) }
-            stack.setLore("Roll $i/$rolls", "Count ${stack.count}", "Weight ${entry.weight}")
+            stack.setLore("Roll ${i + 1}/$rolls", "Weight ${entry.weight}")
             stack
         }
     }

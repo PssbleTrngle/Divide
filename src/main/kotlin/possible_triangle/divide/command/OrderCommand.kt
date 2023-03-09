@@ -8,6 +8,7 @@ import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
 import possible_triangle.divide.command.PointsCommand.NOT_ENOUGH
 import possible_triangle.divide.crates.Order
+import possible_triangle.divide.gui.openOrderGui
 
 object OrderCommand {
 
@@ -15,6 +16,7 @@ object OrderCommand {
         dispatcher.register(
             Order.keys.toList().fold(
                 literal("order").requires { it.isActiveParticipant() }
+                    .executes(::openGui)
             ) { node, key ->
                 node.then(literal(key)
                     .executes { orderItem(it) { Order.getOrThrow(key) } }
@@ -24,6 +26,11 @@ object OrderCommand {
                 )
             }
         )
+    }
+
+    private fun openGui(ctx: CommandContext<CommandSourceStack>): Int {
+        ctx.source.playerOrException.openOrderGui()
+        return 1
     }
 
     private fun orderItem(ctx: CommandContext<CommandSourceStack>, supplier: () -> Order): Int {

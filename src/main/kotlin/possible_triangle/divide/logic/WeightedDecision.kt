@@ -1,15 +1,14 @@
 package possible_triangle.divide.logic
 
-import kotlin.math.max
 import kotlin.random.Random
 
 fun <T> makeWeightedDecision(rolls: Int, values: Map<T, Number>, random: Random = Random): List<T> {
-    val weighted = hashMapOf<T, Double>()
+    val weighted = arrayListOf<Pair<T, Double>>()
 
     var total = 0.0
-    values.mapValues { max(it.value.toDouble(), 1.0) }.forEach { (entry, weight) ->
-        weighted[entry] = total
-        total += weight
+    values.forEach { (entry, weight) ->
+        weighted += entry to total
+        total += weight.toDouble()
     }
 
     if (total <= 0.0) return emptyList()
@@ -17,10 +16,10 @@ fun <T> makeWeightedDecision(rolls: Int, values: Map<T, Number>, random: Random 
     return (1..rolls)
         .map { random.nextDouble(0.0, total) }
         .map { roll ->
-            weighted.entries.findLast { it.value <= roll }
-                ?: throw NullPointerException("Could not find entry for $roll in map $weighted with total $total")
+            weighted.findLast { it.second <= roll }
+                ?: throw NullPointerException("Could not find entry for $roll with total $total")
         }
-        .map { it.key }
+        .map { it.first }
 }
 
 fun <T> makeWeightedDecision(values: Map<T, Number>): T? {

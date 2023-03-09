@@ -16,7 +16,7 @@ object OrderLootCrate : Action() {
         val pos = CrateScheduler.findInRange(ctx.server, center, 10.0) ?: throw NO_CRATE_POS.create(center)
 
         val seconds = ctx.reward.charge ?: 0
-        val due = CrateScheduler.prepare(ctx.server, seconds, pos, table)
+        val due = CrateScheduler.prepare(ctx.server, seconds, pos, table, withoutOrders = true)
 
         val teams = ctx.server.participingTeams()
         teams.forEach { CrateScheduler.scheduleMessage(ctx.server, 1, pos, due, it) }

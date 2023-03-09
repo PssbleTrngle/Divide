@@ -78,7 +78,7 @@ object PacketIntercepting {
     }
 
     fun updateData(entity: Entity, server: MinecraftServer) {
-        if (!shouldModify(server, entity)) return
+        //if (!shouldModify(server, entity)) return
         val data = entity.entityData.packDirty() ?: arrayListOf()
 
         if (data.none { it.id == SHARED_FLAGS.id }) {

@@ -35,8 +35,9 @@ fun ItemStack.setLore(vararg lore: Component) {
 }
 
 fun ItemStack.setLore(lore: List<Component>) {
-    val displayTag = orCreateTag.apply {
-        getCompound("display") ?: CompoundTag().also { put("display", it) }
+    val displayTag = with(orCreateTag) {
+        if(contains("display")) getCompound("display")
+        else CompoundTag().also { put("display", it) }
     }
     displayTag.put("Lore", lore.toLoreTag())
 }
