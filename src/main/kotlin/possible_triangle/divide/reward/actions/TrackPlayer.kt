@@ -9,7 +9,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import possible_triangle.divide.events.Eras
 import possible_triangle.divide.extensions.id
-import possible_triangle.divide.extensions.toDuration
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Bases.isInBase
 import possible_triangle.divide.logic.Chat
@@ -43,8 +42,8 @@ object TrackPlayer : DataAction(GLOWING) {
         checkRequirements(ctx)
 
         ctx.notify(
-            playerMsg = "Tracking ${ctx.reward.charge.toDuration()}",
-            targetMsg = "You will be tracked ${ctx.reward.charge.toDuration()}"
+            playerMsg = "Tracking ${ctx.reward.charge}",
+            targetMsg = "You will be tracked ${ctx.reward.charge}"
         )
     }
 

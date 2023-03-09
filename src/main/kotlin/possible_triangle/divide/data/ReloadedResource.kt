@@ -90,7 +90,6 @@ abstract class ReloadedResource<Entry>(
     protected val folder
         get() = File("config/divide/$dir")
 
-    @Deprecated("use contextual")
     open fun populate(entry: Entry, id: String) {}
 
     private fun registerRecursive(root: Path, watchService: WatchService) {

@@ -9,6 +9,7 @@ import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.hacks.PacketIntercepting
 import possible_triangle.divide.logic.Teams.teammates
+import kotlin.time.Duration.Companion.minutes
 
 object GlowCommand {
 
@@ -26,7 +27,7 @@ object GlowCommand {
         val player = ctx.source.playerOrException
         val glowing = DataHacker.removeReason(ctx.source.server) { it.target == player.uuid && it.id == REASON_ID }
         if (glowing) PacketIntercepting.updateData(player, ctx.source.server)
-        if (!glowing) DataHacker.addReason(GLOWING, player, player.teammates(true), 60 * 5, id = REASON_ID)
+        if (!glowing) DataHacker.addReason(GLOWING, player, player.teammates(true), 5.minutes, id = REASON_ID)
 
         ctx.source.sendSuccess(Component.literal("You are${if (glowing) " no longer " else " "}glowing"), false)
 

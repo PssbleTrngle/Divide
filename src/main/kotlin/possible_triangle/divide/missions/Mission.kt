@@ -14,15 +14,17 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.data.DurationAsInt
 import possible_triangle.divide.extensions.isIn
 import possible_triangle.divide.extensions.isOf
 import possible_triangle.divide.logic.Teams.participantTeam
-import possible_triangle.divide.m
 import possible_triangle.divide.missions.Mission.Type.FAIL
 import possible_triangle.divide.missions.Mission.Type.SUCCEED
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @Serializable
-data class Mission(val description: String, val type: Type, val fine: Int, val time: Int) {
+data class Mission(val description: String, val type: Type, val fine: Int, val time: DurationAsInt) {
 
     enum class Type { FAIL, SUCCEED }
 
@@ -39,7 +41,7 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
             "a copper ore" to { it.isIn(BlockTags.COPPER_ORES) },
             "a diamond ore" to { it.isIn(BlockTags.DIAMOND_ORES) },
         ).mapIndexed { i, (key, tag) ->
-            tag to defaulted("mine_${key}") { Mission("Mine $key", SUCCEED, 300 - i * 50, (i + 1) * 10) }
+            tag to defaulted("mine_${key}") { Mission("Mine $key", SUCCEED, 300 - i * 50, 10.seconds * (i + 1)) }
         }.associate { it }
 
         val CRAFT = listOf<Pair<String, (ItemStack) -> Boolean>>(
@@ -56,32 +58,32 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
                     "Craft $key",
                     SUCCEED,
                     200 - i * 60,
-                    15 + i * 10
+                    15.seconds + 10.seconds * i
                 )
             }
         }.associate { it }
 
-        val KILL_PLAYER by defaulted("kill_player") { Mission("Kill another player", SUCCEED, 100, 5.m) }
-        val SLAY_MONSTER by defaulted("slay_monster") { Mission("Slay a Monster", SUCCEED, 200, 5.m) }
-        val SLEEP by defaulted("sleep") { Mission("Go sleepy sleepy", SUCCEED, 100, 30) }
+        val KILL_PLAYER by defaulted("kill_player") { Mission("Kill another player", SUCCEED, 100, 5.minutes) }
+        val SLAY_MONSTER by defaulted("slay_monster") { Mission("Slay a Monster", SUCCEED, 200, 5.minutes) }
+        val SLEEP by defaulted("sleep") { Mission("Go sleepy sleepy", SUCCEED, 100, 30.seconds) }
 
-        val DROWN by defaulted("drown") { Mission("Drown", SUCCEED, 100, 1.m) }
-        val EXPLODE by defaulted("explode") { Mission("Explode", SUCCEED, 100, 2.m) }
-        val FALL by defaulted("fall") { Mission("Fall to your demise", SUCCEED, 200, 30) }
-        val BURN by defaulted("burn") { Mission("Burn alive", SUCCEED, 150, 1.m) }
+        val DROWN by defaulted("drown") { Mission("Drown", SUCCEED, 100, 1.minutes) }
+        val EXPLODE by defaulted("explode") { Mission("Explode", SUCCEED, 100, 2.minutes) }
+        val FALL by defaulted("fall") { Mission("Fall to your demise", SUCCEED, 200, 30.seconds) }
+        val BURN by defaulted("burn") { Mission("Burn alive", SUCCEED, 150, 1.minutes) }
 
-        val FOOD by defaulted("food") { Mission("Don't eat", FAIL, 150, 5.m) }
-        val CRAFTING by defaulted("crafting") { Mission("Don't craft", FAIL, 200, 10.m) }
+        val FOOD by defaulted("food") { Mission("Don't eat", FAIL, 150, 5.minutes) }
+        val CRAFTING by defaulted("crafting") { Mission("Don't craft", FAIL, 200, 10.minutes) }
         val DIMENSIONAL_TRAVEL by defaulted("dimensional_travel") {
             Mission(
                 "Don't switch dimensions",
                 FAIL,
                 300,
-                15.m
+                15.minutes
             )
         }
-        val JUMP by defaulted("jump") { Mission("Don't jump", FAIL, 150, 1.m) }
-        val SNEAK by defaulted("sneak") { Mission("Don't sneak", FAIL, 200, 5.m) }
+        val JUMP by defaulted("jump") { Mission("Don't jump", FAIL, 150, 1.minutes) }
+        val SNEAK by defaulted("sneak") { Mission("Don't sneak", FAIL, 200, 5.minutes) }
 
         override fun populate(entry: Mission, id: String) {
             entry.id = id

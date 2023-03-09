@@ -6,8 +6,10 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.extensions.inTicks
 import possible_triangle.divide.extensions.time
 import java.util.*
+import kotlin.time.Duration
 
 object DataHacker {
 
@@ -55,7 +57,7 @@ object DataHacker {
         type: Type,
         target: Entity,
         appliedTo: List<ServerPlayer>,
-        duration: Int,
+        duration: Duration,
         clearOnDeath: Boolean = false,
         clearInBase: Boolean = false,
         id: String? = null,
@@ -68,7 +70,7 @@ object DataHacker {
                     type,
                     target.uuid,
                     appliedTo.map { it.uuid },
-                    server.time() + duration * 20,
+                    server.time() + duration.inTicks,
                     clearOnDeath,
                     clearInBase,
                     id

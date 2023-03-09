@@ -1,5 +1,6 @@
 package possible_triangle.divide.missions
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import net.minecraft.ChatFormatting
 import net.minecraft.nbt.CompoundTag
@@ -23,20 +24,21 @@ import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.logic.Teams.participingTeams
 import kotlin.math.min
+import kotlin.time.Duration
 
 object MissionEvent : CycleEvent("missions") {
 
     override val enabled: Boolean
         get() = Config.CONFIG.missions.enabled
 
-    override val startsAfter: Int
+    override val startsAfter: Duration
         get() = Config.CONFIG.missions.startAfter
 
     @Serializable
     private data class Event(val mission: Mission, val action: String, val team: EventTarget? = null)
 
     @Serializable
-    data class MissionStatus(val mission: Mission, val secondsLeft: Int, val done: Boolean = false)
+    data class MissionStatus(val mission: Mission, @Contextual val timeLeft: Duration, val done: Boolean = false)
 
     internal data class ActiveMission(val mission: Mission, val teams: MutableList<PlayerTeam>)
 
@@ -48,7 +50,7 @@ object MissionEvent : CycleEvent("missions") {
         return ACTIVE[server]?.let { active ->
             MissionStatus(
                 mission = active.mission,
-                secondsLeft = COUNTDOWN.remaining(server),
+                timeLeft = COUNTDOWN.remaining(server),
                 done = player != null && active.teams.none { it.name == player.participantTeam()?.name }
             )
         }
@@ -114,7 +116,7 @@ object MissionEvent : CycleEvent("missions") {
         }
     }
 
-    override fun handle(server: MinecraftServer, index: Int): Int {
+    override fun handle(server: MinecraftServer, index: Int): Duration {
 
         val occurred = OCCURRED_MISSIONS[server]
         val availableMissions = Mission.values.filterNot { occurred.contains(it.id) }.let {

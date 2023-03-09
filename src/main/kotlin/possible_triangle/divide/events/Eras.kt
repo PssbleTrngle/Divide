@@ -9,13 +9,14 @@ import possible_triangle.divide.GameData
 import possible_triangle.divide.extensions.players
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
+import kotlin.time.Duration
 
 object Eras : CycleEvent("eras") {
 
     override val enabled: Boolean
         get() = Config.CONFIG.eras.enabled
 
-    override val startsAfter: Int
+    override val startsAfter: Duration
         get() = Config.CONFIG.eras.startAfter
 
     @Serializable
@@ -62,7 +63,7 @@ object Eras : CycleEvent("eras") {
         bar.isVisible = Config.CONFIG.eras.showWarBar
     }
 
-    override fun handle(server: MinecraftServer, index: Int): Int {
+    override fun handle(server: MinecraftServer, index: Int): Duration {
         val peace = isPeace(index)
         val pause = if (peace) Config.CONFIG.eras.peaceTime else Config.CONFIG.eras.warTime
 

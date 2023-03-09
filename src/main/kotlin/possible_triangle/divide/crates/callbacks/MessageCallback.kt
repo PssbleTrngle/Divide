@@ -11,10 +11,11 @@ import possible_triangle.divide.Config
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.extensions.toComponent
 import possible_triangle.divide.events.CallbackHandler
 import possible_triangle.divide.extensions.putBlockPos
 import possible_triangle.divide.extensions.readBlockPos
+import possible_triangle.divide.extensions.ticks
+import possible_triangle.divide.extensions.toComponent
 import possible_triangle.divide.hacks.DataHacker
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logging.EventLogger
@@ -50,22 +51,22 @@ class MessageCallback(val teamName: String, val pos: BlockPos, val time: Long) :
         LOGGER.log(server, Event(EventPos.of(pos), EventTarget.of(team)))
 
         val marker = CrateScheduler.markersAt(server, pos).firstOrNull()
-        val inSeconds = (time - now) / 20
+        val duration = (time - now).ticks
         if (marker != null) DataHacker.addReason(
             GLOWING,
             marker,
             players,
-            inSeconds.toInt() + Config.CONFIG.crate.cleanUpTime
+            duration + Config.CONFIG.crate.cleanUpTime
         )
 
         players.forEach {
             CrateScheduler.COUNTDOWN.bar(server).addPlayer(it)
             Chat.message(
                 it, Component.literal(
-                    if (inSeconds <= 0)
+                    if (!duration.isPositive())
                         "Loot dropped at "
                     else
-                        "Loot will drop in $inSeconds seconds at "
+                        "Loot will drop in $duration seconds at "
                 ).append(pos.toComponent(it)),
                 log = true
             )

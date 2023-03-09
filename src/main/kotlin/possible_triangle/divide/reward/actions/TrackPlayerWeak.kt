@@ -7,7 +7,6 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.removeCollision
 import possible_triangle.divide.data.spawnMarker
 import possible_triangle.divide.extensions.persistentData
-import possible_triangle.divide.extensions.toDuration
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.teammates
@@ -51,8 +50,8 @@ object TrackPlayerWeak : DataAction(GLOWING) {
         target.persistentData().putInt(TARGET_TAG, marker.id)
 
         ctx.notify(
-            playerMsg =  "Tracking ${ctx.reward.charge.toDuration()}",
-            targetMsg = "Your position will be recorded ${ctx.reward.charge.toDuration()}"
+            playerMsg =  "Tracking ${ctx.reward.charge}",
+            targetMsg = "Your position will be recorded ${ctx.reward.charge}"
         )
     }
 

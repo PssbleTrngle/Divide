@@ -38,9 +38,17 @@ abstract class DataAction(
 
     final override fun <T> start(ctx: RewardContext<T>) {
         onStart(ctx)
-        targets(ctx).forEach {
-            DataHacker.addReason(type, it, visibleTo(ctx, it), ctx.reward.duration ?: 0, clearOnDeath, clearInBase)
-        }
+        if (ctx.reward.duration != null)
+            targets(ctx).forEach {
+                DataHacker.addReason(
+                    type,
+                    it,
+                    visibleTo(ctx, it),
+                    ctx.reward.duration,
+                    clearOnDeath,
+                    clearInBase
+                )
+            }
     }
 
     final override fun <T> stop(ctx: RewardContext<T>) {

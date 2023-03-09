@@ -7,8 +7,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
+import possible_triangle.divide.extensions.inTicks
 import possible_triangle.divide.extensions.time
 import possible_triangle.divide.isPaused
+import kotlin.time.Duration
 
 abstract class Action {
 
@@ -24,15 +26,15 @@ abstract class Action {
 
         val NOT_ONLINE = SimpleCommandExceptionType(Component.literal("Target is not online"))
 
-        fun <T> run(ctx: RewardContext<T>, duration: Int? = ctx.reward.duration, charge: Int? = ctx.reward.charge) {
+        fun <T> run(ctx: RewardContext<T>, duration: Duration? = ctx.reward.duration, charge: Duration? = ctx.reward.charge) {
             ctx.prepare()
             if (charge == null) ctx.start()
 
-            val realDuration = (duration ?: 0) + (charge ?: 0)
-            if (realDuration > 0) {
+            val runtime = (duration ?: Duration.ZERO) + (charge ?: Duration.ZERO)
+            if (runtime.isPositive()) {
                 val now = ctx.server.time()
-                val until = now + (realDuration * 20)
-                val chargedAt = charge?.times(20)?.plus(now)
+                val until = now + runtime.inTicks
+                val chargedAt = charge?.inTicks?.plus(now)
                 DATA.modify(ctx.server) {
                     add(ActionContext(ctx, until, chargedAt))
                 }

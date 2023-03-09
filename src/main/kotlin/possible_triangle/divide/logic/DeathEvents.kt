@@ -20,7 +20,6 @@ import possible_triangle.divide.bounty.Bounty
 import possible_triangle.divide.command.SellCommand
 import possible_triangle.divide.data.EventPos
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.extensions.persistentData
 import possible_triangle.divide.events.PlayerBountyEvent
 import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logging.EventLogger
@@ -31,6 +30,8 @@ import possible_triangle.divide.reward.actions.BaseBuff
 import java.util.*
 import kotlin.math.min
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 @Serializable
 private data class Event(
@@ -72,11 +73,11 @@ object DeathEvents {
 
     fun ServerPlayer.getDeathPos() = persistentData().readBlockPos(DEATH_POS_TAG)
 
-    fun timeSinceDeath(player: ServerPlayer): Long {
+    fun timeSinceDeath(player: ServerPlayer): Duration {
         val persistent = player.persistentData()
-        if (!persistent.contains(DEATH_TIME_TAG)) return 0L
+        if (!persistent.contains(DEATH_TIME_TAG)) return Duration.ZERO
         val lastDeath = persistent.getLong(DEATH_TIME_TAG)
-        return player.level.time() - lastDeath
+        return (player.level.time() - lastDeath).ticks
     }
 
     fun startedGear(player: ServerPlayer): List<ItemStack> {
@@ -206,7 +207,7 @@ object DeathEvents {
         val wasBounty = PlayerBountyEvent.checkBounty(player, killer)
         if (killer != null && !wasBounty) {
             val livedFor = timeSinceDeath(player)
-            val modifier = min(5.0, livedFor / 20.0 / 60 / 10) + 1.0
+            val modifier = min(5.0, livedFor.toDouble(DurationUnit.MINUTES) / 10) + 1.0
 
             Mission.KILL_PLAYER.fulfill(killer)
 

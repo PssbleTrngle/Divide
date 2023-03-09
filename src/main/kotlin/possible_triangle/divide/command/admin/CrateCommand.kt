@@ -13,6 +13,9 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument
 import net.minecraft.network.chat.Component
 import possible_triangle.divide.crates.CrateScheduler
 import possible_triangle.divide.crates.loot.CrateLoot
+import possible_triangle.divide.extensions.ticks
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 object CrateCommand {
 
@@ -35,29 +38,28 @@ object CrateCommand {
 
     private fun spawnCrate(
         ctx: CommandContext<CommandSourceStack>,
-        type: () -> CrateLoot? = { CrateLoot.random() }
+        type: () -> CrateLoot? = { CrateLoot.random() },
     ): Int {
 
         val center = BlockPosArgument.getSpawnablePos(ctx, "pos")
         val pos = CrateScheduler.findInRange(ctx.source.server, center, 10.0) ?: throw NO_CRATE_POS.create(center)
 
-        val timeTicks = try {
-            IntegerArgumentType.getInteger(ctx, "in")
+        val duration = try {
+            IntegerArgumentType.getInteger(ctx, "in").ticks
         } catch (e: IllegalArgumentException) {
-            0
+            Duration.ZERO
         }
 
-        val seconds = timeTicks / 20
-        CrateScheduler.schedule(ctx.source.server, seconds, pos, type() ?: throw NO_LOOT_DEFINED.create())
+        CrateScheduler.schedule(ctx.source.server, duration, pos, type() ?: throw NO_LOOT_DEFINED.create())
 
         ctx.source.sendSuccess(
             Component.literal(
-                if (seconds == 0) "Crate delivered to $pos"
-                else "Crate will be delivered to $pos in $seconds seconds"
+                if (duration.isPositive()) "Crate will be delivered to $pos in $duration seconds"
+                else "Crate delivered to $pos"
             ), false
         )
 
-        return seconds
+        return duration.toInt(DurationUnit.SECONDS)
     }
 
 }

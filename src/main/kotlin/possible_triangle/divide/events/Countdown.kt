@@ -9,6 +9,9 @@ import net.minecraft.server.bossevents.CustomBossEvent
 import possible_triangle.divide.DivideMod
 import possible_triangle.divide.GameData
 import possible_triangle.divide.extensions.time
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 fun CustomBossEvent.clearPlayers() {
     players = emptyList()
@@ -18,12 +21,13 @@ open class Countdown(private val id: String, private val display: String = id.re
 
     fun countdown(
         server: MinecraftServer,
-        seconds: Int,
+        duration: Duration,
         resetPlayers: Boolean = true,
         consumer: CustomBossEvent.() -> Unit = {},
     ) {
         val bar = bar(server)
         if (resetPlayers) bar.clearPlayers()
+        val seconds = duration.toInt(DurationUnit.SECONDS)
         bar.max = seconds
         bar.value = seconds
         consumer(bar)
@@ -53,8 +57,8 @@ open class Countdown(private val id: String, private val display: String = id.re
         }
     }
 
-    fun remaining(server: MinecraftServer): Int {
-        return bar(server).value
+    fun remaining(server: MinecraftServer): Duration {
+        return bar(server).value.seconds
     }
 
 }

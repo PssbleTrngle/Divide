@@ -11,26 +11,28 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.level.ItemLike
 import net.minecraft.world.scores.PlayerTeam
 import possible_triangle.divide.data.DefaultedResource
+import possible_triangle.divide.data.DurationAsInt
 import possible_triangle.divide.data.EventTarget
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams.teammates
-import possible_triangle.divide.m
 import possible_triangle.divide.reward.actions.*
 import possible_triangle.divide.reward.actions.secret.BlindTeam
 import possible_triangle.divide.reward.actions.secret.MiningFatigue
 import possible_triangle.divide.reward.actions.secret.ScarePlayer
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @Serializable
 data class Reward(
     val display: String,
     @Contextual val icon: ItemLike,
     val price: Int,
-    val duration: Int? = null,
-    val charge: Int? = null,
+    val duration: DurationAsInt? = null,
+    val charge: DurationAsInt? = null,
     val secret: Boolean = false,
-    @Serializable(with = ActionTarget.Serializer::class) @SerialName("target") private val targetType: String = ActionTarget.NONE.id,
+    @SerialName("target") private val targetType: String = ActionTarget.NONE.id,
 ) {
 
     @Transient
@@ -73,8 +75,8 @@ data class Reward(
                 "Track Player",
                 Items.COMPASS,
                 1000,
-                duration = 2.m,
-                charge = 1.m,
+                duration = 2.minutes,
+                charge = 1.minutes,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
@@ -83,8 +85,8 @@ data class Reward(
                 "Track Player (Weak)",
                 Items.COMPASS,
                 500,
-                duration = 5.m,
-                charge = 30,
+                duration = 5.minutes,
+                charge = 30.seconds,
                 targetType = ActionTarget.PLAYER.id,
             )
         }
@@ -94,7 +96,7 @@ data class Reward(
                 "Find Grave",
                 Items.RECOVERY_COMPASS,
                 50,
-                duration = 10.m
+                duration = 10.minutes
             )
         }
 
@@ -103,7 +105,7 @@ data class Reward(
                 "Hide from monsters",
                 Items.ZOMBIE_HEAD,
                 200,
-                duration = 5.m
+                duration = 5.minutes
             )
         }
 
@@ -112,7 +114,7 @@ data class Reward(
                 "Show Nametags",
                 Items.NAME_TAG,
                 100,
-                duration = 20,
+                duration = 20.seconds,
                 targetType = ActionTarget.TEAM.id
             )
         }
@@ -122,7 +124,7 @@ data class Reward(
                 "Buff Loot-Chance",
                 Items.DIAMOND_SWORD,
                 100,
-                duration = 1.m
+                duration = 1.minutes
             )
         }
 
@@ -131,7 +133,7 @@ data class Reward(
                 "Boost Crop-Growth",
                 Items.WHEAT,
                 200,
-                duration = 10.m
+                duration = 10.minutes
             )
         }
 
@@ -140,7 +142,7 @@ data class Reward(
                 "Order a Loot-Crate",
                 Items.BARREL,
                 800,
-                charge = 5.m
+                charge = 5.minutes
             )
         }
 
@@ -149,7 +151,7 @@ data class Reward(
                 "Blind a Team",
                 Items.INK_SAC,
                 200,
-                duration = 1.m,
+                duration = 1.minutes,
                 secret = true,
                 targetType = ActionTarget.TEAM.id,
             )
@@ -160,7 +162,7 @@ data class Reward(
                 "Give a Team Mining-Fatigue",
                 Items.WOODEN_PICKAXE,
                 300,
-                duration = 4.m,
+                duration = 4.minutes,
                 secret = true,
                 targetType = ActionTarget.TEAM.id,
             )
@@ -171,7 +173,7 @@ data class Reward(
                 "Scares a player by playing sounds near him",
                 Items.SKELETON_SKULL,
                 100,
-                duration = 1.m,
+                duration = 1.minutes,
                 secret = true,
                 targetType = ActionTarget.PLAYER.id,
             )
@@ -212,7 +214,6 @@ data class Reward(
 
     }
 
-    @Suppress("UNCHECKED_CAST")
     val action: Action
         get() = (ACTIONS[id] ?: throw NullPointerException("Action for $id missing"))
 

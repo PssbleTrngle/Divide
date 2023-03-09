@@ -1,5 +1,6 @@
 package possible_triangle.divide.events
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
@@ -9,19 +10,21 @@ import possible_triangle.divide.DivideMod
 import possible_triangle.divide.data.ModSavedData
 import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger
-import possible_triangle.divide.logic.Teams.isParticipant
 import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.mixins.TimerAccessor
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 @Suppress("LeakingThis")
 abstract class CycleEvent(val id: String) : Countdown(id) {
 
     abstract val enabled: Boolean
 
-    abstract val startsAfter: Int
+    abstract val startsAfter: Duration
 
     @Serializable
-    private data class Event(val id: String, val action: String, val timesRun: Int? = null, val pause: Int? = null)
+    private data class Event(val id: String, val action: String, val timesRun: Int? = null, @Contextual val pause: Duration? = null)
 
     private val callbackId = "${DivideMod.ID}:event_$id"
 
@@ -68,7 +71,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
     }
 
     fun startCycle(server: MinecraftServer, at: Int = 0): Boolean {
-        val started = startsAfter <= 0
+        val started = !startsAfter.isPositive()
         val pause = if (started) handle(server, at) else startsAfter
 
         val alreadyRun = cancel(server)
@@ -94,19 +97,19 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
         }
     }
 
-    private fun schedule(server: MinecraftServer, seconds: Int, index: Int, invisible: Boolean = false) {
+    private fun schedule(server: MinecraftServer, duration: Duration, index: Int, invisible: Boolean = false) {
         cancel(server)
         val bar = bar(server)
         if (invisible) {
             bar.clearPlayers()
         } else {
-            countdown(server, seconds)
+            countdown(server, duration)
             bar.players = server.participants()
         }
-        schedule(server, seconds, Callback(index, id), suffix = id)
+        schedule(server, duration, Callback(index, id), suffix = id)
     }
 
-    abstract fun handle(server: MinecraftServer, index: Int): Int
+    abstract fun handle(server: MinecraftServer, index: Int): Duration
 
     class Callback(val index: Int, val id: String) : TimerCallback<MinecraftServer> {
 
@@ -118,7 +121,7 @@ abstract class CycleEvent(val id: String) : Countdown(id) {
                 event.schedule(server, pause, index + 1)
                 event.data[server] = index
             } else {
-                event.schedule(server, 10, index, invisible = true)
+                event.schedule(server, 10.seconds, index, invisible = true)
             }
         }
 

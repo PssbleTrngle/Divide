@@ -41,11 +41,6 @@ import possible_triangle.divide.reward.Reward
 import possible_triangle.divide.reward.actions.BaseBuff
 import possible_triangle.divide.reward.actions.secret.MiningFatigue
 
-inline val Double.m get() = this * 60
-inline val Double.h get() = this.m * 60
-inline val Int.m get() = this * 60
-inline val Int.h get() = this.m * 60
-
 object DivideMod : ModInitializer {
     const val ID = "divide"
 
@@ -106,9 +101,8 @@ object DivideMod : ModInitializer {
             val pos = event.pos ?: return@register
             if (player !is ServerPlayer) return@register
 
-            if (CrateEvents.isUnbreakable(player.server, pos)) 0F
-            else if (BaseBuff.isBuffed(player, Reward.MINING_FATIGUE)) event.newSpeed * MiningFatigue.MODIFIER
-            else event.newSpeed
+            if (CrateEvents.isUnbreakable(player.server, pos)) event.newSpeed = 0F
+            else if (BaseBuff.isBuffed(player, Reward.MINING_FATIGUE)) event.newSpeed *= MiningFatigue.MODIFIER
         }
 
         ServerPlayerEvents.AFTER_RESPAWN.register { player, _, _ ->

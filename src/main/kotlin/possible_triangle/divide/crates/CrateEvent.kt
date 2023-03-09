@@ -3,7 +3,6 @@ package possible_triangle.divide.crates
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import possible_triangle.divide.Config
-import possible_triangle.divide.DivideMod
 import possible_triangle.divide.crates.callbacks.CleanCallback
 import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
@@ -13,13 +12,14 @@ import possible_triangle.divide.extensions.mainWorld
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams.participingTeams
 import kotlin.random.Random
+import kotlin.time.Duration
 
 object CrateEvent : CycleEvent("loot_crates") {
 
     override val enabled: Boolean
         get() = Config.CONFIG.crate.enabled
 
-    override val startsAfter: Int
+    override val startsAfter: Duration
         get() = Config.CONFIG.crate.startAfter
 
     override fun onStop(server: MinecraftServer) {
@@ -30,7 +30,7 @@ object CrateEvent : CycleEvent("loot_crates") {
         }
     }
 
-    override fun handle(server: MinecraftServer, index: Int): Int {
+    override fun handle(server: MinecraftServer, index: Int): Duration {
         val border = server.mainWorld().worldBorder
 
         try {

@@ -14,13 +14,14 @@ import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
 import possible_triangle.divide.logic.Teams.participants
 import kotlin.math.abs
+import kotlin.time.Duration
 
 object Border : CycleEvent("border") {
 
     override val enabled: Boolean
         get() = Config.CONFIG.border.enabled
 
-    override val startsAfter: Int
+    override val startsAfter: Duration
         get() = Config.CONFIG.border.startAfter
 
     @Serializable
@@ -28,10 +29,10 @@ object Border : CycleEvent("border") {
 
     private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
 
-    private fun resize(server: MinecraftServer, size: Int, seconds: Int = 0, message: Boolean = true) {
+    private fun resize(server: MinecraftServer, size: Int, duration: Duration = Duration.ZERO, message: Boolean = true) {
         val border = server.mainWorld().worldBorder
         if (border.size == size.toDouble()) return
-        border.lerpSizeBetween(border.size, size.toDouble(), 1000L * seconds)
+        border.lerpSizeBetween(border.size, size.toDouble(), duration.inWholeMilliseconds)
         val verb = if (border.size < size.toDouble()) "grow" else "shrink"
         val color = if (border.size < size.toDouble()) ChatFormatting.GREEN else ChatFormatting.RED
         if (message) {
@@ -68,7 +69,7 @@ object Border : CycleEvent("border") {
         border.damagePerBlock = 0.0
     }
 
-    override fun handle(server: MinecraftServer, index: Int): Int {
+    override fun handle(server: MinecraftServer, index: Int): Duration {
         val grow = index % 2 == 0
         val size = if (grow) Config.CONFIG.border.bigBorder else Config.CONFIG.border.smallBorder
         val pause = if (grow) Config.CONFIG.border.stayBigFor else Config.CONFIG.border.staySmallFor

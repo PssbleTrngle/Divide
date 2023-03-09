@@ -1,14 +1,13 @@
 package possible_triangle.divide.reward.actions
 
 import net.minecraft.world.scores.Team
-import possible_triangle.divide.extensions.toDuration
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.RewardContext
 
 object ShowNametags : Action() {
 
     override fun <T> prepare(ctx: RewardContext<T>) {
-        val time = ctx.reward.charge.toDuration()
+        val time = ctx.reward.charge
         ctx.notify(
             targetMsg = "You're nametag will be revealed $time",
             playerMsg = "Revealing nametags $time"

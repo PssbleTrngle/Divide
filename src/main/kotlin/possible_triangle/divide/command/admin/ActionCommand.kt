@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component
 import possible_triangle.divide.command.arguments.RewardArgument
 import possible_triangle.divide.command.arguments.TargetArgument
 import possible_triangle.divide.command.arguments.TargetTypeArgument
+import possible_triangle.divide.extensions.ticks
 import possible_triangle.divide.logic.Teams.teamOrThrow
 import possible_triangle.divide.reward.Action
 import possible_triangle.divide.reward.ActionTarget
@@ -58,13 +59,13 @@ object ActionCommand {
         val type = TargetTypeArgument.getTargetType(ctx, "targetType")
 
         val duration = try {
-            IntegerArgumentType.getInteger(ctx, "duration")
+            IntegerArgumentType.getInteger(ctx, "duration").ticks
         } catch (e: IllegalArgumentException) {
             reward.duration
         }
 
         val charge = try {
-            IntegerArgumentType.getInteger(ctx, "charge")
+            IntegerArgumentType.getInteger(ctx, "charge").ticks
         } catch (e: IllegalArgumentException) {
             reward.charge
         }

@@ -26,13 +26,14 @@ import possible_triangle.divide.crates.callbacks.FillLootCallback
 import possible_triangle.divide.crates.callbacks.MessageCallback
 import possible_triangle.divide.crates.loot.CrateLoot
 import possible_triangle.divide.data.PerTeamData
-import possible_triangle.divide.extensions.blocksIn
 import possible_triangle.divide.data.spawnMarker
 import possible_triangle.divide.events.Countdown
 import possible_triangle.divide.extensions.*
 import possible_triangle.divide.logic.Teams
 import java.util.*
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 object CrateScheduler {
 
@@ -152,12 +153,12 @@ object CrateScheduler {
 
     fun prepare(
         server: MinecraftServer,
-        seconds: Int,
+        duration: Duration,
         pos: BlockPos,
         type: CrateLoot,
         withoutOrders: Boolean = false,
     ): Long {
-        val time = server.time() + seconds * 20
+        val time = server.time() + duration.inTicks
 
         val uuid = spawnCrate(server, pos)
         val marker = spawnMarker(EntityType.SLIME, server.mainWorld(), pos) {
@@ -165,7 +166,7 @@ object CrateScheduler {
         }
         marker.tags.add(CRATE_UUID_TAG)
 
-        COUNTDOWN.countdown(server, seconds)
+        COUNTDOWN.countdown(server, duration)
         COUNTDOWN.bar(server).isVisible = true
         COUNTDOWN.bar(server).color = BossEvent.BossBarColor.YELLOW
 
@@ -178,24 +179,24 @@ object CrateScheduler {
             items
         }
 
-        FillLootCallback.schedule(server, seconds, FillLootCallback(pos, type, orders, uuid))
-        CleanCallback.schedule(server, seconds + Config.CONFIG.crate.cleanUpTime, CleanCallback(pos, uuid))
+        FillLootCallback.schedule(server, duration, FillLootCallback(pos, type, orders, uuid))
+        CleanCallback.schedule(server, duration + Config.CONFIG.crate.cleanUpTime, CleanCallback(pos, uuid))
 
         return time
     }
 
-    fun schedule(server: MinecraftServer, seconds: Int, pos: BlockPos, type: CrateLoot) {
-        val time = prepare(server, seconds, pos, type)
+    fun schedule(server: MinecraftServer, duration: Duration, pos: BlockPos, type: CrateLoot) {
+        val time = prepare(server, duration, pos, type)
 
         val teams = Teams.ranked(server).reversed()
         teams.forEachIndexed { index, team ->
-            scheduleMessage(server, seconds * index / teams.size, pos, time, team)
+            scheduleMessage(server, duration * index / teams.size, pos, time, team)
         }
     }
 
-    fun scheduleMessage(server: MinecraftServer, seconds: Int, pos: BlockPos, time: Long, team: PlayerTeam) {
+    fun scheduleMessage(server: MinecraftServer, duration: Duration, pos: BlockPos, time: Long, team: PlayerTeam) {
         MessageCallback.schedule(
-            server, seconds, MessageCallback(team.name, pos, time), suffix = team.color.name.lowercase()
+            server, duration, MessageCallback(team.name, pos, time), suffix = team.color.name.lowercase()
         )
     }
 

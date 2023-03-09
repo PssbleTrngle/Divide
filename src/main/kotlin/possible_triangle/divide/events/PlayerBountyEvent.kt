@@ -7,8 +7,9 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import possible_triangle.divide.Config
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.extensions.persistentData
+import possible_triangle.divide.extensions.inTicks
 import possible_triangle.divide.extensions.isTeammate
+import possible_triangle.divide.extensions.persistentData
 import possible_triangle.divide.extensions.time
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Chat
@@ -17,13 +18,15 @@ import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.participants
 import possible_triangle.divide.logic.makeWeightedDecision
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 object PlayerBountyEvent : CycleEvent("player_bounty") {
 
     override val enabled: Boolean
         get() = Config.CONFIG.bounties.enabled
 
-    override val startsAfter: Int
+    override val startsAfter: Duration
         get() = Config.CONFIG.bounties.startAfter
 
     @Serializable
@@ -31,11 +34,11 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
 
     private val LOGGER = EventLogger(id, { Event.serializer() }) { always() }
 
-    override fun handle(server: MinecraftServer, index: Int): Int {
+    override fun handle(server: MinecraftServer, index: Int): Duration {
 
         val minutesDead = server.participants()
-            .associateWith { DeathEvents.timeSinceDeath(it) / 20 / 60 }
-            .mapValues { it.value.toInt() }
+            .associateWith { DeathEvents.timeSinceDeath(it) }
+            .mapValues { it.value.toInt(DurationUnit.MINUTES) }
         val target = makeWeightedDecision(minutesDead)
 
         if (target != null) {
@@ -50,7 +53,7 @@ object PlayerBountyEvent : CycleEvent("player_bounty") {
                 Chat.subtitle(it, Component.literal("").append(target.displayName).append(" - $price points"), false)
             }
 
-            setBounty(target, PlayerBounty(price, target.level.time() + Config.CONFIG.bounties.bountyTime * 20))
+            setBounty(target, PlayerBounty(price, target.level.time() + Config.CONFIG.bounties.bountyTime.inTicks))
         }
 
         return Config.CONFIG.bounties.pause.value

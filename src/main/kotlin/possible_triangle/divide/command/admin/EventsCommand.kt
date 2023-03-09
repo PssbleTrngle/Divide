@@ -16,6 +16,7 @@ import possible_triangle.divide.events.CycleEvent.Companion.EVENTS
 import possible_triangle.divide.extensions.mainWorld
 import possible_triangle.divide.logic.Teams.participantTeam
 import possible_triangle.divide.logic.Teams.participants
+import kotlin.time.DurationUnit
 
 object EventsCommand {
 
@@ -94,7 +95,7 @@ object EventsCommand {
             Component.literal("${event.id} will happen in ${remaining}s for the ${index?.plus(2) ?: "first"} time"),
             false
         )
-        return remaining
+        return remaining.toInt(DurationUnit.SECONDS)
     }
 
     private fun stop(ctx: CommandContext<CommandSourceStack>, event: CycleEvent): Int {

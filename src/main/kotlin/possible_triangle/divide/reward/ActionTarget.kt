@@ -2,12 +2,6 @@ package possible_triangle.divide.reward
 
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.SuggestionProvider
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
@@ -34,21 +28,6 @@ class ActionTarget<Target> private constructor(
         team(ctx)?.participants(ctx.server) ?: emptyList()
     },
 ) {
-
-    object Serializer : KSerializer<String> {
-
-        override val descriptor = PrimitiveSerialDescriptor("ActionTarget", PrimitiveKind.STRING)
-
-        override fun deserialize(decoder: Decoder): String {
-            val id = decoder.decodeString()
-            return id.takeIf { get(id) != null }
-                ?: throw SerializationException("Unknown ActionTarget $id")
-        }
-
-        override fun serialize(encoder: Encoder, value: String) {
-            encoder.encodeString(value)
-        }
-    }
 
     init {
         REGISTRY[id] = this

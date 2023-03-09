@@ -5,8 +5,10 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.timers.TimerCallback
 import net.minecraft.world.level.timers.TimerCallbacks
 import possible_triangle.divide.DivideMod
+import possible_triangle.divide.extensions.inTicks
 import possible_triangle.divide.extensions.time
 import possible_triangle.divide.mixins.TimerAccessor
+import kotlin.time.Duration
 
 abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val id: String, clazz: Class<T>) :
     TimerCallback.Serializer<MinecraftServer, T>(
@@ -38,7 +40,7 @@ abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val i
 
     fun schedule(
         server: MinecraftServer,
-        seconds: Int,
+        duration: Duration,
         callback: T,
         suffix: String = "",
         clearPrevious: Boolean = false
@@ -46,7 +48,7 @@ abstract class CallbackHandler<T : TimerCallback<MinecraftServer>>(private val i
         if (clearPrevious) cancel(server)
         server.scheduledEvents().schedule(
             callbackId(suffix),
-            server.time() + seconds * 20,
+            server.time() + duration.inTicks,
             callback,
         )
     }
