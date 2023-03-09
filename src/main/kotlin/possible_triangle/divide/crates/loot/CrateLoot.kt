@@ -2,7 +2,6 @@ package possible_triangle.divide.crates.loot
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.server.MinecraftServer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import possible_triangle.divide.crates.loot.LootFunction.*
@@ -25,7 +24,6 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             val max = list.maxOf { it.weight }
             return list.map {
                 val copied = it.copy(weight = it.weight / max)
-                copied.item = it.item
                 copied
             }
         }
@@ -37,7 +35,6 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
         private fun applyWeight(loot: List<LootEntry>, factor: Double): List<LootEntry> {
             return normalized(loot).map {
                 val copied = it.copy(weight = it.weight * factor)
-                copied.item = it.item
                 copied
             }
         }
@@ -47,7 +44,6 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                 applyWeight(loot, factor).filter { entry -> functions.all { it.canApply(entry.createStack()) } }.map {
                     val merged = functions + (it.functions ?: listOf())
                     val copied = it.copy(functions = if (merged.isEmpty()) null else merged.distinct())
-                    copied.item = it.item
                     copied
                 }
             }.flatten()
@@ -188,7 +184,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                             rolls = 3,
                             matrix(diamondStuff, enchanted) + applyWeight(ironTools + tools, 2.0) + LootEntry(
                                 Items.ELYTRA,
-                                20.0,
+                                0.5,
                                 functions = listOf(BREAK, VANISH)
                             ), functions = listOf(DAMAGE)
                         ),
@@ -206,7 +202,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                             rolls = 3,
                             matrix(diamondStuff, enchanted)+ LootEntry(
                                 Items.ELYTRA,
-                                20.0,
+                                0.5,
                                 functions = listOf(BREAK, VANISH)
                             ), functions = listOf(DAMAGE)
                         ),
@@ -243,9 +239,8 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
             return makeWeightedDecision(values.associateWith { it.weight })
         }
 
-        override fun populate(entry: CrateLoot, server: MinecraftServer?, id: String) {
+        override fun populate(entry: CrateLoot, id: String) {
             entry.id = id
-            if (server != null) entry.pools.forEach { it.populate(server) }
         }
 
     }

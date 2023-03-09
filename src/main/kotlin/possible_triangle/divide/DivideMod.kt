@@ -83,6 +83,8 @@ object DivideMod : ModInitializer {
         ServerTickEvents.START_SERVER_TICK.register {
             ReloadedResource.tickWatchers(it)
 
+            Action.tickActions(it)
+
             val time = it.time()
 
             if (time % 5 == 0L) {
@@ -92,7 +94,6 @@ object DivideMod : ModInitializer {
             if (time % 20 == 0L) {
                 Teams.updateSpectators(it)
                 LoginShield.tickLogin()
-                Action.tickActions(it)
             }
         }
 

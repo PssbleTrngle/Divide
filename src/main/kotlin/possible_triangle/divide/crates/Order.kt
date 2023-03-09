@@ -1,13 +1,10 @@
 package possible_triangle.divide.crates
 
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType
-import kotlinx.serialization.SerialName
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceLocation
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -15,13 +12,12 @@ import net.minecraft.world.level.ItemLike
 import net.minecraft.world.level.block.Blocks
 import possible_triangle.divide.data.DefaultedResource
 import possible_triangle.divide.data.EventTarget
-import possible_triangle.divide.extensions.id
 import possible_triangle.divide.logging.EventLogger
 import possible_triangle.divide.logic.Points
 import possible_triangle.divide.logic.Teams.teamOrThrow
 
 @Serializable
-data class Order(@SerialName("item") internal val itemId: String, val cost: Int, val max: Int?) {
+data class Order(@Contextual val item: ItemLike, val cost: Int, val max: Int?) {
 
     @Transient
     lateinit var id: String
@@ -30,7 +26,7 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
     companion object : DefaultedResource<Order>("orders", { Order.serializer() }) {
 
         private val TOO_MUCH =
-            Dynamic2CommandExceptionType { id, max -> Component.literal("You can only order up to $max of $id") }
+            Dynamic2CommandExceptionType { id, max -> Component.literal("You can only order up to $max of ").append(id as Component) }
 
         @Serializable
         private data class Event(
@@ -43,19 +39,17 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
         private val LOGGER = EventLogger("order", { Event.serializer() }) { inTeam { it.orderedBy.team } }
 
-        override fun populate(entry: Order, server: MinecraftServer?, id: String) {
+        override fun populate(entry: Order, id: String) {
             entry.id = id
-            if (server != null) {
-                val items = server.registryAccess().registryOrThrow(Registries.ITEM)
-                entry.item = items[ResourceLocation(entry.itemId)]
-                    ?: throw IllegalArgumentException("Item ${entry.itemId} does not exists")
-            }
         }
 
         init {
-            defaulted("ender_pearl") { Order(Items.ENDER_PEARL, 200, 2) }
-            defaulted("tnt") { Order(Blocks.TNT, 100, 4) }
+            defaulted("ender_pearl") { Order(Items.ENDER_PEARL, 200, 4) }
+            defaulted("tnt") { Order(Blocks.TNT, 100, 8) }
             defaulted("dragon_breath") { Order(Items.DRAGON_BREATH, 100, 4) }
+
+            defaulted("golden_apple") { Order(Items.GOLDEN_APPLE, 300, 4) }
+            defaulted("end_crystal") { Order(Items.END_CRYSTAL, 1000, 1) }
 
             defaulted("cow") { Order(Items.COW_SPAWN_EGG, 50, 1) }
             defaulted("pig") { Order(Items.PIG_SPAWN_EGG, 50, 1) }
@@ -67,10 +61,8 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
 
     }
 
-    constructor(item: ItemLike, cost: Int, max: Int?) : this(item.id().path, cost, max)
-
     fun order(player: ServerPlayer, amount: Int): Boolean {
-        if (max != null && amount > max) throw TOO_MUCH.create(itemId, max)
+        if (max != null && amount > max) throw TOO_MUCH.create(item.asItem().description, max)
 
         val price = amount * cost
         val team = player.teamOrThrow()
@@ -81,8 +73,5 @@ data class Order(@SerialName("item") internal val itemId: String, val cost: Int,
         }
 
     }
-
-    @Transient
-    lateinit var item: ItemLike
 
 }

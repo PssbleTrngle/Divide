@@ -44,7 +44,7 @@ data class Bounty(val description: String, val amount: Amount) {
             BOUNTY_COUNTS[server][team] = 0
         }
 
-        override fun populate(entry: Bounty, server: MinecraftServer?, id: String) {
+        override fun populate(entry: Bounty, id: String) {
             entry.id = id
         }
 

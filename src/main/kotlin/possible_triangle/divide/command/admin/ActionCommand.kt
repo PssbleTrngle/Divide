@@ -58,13 +58,13 @@ object ActionCommand {
         val type = TargetTypeArgument.getTargetType(ctx, "targetType")
 
         val duration = try {
-            IntegerArgumentType.getInteger(ctx, "duration") / 20
+            IntegerArgumentType.getInteger(ctx, "duration")
         } catch (e: IllegalArgumentException) {
             reward.duration
         }
 
         val charge = try {
-            IntegerArgumentType.getInteger(ctx, "charge") / 20
+            IntegerArgumentType.getInteger(ctx, "charge")
         } catch (e: IllegalArgumentException) {
             reward.charge
         }

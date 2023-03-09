@@ -5,6 +5,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.item.ItemEntity
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.world.phys.AABB
 import possible_triangle.divide.extensions.toComponent
 import possible_triangle.divide.hacks.DataHacker.Type.GLOWING

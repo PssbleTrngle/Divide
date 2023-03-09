@@ -64,7 +64,7 @@ data class Reward(
             return defaulted(id, reward)
         }
 
-        override fun populate(entry: Reward, server: MinecraftServer?, id: String) {
+        override fun populate(entry: Reward, id: String) {
             entry.id = id
         }
 

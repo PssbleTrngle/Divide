@@ -2,7 +2,6 @@ package possible_triangle.divide.missions
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.BlockTags
 import net.minecraft.world.damagesource.DamageSource
@@ -84,7 +83,7 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
         val JUMP by defaulted("jump") { Mission("Don't jump", FAIL, 150, 1.m) }
         val SNEAK by defaulted("sneak") { Mission("Don't sneak", FAIL, 200, 5.m) }
 
-        override fun populate(entry: Mission, server: MinecraftServer?, id: String) {
+        override fun populate(entry: Mission, id: String) {
             entry.id = id
         }
 

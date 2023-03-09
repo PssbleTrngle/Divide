@@ -110,8 +110,8 @@ class RewardGui(player: ServerPlayer) : ClearableGui(MenuType.GENERIC_9x4, playe
                 listOfNotNull(
                     NOT_ENOUGH_POINTS.takeUnless { canBuy },
                     lore("costs ${reward.price} points"),
-                    reward.charge?.let { lore("takes ${it / 2} minutes to charge up") },
-                    reward.duration?.let { lore("lasts ${it / 2} minutes") },
+                    reward.charge?.let { lore("takes $it seconds to charge up") },
+                    reward.duration?.let { lore("lasts $it seconds") },
                 )
             )
         }
