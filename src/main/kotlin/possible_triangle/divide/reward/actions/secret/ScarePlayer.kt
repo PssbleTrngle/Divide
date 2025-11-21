@@ -15,7 +15,7 @@ object ScarePlayer : Action() {
 
     override fun <T> tick(ctx: RewardContext<T>) {
         val anyTarget = ctx.targetPlayer() ?: return
-        if (anyTarget.level.time() % 15 != 0L) return
+        if (anyTarget.level.time() % 65 != 0L) return
 
         val sound = makeWeightedDecision(mapOf(
             FALL to 1,

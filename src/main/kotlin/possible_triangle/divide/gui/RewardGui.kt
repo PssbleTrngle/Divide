@@ -109,6 +109,7 @@ class RewardGui(player: ServerPlayer) : ClearableGui(MenuType.GENERIC_9x4, playe
             setLore(
                 listOfNotNull(
                     NOT_ENOUGH_POINTS.takeUnless { canBuy },
+                    lore(reward.display).withStyle(ChatFormatting.GOLD),
                     lore("costs ${reward.price} points"),
                     reward.charge?.let { lore("takes $it seconds to charge up") },
                     reward.duration?.let { lore("lasts $it seconds") },

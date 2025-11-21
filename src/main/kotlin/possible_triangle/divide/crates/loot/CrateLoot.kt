@@ -200,7 +200,7 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                         LootPools(rolls = 3, potions),
                         LootPools(
                             rolls = 3,
-                            matrix(diamondStuff, enchanted)+ LootEntry(
+                            matrix(diamondStuff, enchanted) + LootEntry(
                                 Items.ELYTRA,
                                 0.5,
                                 functions = listOf(BREAK, VANISH)
@@ -217,6 +217,12 @@ data class CrateLoot(val weight: Double, val pools: List<LootPools>) {
                             rolls = 1,
                             diamondStuff,
                             functions = listOf(ENCHANT),
+                        ),
+                        LootPools(
+                            rolls = 2,
+                            listOf(
+                                LootEntry(Items.OBSIDIAN, amounts = listOf(16, 40))
+                            )
                         ),
                         LootPools(
                             rolls = 10,

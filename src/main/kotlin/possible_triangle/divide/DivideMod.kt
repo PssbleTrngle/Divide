@@ -105,7 +105,7 @@ object DivideMod : ModInitializer {
             else if (BaseBuff.isBuffed(player, Reward.MINING_FATIGUE)) event.newSpeed *= MiningFatigue.MODIFIER
         }
 
-        ServerPlayerEvents.AFTER_RESPAWN.register { player, _, _ ->
+        ServerPlayerEvents.AFTER_RESPAWN.register { _, player, _ ->
             DataHacker.clearReasons(player)
             DeathEvents.restoreItems(player)
         }

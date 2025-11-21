@@ -146,6 +146,14 @@ data class Reward(
             )
         }
 
+        val GET_LEVEL by register("get_level", GetLevel) {
+            Reward(
+                "Receive 5 levels",
+                Items.EXPERIENCE_BOTTLE,
+                150
+            )
+        }
+
         val BLIND_TEAM by register("blind_team", BlindTeam) {
             Reward(
                 "Blind a Team",

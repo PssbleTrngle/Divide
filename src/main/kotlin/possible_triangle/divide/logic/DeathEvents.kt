@@ -89,13 +89,15 @@ object DeathEvents {
 
         if (checkPause) {
             val timeSince = timeSinceDeath(player)
-            if (timeSince < (Config.CONFIG.deaths.starterGearBreak * 20)) return compass
+            if (timeSince < Config.CONFIG.deaths.starterGearBreak) return compass
         }
 
         player.persistentData().putLong(DEATH_TIME_TAG, player.level.time())
 
         return listOf(
             ItemStack(Items.JUNGLE_PLANKS, 10),
+            ItemStack(Items.WOODEN_SWORD),
+            ItemStack(Items.WOODEN_PICKAXE),
             ItemStack(Items.BREAD, 6),
         ) + compass
     }

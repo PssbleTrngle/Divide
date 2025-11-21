@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.tags.BlockTags
+import net.minecraft.tags.ItemTags
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.monster.Enemy
@@ -38,10 +39,12 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
             "any stone" to { it.isIn(BlockTags.BASE_STONE_NETHER) },
             "any log" to { it.isIn(BlockTags.LOGS) },
             "a crafting table" to { it.isOf(Blocks.CRAFTING_TABLE) },
+            "a bed" to { it.isIn(BlockTags.BEDS) },
+            "a crop" to { it.isIn(BlockTags.CROPS) },
             "a copper ore" to { it.isIn(BlockTags.COPPER_ORES) },
             "a diamond ore" to { it.isIn(BlockTags.DIAMOND_ORES) },
         ).mapIndexed { i, (key, tag) ->
-            tag to defaulted("mine_${key}") { Mission("Mine $key", SUCCEED, 300 - i * 50, 10.seconds * (i + 1)) }
+            tag to defaulted("mine_${key}") { Mission("Break $key", SUCCEED, 300 - i * 50, 10.seconds * (i + 1)) }
         }.associate { it }
 
         val CRAFT = listOf<Pair<String, (ItemStack) -> Boolean>>(
@@ -49,6 +52,9 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
             "a hoe" to { it.item is HoeItem },
             "a fishing rod" to { it.isOf(Items.FISHING_ROD) },
             "a smoker" to { it.isOf(Items.SMOKER) },
+            "a loom" to { it.isOf(Items.LOOM) },
+            "a chest-boat" to { it.isIn(ItemTags.CHEST_BOATS) },
+            "stairs" to { it.isIn(ItemTags.STAIRS) },
             "a repeater" to { it.isOf(Items.REPEATER) },
             "an observer" to { it.isOf(Items.OBSERVER) },
             "a daylight sensor" to { it.isOf(Items.DAYLIGHT_DETECTOR) },
@@ -74,14 +80,14 @@ data class Mission(val description: String, val type: Type, val fine: Int, val t
 
         val FOOD by defaulted("food") { Mission("Don't eat", FAIL, 150, 5.minutes) }
         val CRAFTING by defaulted("crafting") { Mission("Don't craft", FAIL, 200, 10.minutes) }
-        val DIMENSIONAL_TRAVEL by defaulted("dimensional_travel") {
-            Mission(
-                "Don't switch dimensions",
-                FAIL,
-                300,
-                15.minutes
-            )
-        }
+        //val DIMENSIONAL_TRAVEL by defaulted("dimensional_travel") {
+        //    Mission(
+        //        "Don't switch dimensions",
+        //        FAIL,
+        //        300,
+        //        15.minutes
+        //    )
+        //}
         val JUMP by defaulted("jump") { Mission("Don't jump", FAIL, 150, 1.minutes) }
         val SNEAK by defaulted("sneak") { Mission("Don't sneak", FAIL, 200, 5.minutes) }
 

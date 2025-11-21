@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.1-SNAPSHOT'
+    id 'fabric-loom' version '1.0.16'
     id 'maven-publish'
     id "org.jetbrains.kotlin.jvm" version "1.8.10"
     id "org.jetbrains.kotlin.plugin.serialization" version "1.8.10"
@@ -54,17 +54,8 @@ repositories {
 }
 
 dependencies {
-    //library "io.ktor:ktor-server-core:${project.ktor_version}"
-    //library "io.ktor:ktor-server-netty:${project.ktor_version}"
-    //library "io.ktor:ktor-serialization:${project.ktor_version}"
-    //library "io.ktor:ktor-auth:$ktor_version"
-    //library "io.ktor:ktor-auth-jwt:$ktor_version"
-    //library "ch.qos.logback:logback-classic:${project.logback_version}"
-    //library "io.ktor:ktor-websockets:${project.ktor_version}"
-    //library "io.ktor:ktor-utils-jvm:${project.ktor_version}"
-
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    //mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+
     mappings(loom.layered {
         it.mappings("org.quiltmc:quilt-mappings:${project.minecraft_version}+build.${project.qm_version}:intermediary-v2")
         it.parchment("org.parchmentmc.data:parchment-${project.minecraft_version}:${project.parchment_version}@zip")
@@ -82,8 +73,6 @@ dependencies {
     modImplementation include("eu.pb4:sgui:${project.sgui_version}")
 
     modImplementation include("io.github.fabricators_of_create.Porting-Lib:porting-lib:${project.porting_lib_version}")
-
-    //library files('build/libs/allLibs.jar')
 }
 
 processResources {

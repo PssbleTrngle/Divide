@@ -9,7 +9,7 @@ import net.minecraft.world.scores.Objective
 import net.minecraft.world.scores.Score
 
 fun Inventory.items(): List<ItemStack> {
-    return listOf(items, armor, offhand).flatten()
+    return listOf(items, armor, offhand).flatten().filterNot { it.isEmpty }
 }
 
 fun Player.isTeammate(other: Player): Boolean {

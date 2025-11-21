@@ -4,11 +4,11 @@ import net.minecraft.network.chat.Component
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-inline val Int.ticks get() = times(500).milliseconds
+inline val Int.ticks get() = times(50).milliseconds
 
-inline val Long.ticks get() = times(500).milliseconds
+inline val Long.ticks get() = times(50).milliseconds
 
-inline val Duration.inTicks get() = inWholeMilliseconds / 500
+inline val Duration.inTicks get() = inWholeMilliseconds / 50
 
 fun Duration.toText() = this.toString()
 
